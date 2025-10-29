@@ -1,0 +1,19 @@
+[package]
+name = "alethea-oracle-types"
+version = "0.1.0"
+edition = "2021"
+authors = ["Alethea Network Team"]
+description = "Shared types for Alethea Oracle Platform"
+repository = "https://github.com/alethea-network/alethea-network"
+license = "MIT OR Apache-2.0"
+keywords = ["blockchain", "oracle", "linera", "types"]
+
+[dependencies]
+linera-sdk = { workspace = true }
+serde = { workspace = true }
+async-graphql = { workspace = true }
+bcs = { workspace = true }
+
+[lib]
+crate-type = ["lib"]
+

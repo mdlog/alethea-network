@@ -1,0 +1,6 @@
+[project]
+name = "voter-chain"
+
+[bytecode]
+contract = "target/wasm32-unknown-unknown/release/voter-chain-contract.wasm"
+service = "target/wasm32-unknown-unknown/release/voter-chain-service.wasm"

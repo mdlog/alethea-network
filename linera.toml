@@ -1,0 +1,11 @@
+# Alethea Network - Linera Project Configuration
+
+[[project]]
+path = "market-chain"
+
+[[project]]
+path = "voter-chain"
+
+[[project]]
+path = "oracle-coordinator"
+

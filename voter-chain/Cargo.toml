@@ -1,0 +1,42 @@
+# 🏛️ Alethea Network - Voter Chain
+# Decentralized oracle with commit-reveal voting
+
+[package]
+name = "alethea-voter-chain"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description = "Alethea Network voter chain - Commit-reveal oracle with reputation system"
+repository.workspace = true
+license.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+linera-sdk.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+async-trait.workspace = true
+bcs.workspace = true
+async-graphql = "7.0"
+futures = "0.3"
+bincode.workspace = true
+sha2.workspace = true
+
+[dev-dependencies]
+linera-sdk = { workspace = true, features = ["test"] }
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "voter-chain-contract"
+path = "src/contract.rs"
+
+[[bin]]
+name = "voter-chain-service"
+path = "src/service.rs"
+
+[package.metadata.linera]
+contract = "../target/wasm32-unknown-unknown/release/voter-chain-contract.wasm"
+service = "../target/wasm32-unknown-unknown/release/voter-chain-service.wasm"

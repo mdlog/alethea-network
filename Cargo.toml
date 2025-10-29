@@ -1,0 +1,34 @@
+# 🏛️ Alethea Network - Divine Truth for Modern Markets
+# Decentralized Oracle Platform built on Linera Blockchain
+
+[workspace]
+resolver = "2"
+members = [
+    "voter-chain",
+    "market-chain",
+    "oracle-coordinator",
+    "alethea-oracle-types",
+]
+
+[workspace.package]
+name = "alethea-network"
+version = "0.1.0"
+edition = "2021"
+authors = ["Alethea Network Team"]
+description = "Decentralized oracle with commit-reveal voting on Linera blockchain"
+repository = "https://github.com/alethea-network/alethea-network"
+license = "MIT OR Apache-2.0"
+keywords = ["blockchain", "oracle", "linera", "prediction-markets", "defi"]
+categories = ["cryptography::cryptocurrencies"]
+
+[workspace.dependencies]
+linera-sdk = "0.15.4"
+serde = { version = "1.0", features = ["derive"] }
+thiserror = "1.0"
+async-trait = "0.1"
+bcs = "0.1"
+async-graphql = "7.0"
+futures = "0.3"
+sha2 = "0.10"
+bincode = "1.3"
+alethea-oracle-types = { path = "alethea-oracle-types" }

@@ -1,0 +1,40 @@
+# 🏛️ Alethea Network - Market Chain
+# Prediction market with AMM pricing
+
+[package]
+name = "alethea-market-chain"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description = "Alethea Network market chain - Automated Market Maker for prediction markets"
+repository.workspace = true
+license.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+linera-sdk.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+async-trait.workspace = true
+bcs.workspace = true
+async-graphql = "7.0"
+futures = "0.3"
+
+[dev-dependencies]
+linera-sdk = { workspace = true, features = ["test"] }
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "market-chain-contract"
+path = "src/contract.rs"
+
+[[bin]]
+name = "market-chain-service"
+path = "src/service.rs"
+
+[package.metadata.linera]
+contract = "/home/mdlog/Project-MDlabs/linera-new/target/wasm32-unknown-unknown/release/market-chain-contract.wasm"
+service = "/home/mdlog/Project-MDlabs/linera-new/target/wasm32-unknown-unknown/release/market-chain-service.wasm"
