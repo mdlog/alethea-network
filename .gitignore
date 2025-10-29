@@ -64,6 +64,10 @@ amm/
 *.svg
 *.webp
 
+# Exception: Include logo
+!logo.png
+!alethea-logo.png
+
 # Exclude zip files
 *.zip
 

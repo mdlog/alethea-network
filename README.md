@@ -1,12 +1,19 @@
 # Alethea Network - Decentralized Oracle on Linera
 
+<div align="center">
+
 ```
-    ◉─────◉
-     ╲   ╱      ALETHEA NETWORK
-      ◉─◉       Divine Truth for Modern Markets
+        ◉
+       ╱ ╲
+      ╱   ╲      ALETHEA NETWORK
+     ◉─────◉     Decentralized Oracle Infrastructure
 ```
 
-**Powered by Commit-Reveal Voting on Linera Blockchain**
+**Three-Node Decentralized Oracle • Commit-Reveal Voting • Linera Blockchain**
+
+> *Logo represents our three-contract architecture: Oracle Coordinator (center) coordinating Market Chain and Voter Chain*
+
+</div>
 
 [![Linera](https://img.shields.io/badge/Linera-v0.15.4-blue)](https://linera.dev)
 [![Rust](https://img.shields.io/badge/Rust-1.86.0-orange)](https://www.rust-lang.org/)
