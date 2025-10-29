@@ -2,25 +2,23 @@
 
 <div align="center">
 
-```
-        ◉
-       ╱ ╲
-      ╱   ╲      ALETHEA NETWORK
-     ◉─────◉     Decentralized Oracle Infrastructure
-```
+<img src="logo.png" alt="Alethea Network Logo" width="200"/>
+
+# ALETHEA NETWORK
+### Decentralized Oracle Infrastructure
 
 **Three-Node Decentralized Oracle • Commit-Reveal Voting • Linera Blockchain**
 
-> *Logo represents our three-contract architecture: Oracle Coordinator (center) coordinating Market Chain and Voter Chain*
+> *Alethea (Ἀλήθεια) - Greek goddess of truth, daughter of Zeus*
 
 </div>
+
+---
 
 [![Linera](https://img.shields.io/badge/Linera-v0.15.4-blue)](https://linera.dev)
 [![Rust](https://img.shields.io/badge/Rust-1.86.0-orange)](https://www.rust-lang.org/)
 [![Status](https://img.shields.io/badge/Status-Deployed-success)](.)
 [![Docs](https://img.shields.io/badge/Docs-GitBook-blue)](https://github.com/mdlog/alethea-docs)
-
-> *Alethea (Ἀλήθεια) - Greek goddess of truth, daughter of Zeus*
 
 ---
 
