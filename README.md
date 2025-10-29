@@ -131,57 +131,62 @@ linera --version
 # Should show: Linera protocol: v0.15.4
 ```
 
-### **2. Build Contracts**
+### **2. Clone & Build Contracts**
 
 ```bash
-cd /home/mdlog/Project-MDlabs/linera-new
+# Clone the repository
+git clone https://github.com/mdlog/alethea-network.git
+cd alethea-network
 
 # Clean build
 cargo clean
 
-# Build both contracts
+# Build all three contracts
 cargo build --release --target wasm32-unknown-unknown -p market-chain
 cargo build --release --target wasm32-unknown-unknown -p voter-chain
+cargo build --release --target wasm32-unknown-unknown -p oracle-coordinator
 
-# Copy with correct naming (underscores)
-cd target/wasm32-unknown-unknown/release
-cp market-chain-contract.wasm market_chain_contract.wasm
-cp market-chain-service.wasm market_chain_service.wasm
-cp voter-chain-contract.wasm voter_chain_contract.wasm
-cp voter-chain-service.wasm voter_chain_service.wasm
+# Verify WASM files created
+ls -lh target/wasm32-unknown-unknown/release/*.wasm
 ```
 
-### **3. Deploy to Local Network**
+### **3. Deploy to Conway Testnet**
 
 ```bash
-cd /home/mdlog/Project-MDlabs/linera-new
+# Initialize wallet with Conway testnet
+linera wallet init --with-new-chain --faucet https://faucet.testnet-conway.linera.net
 
-# Start local network
-linera net up --testing-prng-seed 37 &
-sleep 12
+# Get your chain ID
+linera wallet show
 
-# Setup environment (from network output)
-export LINERA_WALLET="/tmp/.tmpXXXXXX/wallet_0.json"
-export LINERA_KEYSTORE="/tmp/.tmpXXXXXX/keystore_0.json"
-export LINERA_STORAGE="rocksdb:/tmp/.tmpXXXXXX/client_0.db"
+# Deploy using manual 2-step method (recommended for v0.15.4)
 
-# Deploy Market Chain (publish bytecode + create app)
-cd market-chain
-linera project publish-and-create \
-  --json-parameters '{"initial_markets": []}' \
-  --json-argument '{"markets": []}'
+# Step 1: Publish Market Chain
+linera publish-bytecode \
+  target/wasm32-unknown-unknown/release/market_chain_contract.wasm \
+  target/wasm32-unknown-unknown/release/market_chain_service.wasm
 
-# Save Market App ID from output
+# Save bytecode ID from output
+export MARKET_BYTECODE="<bytecode-id>"
+
+# Step 2: Create Market Chain application
+linera create-application $MARKET_BYTECODE \
+  --json-parameters '{}' \
+  --json-argument '{}'
+
+# Save application ID
 export MARKET_APP="<app-id-from-output>"
 
-# Deploy Voter Chain
-cd ../voter-chain
-linera project publish-and-create \
-  --json-parameters '{"min_stake": "100000"}' \
-  --json-argument '{"oracle_chain": "<chain-id>", "initial_stake": "1000000"}'
+# Repeat for Voter Chain
+linera publish-bytecode \
+  target/wasm32-unknown-unknown/release/voter_chain_contract.wasm \
+  target/wasm32-unknown-unknown/release/voter_chain_service.wasm
 
-# Save Voter App ID from output
-export VOTER_APP="<app-id-from-output>"
+export VOTER_BYTECODE="<bytecode-id>"
+
+linera create-application $VOTER_BYTECODE \
+  --json-parameters '{"min_stake": "1"}' \
+  --json-argument '{"initial_stake": "10"}'
 
 # Start GraphQL service
 linera service --port 8080 &
