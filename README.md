@@ -58,17 +58,7 @@ Oracle Coord:  d6e3e0e891120936967ea0f877d135cf6839d7e8b312930f3c15b0a4e44f2209 
 **Oracle Coordinator:** ✅ Active (cross-chain messaging)  
 **Integration:** ✅ FULLY INTEGRATED (Market ↔ Oracle ↔ Voter)
 
-### 🏠 Localhost (Archive - for reference)
-
-```
-Chain ID:     127141603399cabcdcb7ce1017141f2983dfa0218aef168723b54d44f1a1d614
-Market Chain: c8ce7acb403e8a2debe774701c5ee89e75ea48c67eaf514fb661f1fcd81c5990
-Voter Chain:  53cdfae3fd336d3759d65284aa67faef35e04d02728b6c45990f92c37d32030d
-```
-
-**Status:** 🏠 Local testnet (for development)
-
-### **GraphiQL IDE URLs (Conway Testnet):**
+### **GraphiQL IDE URLs:**
 
 **Main IDE:**
 ```
@@ -193,19 +183,6 @@ linera service --port 8080 &
 
 # Verify deployment
 linera wallet show
-```
-
-**Alternative: Use Pre-deployed Instance**
-
-If deployment is complex, use the current running instance:
-
-```bash
-# Current deployment (active)
-export CHAIN_ID="127141603399cabcdcb7ce1017141f2983dfa0218aef168723b54d44f1a1d614"
-export MARKET_APP="c8ce7acb403e8a2debe774701c5ee89e75ea48c67eaf514fb661f1fcd81c5990"
-export VOTER_APP="53cdfae3fd336d3759d65284aa67faef35e04d02728b6c45990f92c37d32030d"
-
-# Access GraphiQL directly at URLs shown in Deployment Status
 ```
 
 ---
@@ -337,31 +314,17 @@ Oracle Coord: d6e3e0e891120936967ea0f877d135cf6839d7e8b312930f3c15b0a4e44f2209
 
 4. Response will show transaction hash ✅
 
-**Via curl (Conway Testnet):**
+**Via curl:**
 
 ```bash
-CHAIN_ID="8550ef0ecb1ee0289b94c88d5bdec0183e5c3667d473ab1cedcf19f56ad6bd16"
-MARKET_APP="dbdd35883b93d142d3ecd27d49aed23ca2d28e7607e35aa1858bf399bc40996b"
+# Get your chain ID and application ID from: linera wallet show
+export YOUR_CHAIN_ID="<your-chain-id>"
+export YOUR_MARKET_APP="<your-market-app-id>"
 
-curl -X POST "http://localhost:8080/chains/$CHAIN_ID/applications/$MARKET_APP" \
+curl -X POST "http://localhost:8080/chains/$YOUR_CHAIN_ID/applications/$YOUR_MARKET_APP" \
   -H "Content-Type: application/json" \
   -d '{"query": "mutation { createMarket(question: \"Your question?\", outcomes: [\"Yes\", \"No\"], resolutionDeadline: 9999999999000000, initialLiquidity: \"1000000\") }"}'
 ```
-
-**For Localhost Testing:**
-<details>
-<summary>Click to expand localhost commands</summary>
-
-```bash
-# Localhost URLs (Archive)
-CHAIN_ID="127141603399cabcdcb7ce1017141f2983dfa0218aef168723b54d44f1a1d614"
-MARKET_APP="c8ce7acb403e8a2debe774701c5ee89e75ea48c67eaf514fb661f1fcd81c5990"
-
-curl -X POST "http://localhost:8080/chains/$CHAIN_ID/applications/$MARKET_APP" \
-  -H "Content-Type: application/json" \
-  -d '{"query": "mutation { createMarket(question: \"Your question?\", outcomes: [\"Yes\", \"No\"], resolutionDeadline: 9999999999000000, initialLiquidity: \"1000000\") }"}'
-```
-</details>
 
 **Verify:**
 
@@ -390,15 +353,11 @@ curl -X POST "http://localhost:8080/chains/$CHAIN_ID/applications/$MARKET_APP" \
 - 🔄 `commitVote` - Commit-reveal Phase 1 (planned)
 - 🔄 `revealVote` - Commit-reveal Phase 2 (planned)
 
-**GraphiQL URL (Conway Testnet):**
+**GraphiQL URL:**
 ```
-http://localhost:8080/chains/8550ef0ecb1ee0289b94c88d5bdec0183e5c3667d473ab1cedcf19f56ad6bd16/applications/333197de9bd7426b327b41f8f342537a6160d3de521917d71ca6ed1a14a7bc40
+http://localhost:8080/chains/YOUR_CHAIN_ID/applications/YOUR_VOTER_APP_ID
 ```
-
-**GraphiQL URL (Localhost - Archive):**
-```
-http://localhost:8080/chains/127141603399cabcdcb7ce1017141f2983dfa0218aef168723b54d44f1a1d614/applications/53cdfae3fd336d3759d65284aa67faef35e04d02728b6c45990f92c37d32030d
-```
+*Replace with your actual chain ID and voter app ID from `linera wallet show`*
 
 **Available Queries:**
 ```graphql
@@ -714,15 +673,13 @@ To confirm your deployment is on Conway Testnet (not localhost):
 ```bash
 linera wallet show --with-validators
 ```
-✅ Conway: Shows 10+ validators with public URLs (`validator-X.testnet-conway.linera.net`)  
-❌ Localhost: Shows 4-8 validators with local URLs (`127.0.0.1`)
+✅ Should show 10+ validators with public URLs like `validator-X.testnet-conway.linera.net`
 
 **Method 2: Check Wallet Config**
 ```bash
 cat ~/.config/linera/wallet.json | grep -A 3 '"validators"' | head -10
 ```
-✅ Conway: Shows `"network_address": "grpcs:validator-X.testnet-conway.linera.net:443"`  
-❌ Localhost: Shows `127.0.0.1` addresses
+✅ Should show `"network_address": "grpcs:validator-X.testnet-conway.linera.net:443"`
 
 **Method 3: Check Block Production**
 ```bash
@@ -730,8 +687,7 @@ cat ~/.config/linera/wallet.json | grep -A 3 '"validators"' | head -10
 sleep 30
 linera wallet show
 ```
-✅ Conway: Block height increases (other users' transactions)  
-❌ Localhost: Block height stays the same (only your transactions)
+✅ Block height should increase even without your activity (other users' transactions on Conway)
 
 ---
 
