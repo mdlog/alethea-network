@@ -39,14 +39,14 @@ tmp/
 temp/
 *.tmp
 
-# Exclude folders (alethea-explorer and docs are separate repos)
+# Exclude folders (alethea-explorer is separate repo)
 alethea-explorer/
-docs/
 amm/
 
-# Exclude all .md files except README.md
+# Exclude all .md files except README.md and docs/**/*.md
 *.md
 !README.md
+!docs/**/*.md
 
 # Exclude text documentation files
 *.txt
