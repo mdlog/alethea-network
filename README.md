@@ -706,6 +706,33 @@ After successful deployment on Conway Testnet, you should see:
 ✅ **WASM Bytecode:** ~7.2MB total deployed  
 ✅ **Integration:** Market ↔ Oracle ↔ Voter (cross-chain messaging)
 
+### **Verify You're on Conway Testnet**
+
+To confirm your deployment is on Conway Testnet (not localhost):
+
+**Method 1: Check Validators**
+```bash
+linera wallet show --with-validators
+```
+✅ Conway: Shows 10+ validators with public URLs (`validator-X.testnet-conway.linera.net`)  
+❌ Localhost: Shows 4-8 validators with local URLs (`127.0.0.1`)
+
+**Method 2: Check Wallet Config**
+```bash
+cat ~/.config/linera/wallet.json | grep -A 3 '"validators"' | head -10
+```
+✅ Conway: Shows `"network_address": "grpcs:validator-X.testnet-conway.linera.net:443"`  
+❌ Localhost: Shows `127.0.0.1` addresses
+
+**Method 3: Check Block Production**
+```bash
+# Wait 30 seconds without sending transactions
+sleep 30
+linera wallet show
+```
+✅ Conway: Block height increases (other users' transactions)  
+❌ Localhost: Block height stays the same (only your transactions)
+
 ---
 
 ## 🎊 **Features**
