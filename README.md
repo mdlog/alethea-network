@@ -282,29 +282,34 @@ Phase 2 (Reveal):
 ### **Verify Deployment**
 
 ```bash
-# Check wallet (note: this locks database if service is running)
-# Stop service first: pkill -f "linera service"
+# Check your wallet and chain
 linera wallet show
 
-# Current deployment info (Conway Testnet - ACTIVE)
+# You should see:
+# - Your chain ID (64-character hex string)
+# - Block height increasing
+# - Your deployed applications
+
+# Check balance
+linera query-balance
+
+# Verify GraphQL service is running
+curl http://localhost:8080
+# Should return GraphiQL IDE HTML
+
+# Test GraphQL connection
+curl -X POST http://localhost:8080 \
+  -H "Content-Type: application/json" \
+  -d '{"query": "{ __schema { queryType { name } } }"}'
+```
+
+**Example deployment info (Conway Testnet):**
+```
 Chain ID:     8550ef0ecb1ee0289b94c88d5bdec0183e5c3667d473ab1cedcf19f56ad6bd16
+Block Height: 75+
 Market Chain: dbdd35883b93d142d3ecd27d49aed23ca2d28e7607e35aa1858bf399bc40996b
 Voter Chain:  333197de9bd7426b327b41f8f342537a6160d3de521917d71ca6ed1a14a7bc40
 Oracle Coord: d6e3e0e891120936967ea0f877d135cf6839d7e8b312930f3c15b0a4e44f2209
-
-# Localhost deployment (Archive - for reference)
-Chain ID:     127141603399cabcdcb7ce1017141f2983dfa0218aef168723b54d44f1a1d614
-Market Chain: c8ce7acb403e8a2debe774701c5ee89e75ea48c67eaf514fb661f1fcd81c5990
-Voter Chain:  53cdfae3fd336d3759d65284aa67faef35e04d02728b6c45990f92c37d32030d
-
-# Check network
-ps aux | grep linera | wc -l  # Should show ~10+ processes
-
-# Check service
-curl http://localhost:8080  # Should show GraphiQL IDE
-
-# Check Alethea Explorer
-curl http://localhost:3333  # Should show dashboard
 ```
 
 ### **Create a Market** 🎯
@@ -665,43 +670,41 @@ query {
 ### **Check Deployment**
 
 ```bash
-# 1. View wallet
+# 1. View your wallet and chain
 linera wallet show
 
 # Expected output:
-# - Chain 8550ef0e... with Block Height: 75+
-# - Applications deployed and operational
+# - Your chain ID (64-character hex)
+# - Block height increasing
+# - Deployed applications
 
-# 2. Current Application IDs (Conway Testnet)
-Market Chain: dbdd35883b93d142d3ecd27d49aed23ca2d28e7607e35aa1858bf399bc40996b
-Voter Chain:  333197de9bd7426b327b41f8f342537a6160d3de521917d71ca6ed1a14a7bc40
-Oracle Coord: d6e3e0e891120936967ea0f877d135cf6839d7e8b312930f3c15b0a4e44f2209
+# 2. Check balance
+linera query-balance
 
-# 3. Verify network
-ps aux | grep linera | wc -l
-# Should show ~13 processes
-
-# 4. Verify GraphQL service
+# 3. Verify GraphQL service
 curl http://localhost:8080
 # Should return GraphiQL IDE HTML
 
-# 5. Test mutations available (Conway)
-curl -X POST "http://localhost:8080/chains/8550ef0ecb1ee0289b94c88d5bdec0183e5c3667d473ab1cedcf19f56ad6bd16/applications/dbdd35883b93d142d3ecd27d49aed23ca2d28e7607e35aa1858bf399bc40996b" \
+# 4. Test your deployment
+# Replace YOUR_CHAIN_ID and YOUR_MARKET_APP_ID with actual values from wallet
+curl -X POST "http://localhost:8080/chains/YOUR_CHAIN_ID/applications/YOUR_MARKET_APP_ID" \
   -H "Content-Type: application/json" \
   -d '{"query": "{ __schema { mutationType { fields { name } } } }"}'
+
 # Should list: createMarket, buyShares, setOracleChain, requestResolution, etc.
 ```
 
-### **Proof of Deployment**
+### **Deployment Success Indicators**
 
-✅ **Block Height:** 75+ (Conway Testnet - Active!)  
-✅ **Applications:** 3 deployed (Market, Voter, Oracle Coordinator)  
-✅ **Mutations:** createMarket, buyShares, submitVote, requestResolution (all active!)  
-✅ **Application IDs:** 64-character hex strings  
-✅ **Network:** Conway Testnet (Multi-validator consensus)  
-✅ **WASM:** 6 files deployed (~7.2MB total bytecode)  
-✅ **Integration:** Market ↔ Oracle ↔ Voter (cross-chain messaging active)  
-✅ **Test Market:** Successfully created and tested on Conway!
+After successful deployment on Conway Testnet, you should see:
+
+✅ **Chain Created:** Your unique chain ID on Conway Testnet  
+✅ **Applications:** 3 contracts deployed (Market, Voter, Oracle Coordinator)  
+✅ **Mutations Active:** createMarket, buyShares, submitVote, requestResolution  
+✅ **GraphQL Service:** Running on localhost:8080  
+✅ **Network:** Connected to Conway Testnet validators  
+✅ **WASM Bytecode:** ~7.2MB total deployed  
+✅ **Integration:** Market ↔ Oracle ↔ Voter (cross-chain messaging)
 
 ---
 
