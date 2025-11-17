@@ -1,11 +1,15 @@
-# 🔮 Alethea Oracle Network
+<div align="center">
+  <img src="alethea-network-removebg-preview.jpeg" alt="Alethea Network Logo" width="300"/>
+  
+  # 🔮 Alethea Oracle Network
 
-**Decentralized Oracle Protocol with Power-Based Voter Selection on Linera Blockchain**
+  **Decentralized Oracle Protocol with Power-Based Voter Selection on Linera Blockchain**
 
-[![Status](https://img.shields.io/badge/status-production%20ready-brightgreen)]()
-[![Wave](https://img.shields.io/badge/wave-2%20complete-blue)]()
-[![Network](https://img.shields.io/badge/network-linera%20conway-purple)]()
-[![License](https://img.shields.io/badge/license-MIT-blue)]()
+  [![Status](https://img.shields.io/badge/status-production%20ready-brightgreen)]()
+  [![Wave](https://img.shields.io/badge/wave-2%20complete-blue)]()
+  [![Network](https://img.shields.io/badge/network-linera%20conway-purple)]()
+  [![License](https://img.shields.io/badge/license-MIT-blue)]()
+</div>
 
 ---
 
