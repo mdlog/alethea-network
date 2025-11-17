@@ -15,86 +15,38 @@
 
 ## 🎯 What is Alethea?
 
-**Alethea is a decentralized oracle protocol providing truthful resolution of real-world events for DApps on Linera blockchain.**
+Alethea is a **decentralized oracle protocol** that provides truthful resolution of real-world events for DApps on Linera blockchain. We solve the oracle problem through **power-based voter selection** where only the most qualified voters participate in each query.
 
-### What is a Decentralized Oracle?
+### How It Works
 
-A decentralized oracle resolves questions about real-world data through **decentralized voting consensus**. Unlike centralized oracles (single point of failure) or optimistic oracles (assume truth unless disputed), Alethea uses **power-based voter selection** where only the most qualified voters participate in each query.
+**Simple 3-Step Process:**
 
-### How Does It Work?
+1. **Register as Voter** → Stake tokens (min 100) in 30 seconds
+2. **Get Selected** → Top voters chosen by Power (Stake × Reputation)
+3. **Vote & Earn** → Submit answers, earn proportional rewards
 
-1. **Voter Registration** - Stake tokens to become a voter
-   - Minimum stake: 100 tokens
-   - Account-based registration in <30 seconds
-   - Build reputation through accurate voting
-   
-2. **Voter Selection** - Top voters selected by power
-   - Power = Stake × Reputation Weight
-   - Four reputation tiers: Novice (1.0x), Intermediate (1.2x), Expert (1.5x), Master (2.0x)
-   - Only selected voters can vote on each query
-   
-3. **Query Creation** - Request real-world data
-   - Example: "What was BTC closing price on Dec 31, 2025?"
-   - Example: "Did event X occur on date Y?"
-   - Reward pool for correct voters
-   
-4. **Vote Submission** - Selected voters provide answers
-   - Only selected voters can vote
-   - Votes recorded on-chain and immutable
-   - Voting period until deadline
-   
-5. **Resolution** - System determines final answer
-   - **Majority**: Most voted outcome wins
-   - **Weighted**: Votes weighted by voter power
-   - **Consensus**: Requires threshold agreement
-   
-6. **Reward Distribution** - Correct voters earn rewards
-   - Proportional to voter power
-   - Higher power = higher reward share
-   - Reputation increases for accuracy
+### Key Innovation
+
+**Power-Based Selection:**
+- Power = Stake × Reputation Weight
+- Four tiers: Novice (1.0x) → Intermediate (1.2x) → Expert (1.5x) → Master (2.0x)
+- Only top voters selected per query
+- Higher power = more selection chances + bigger rewards
 
 ### Why Alethea?
 
-**Key Advantages:**
-- ✅ **Quality Through Selection** - Only top voters participate
-- ✅ **Spam Prevention** - Power-based selection prevents manipulation
-- ✅ **Fair Rewards** - Proportional distribution by power
-- ✅ **Reputation System** - Long-term incentive alignment
-- ✅ **Fast Registration** - 30 seconds vs 5 minutes
-- ✅ **Scalable** - Handles 1000+ voters efficiently
-- ✅ **Linera-Powered** - High-performance mikrochains
-
-**Innovation:**
-- 🎯 **Power-Based Selection** - Stake × Reputation determines participation
-- 🎯 **Account-Based** - No application deployment needed
-- 🎯 **Four-Tier Reputation** - Dynamic weight multipliers
-- 🎯 **Proportional Rewards** - Incentivizes both stake and accuracy
+✅ **Quality** - Only qualified voters participate  
+✅ **Fair** - Rewards proportional to power  
+✅ **Fast** - 30-second registration  
+✅ **Scalable** - Handles 1000+ voters efficiently  
+✅ **Secure** - Spam-resistant through selection
 
 ### Use Cases
 
-**DeFi Applications:**
-- Price feeds for derivatives and lending protocols
-- Settlement data for prediction markets
-- Collateral valuation for synthetic assets
-- Insurance claim verification
-
-**Real-World Data:**
-- Event outcome verification (sports, elections)
-- Weather data for parametric insurance
-- Supply chain milestone verification
-- IoT sensor data validation
-
-**Governance:**
-- DAO proposal outcome verification
-- Multi-sig transaction validation
-- Cross-chain bridge verification
-- Protocol parameter updates
-
-**Gaming & NFTs:**
-- Tournament result verification
-- Achievement validation
-- Rarity oracle for dynamic NFTs
-- In-game event outcomes
+**DeFi:** Price feeds, prediction markets, insurance claims  
+**Real-World Data:** Sports results, weather, IoT sensors  
+**Governance:** DAO proposals, multi-sig validation  
+**Gaming:** Tournament results, NFT rarity verification
 
 ---
 
