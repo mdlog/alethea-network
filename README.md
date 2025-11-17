@@ -280,9 +280,10 @@ See [docs/QUICK_START_DASHBOARD_NOV17.md](docs/QUICK_START_DASHBOARD_NOV17.md) f
 
 ### Quick Start Guides
 - **Quick Start** - [docs/QUICK_START_DASHBOARD_NOV17.md](docs/QUICK_START_DASHBOARD_NOV17.md)
-- **Voter Registration Guide** - [docs/CARA_MENDAFTAR_VOTER.md](docs/CARA_MENDAFTAR_VOTER.md) (Indonesian)
+- **Voter Registration Guide** - [docs/VOTER_REGISTRATION_GUIDE.md](docs/VOTER_REGISTRATION_GUIDE.md)
 - **Who Can Be Voter** - [docs/WHO_CAN_BE_VOTER.md](docs/WHO_CAN_BE_VOTER.md)
 - **Dashboard Update** - [docs/DASHBOARD_UPDATE_COMPLETE.md](docs/DASHBOARD_UPDATE_COMPLETE.md)
+- **Indonesian Guide** - [docs/CARA_MENDAFTAR_VOTER.md](docs/CARA_MENDAFTAR_VOTER.md) (Bahasa Indonesia)
 
 ### Technical Documentation
 - **Network Overview** - [docs/ALETHEA_NETWORK_OVERVIEW.md](docs/ALETHEA_NETWORK_OVERVIEW.md)
