@@ -1,0 +1,8 @@
+{
+    "min_stake": 100000000,
+    "min_votes_default": 3,
+    "default_query_duration": 86400,
+    "reward_percentage": 1000,
+    "slash_percentage": 500,
+    "protocol_fee": 100
+}

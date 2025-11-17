@@ -4,7 +4,7 @@
 [package]
 name = "alethea-market-chain"
 version.workspace = true
-edition.workspace = true
+edition = "2021"
 authors.workspace = true
 description = "Alethea Network market chain - Automated Market Maker for prediction markets"
 repository.workspace = true
@@ -15,11 +15,14 @@ categories.workspace = true
 [dependencies]
 linera-sdk.workspace = true
 serde.workspace = true
+serde_json.workspace = true
 thiserror.workspace = true
 async-trait.workspace = true
 bcs.workspace = true
 async-graphql = "7.0"
 futures = "0.3"
+alethea-oracle-types = { path = "../alethea-oracle-types" }
+alethea-sdk = { path = "../alethea-sdk" }
 
 [dev-dependencies]
 linera-sdk = { workspace = true, features = ["test"] }

@@ -5,11 +5,24 @@
 //! 
 //! This crate provides common data structures, operations, and types
 //! used across the Alethea Oracle ecosystem, including:
-//! - Oracle Coordinator
-//! - Voter Chain
+//! - Oracle Coordinator (legacy)
+//! - Oracle Registry (new protocol)
+//! - Voter Chain (legacy)
+//! - Voter Template (new protocol)
 //! - Market Chain
 //! 
 //! By centralizing these types, we ensure consistency and reduce duplication.
+
+// New protocol modules
+pub mod registry;
+pub mod voter;
+pub mod constants;
+pub mod graphql_types;
+
+// Re-export new protocol types
+pub use registry::*;
+pub use voter::*;
+pub use constants::*;
 
 use linera_sdk::{
     linera_base_types::{AccountOwner, Amount, ChainId, Timestamp},
@@ -30,17 +43,43 @@ impl ServiceAbi for OracleCoordinatorAbi {
     type QueryResponse = async_graphql::Response;
 }
 
-/// ABI untuk Voter Chain
+/// ABI untuk Voter Chain (legacy)
 pub struct VoterChainAbi;
 
 impl ContractAbi for VoterChainAbi {
-    type Operation = VoterOperation;
-    type Response = VoterResponse;
+    type Operation = VoterOperationLegacy;
+    type Response = VoterResponse; // Using VoterResponse from voter.rs
 }
 
 impl ServiceAbi for VoterChainAbi {
     type Query = VoterQuery;
     type QueryResponse = VoterResponse;
+}
+
+/// ABI untuk Voter Template (new protocol)
+pub struct VoterTemplateAbi;
+
+impl ContractAbi for VoterTemplateAbi {
+    type Operation = VoterOperation;
+    type Response = VoterResponse;
+}
+
+impl ServiceAbi for VoterTemplateAbi {
+    type Query = async_graphql::Request;
+    type QueryResponse = async_graphql::Response;
+}
+
+/// ABI untuk Oracle Registry (new protocol)
+pub struct OracleRegistryAbi;
+
+impl ContractAbi for OracleRegistryAbi {
+    type Operation = RegistryOperation;
+    type Response = RegistryResponse;
+}
+
+impl ServiceAbi for OracleRegistryAbi {
+    type Query = async_graphql::Request;
+    type QueryResponse = async_graphql::Response;
 }
 
 // ==================== COORDINATOR OPERATIONS ====================
@@ -135,9 +174,12 @@ pub enum CoordinatorQuery {
 }
 
 // ==================== VOTER OPERATIONS ====================
+// VoterOperation and VoterResponse are now defined in voter.rs module
+// This section kept for backward compatibility with voter-chain (legacy)
 
+// Legacy VoterOperation for voter-chain (deprecated, use voter.rs version)
 #[derive(Debug, Serialize, Deserialize)]
-pub enum VoterOperation {
+pub enum VoterOperationLegacy {
     /// Initialize voter dengan oracle coordinator
     Initialize {
         oracle_chain: ChainId,
@@ -176,34 +218,18 @@ pub enum VoterOperation {
     GetPendingCommitments,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub enum VoterResponse {
-    Initialized,
-    
-    CommitmentSubmitted {
-        market_id: u64,
-        commitment_hash: [u8; 32],
-    },
-    
-    VoteRevealed {
-        market_id: u64,
-        outcome_index: usize,
-        verified: bool,
-    },
-    
-    VoteSubmitted {
-        market_id: u64,
-        outcome_index: usize,
-    },
-    
-    StakeAdded {
-        new_total: Amount,
-    },
-    
-    VoterInfo(VoterInfo),
-    VoteHistory(Vec<VoteRecord>),
-    PendingCommitments(Vec<CommitmentInfo>),
-}
+// Legacy VoterResponse - replaced by voter.rs version
+// #[derive(Debug, Serialize, Deserialize)]
+// pub enum VoterResponseLegacy {
+//     Initialized,
+//     CommitmentSubmitted { market_id: u64, commitment_hash: [u8; 32] },
+//     VoteRevealed { market_id: u64, outcome_index: usize, verified: bool },
+//     VoteSubmitted { market_id: u64, outcome_index: usize },
+//     StakeAdded { new_total: Amount },
+//     VoterInfo(VoterInfo),
+//     VoteHistory(Vec<VoteRecord>),
+//     PendingCommitments(Vec<CommitmentInfo>),
+// }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum VoterQuery {
@@ -283,6 +309,9 @@ pub enum Message {
         question: String,
         outcomes: Vec<String>,
     },
+    
+    /// Registry messages (new protocol)
+    Registry(RegistryMessage),
 }
 
 // ==================== DATA STRUCTURES ====================

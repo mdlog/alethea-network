@@ -10,30 +10,54 @@
 use async_graphql::{Request, Response};
 use linera_sdk::{
     graphql::GraphQLMutationRoot,
-    linera_base_types::{ContractAbi, ServiceAbi, AccountOwner, Timestamp, Amount, ChainId},
+    linera_base_types::{ContractAbi, ServiceAbi, AccountOwner, Timestamp, Amount, ApplicationId},
 };
 use serde::{Deserialize, Serialize};
 
+// Import shared Message types from oracle types
+pub use alethea_oracle_types::{Message, RegistryMessage};
+
 pub struct MarketChainAbi;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Parameters {
-    /// Oracle chain ID for resolving markets
-    pub oracle_chain_id: Option<linera_sdk::linera_base_types::ChainId>,
+#[derive(Debug, Clone, Serialize)]
+pub struct Parameters {}
+
+impl Default for Parameters {
+    fn default() -> Self {
+        Parameters {}
+    }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct InitialState {
-    /// Initial markets (if any)
-    pub markets: Vec<MarketConfig>,
+// Custom deserializer untuk empty object
+impl<'de> serde::Deserialize<'de> for Parameters {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct ParametersVisitor;
+        
+        impl<'de> serde::de::Visitor<'de> for ParametersVisitor {
+            type Value = Parameters;
+            
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("an empty object {}")
+            }
+            
+            fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
+            where
+                A: serde::de::MapAccess<'de>,
+            {
+                while map.next_entry::<serde::de::IgnoredAny, serde::de::IgnoredAny>()?.is_some() {}
+                Ok(Parameters {})
+            }
+        }
+        
+        deserializer.deserialize_map(ParametersVisitor)
+    }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MarketConfig {
-    pub question: String,
-    pub outcomes: Vec<String>,
-    pub resolution_deadline: Timestamp,
-}
+// InstantiationArgument is now () - no initial state needed
+// Markets are created via operations after deployment
 
 #[derive(Debug, Serialize, Deserialize, GraphQLMutationRoot)]
 pub enum MarketOperation {
@@ -72,11 +96,6 @@ pub enum MarketOperation {
         market_id: u64,
         owner: AccountOwner,
     },
-    
-    /// Set oracle chain ID for resolution coordination
-    SetOracleChain {
-        oracle_chain_id: Option<ChainId>,
-    },
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -101,6 +120,9 @@ pub enum MarketResponse {
     
     /// Generic OK response
     Ok,
+    
+    /// Error response (WASM-safe, no string allocation)
+    Error,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -133,20 +155,8 @@ pub struct PositionDetails {
     pub average_price: Amount,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub enum Message {
-    /// Resolution result from oracle
-    ResolutionResult {
-        market_id: u64,
-        outcome_index: usize,
-    },
-    /// Request resolution from oracle
-    ResolutionRequest {
-        market_id: u64,
-        question: String,
-        outcomes: Vec<String>,
-    },
-}
+// Message type now imported from alethea-oracle-types (see top of file)
+// This ensures cross-chain message compatibility
 
 impl ContractAbi for MarketChainAbi {
     type Operation = MarketOperation;

@@ -30,6 +30,8 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+.kiro/
+.github/
 *.swp
 *.swo
 *~
@@ -43,10 +45,15 @@ temp/
 alethea-explorer/
 amm/
 
-# Exclude all .md files except README.md and docs/**/*.md
-*.md
-!README.md
+# Include all documentation in docs folder
 !docs/**/*.md
+!docs/README.md
+
+# Include main README
+!README.md
+
+# Include important root docs
+!CHANGELOG.md
 
 # Exclude text documentation files
 *.txt
@@ -68,6 +75,6 @@ amm/
 !logo.png
 !alethea-logo.png
 
-# Exclude zip files
+  # Exclude zip files
 *.zip
 

@@ -1,11 +1,12 @@
 # Alethea Network - Linera Project Configuration
+# Only working contracts for Conway testnet deployment
 
 [[project]]
 path = "market-chain"
 
 [[project]]
-path = "voter-chain"
+path = "voter-template"
 
 [[project]]
-path = "oracle-coordinator"
+path = "oracle-registry-v2"
 
