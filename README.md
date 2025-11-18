@@ -17,6 +17,8 @@
 
 Alethea is a **decentralized oracle protocol** that provides truthful resolution of real-world events for DApps on Linera blockchain. We solve the oracle problem through **power-based voter selection** where only the most qualified voters participate in each query.
 
+> **Note:** This repository includes a **prediction market example** (`market-chain/`) to demonstrate and test the oracle resolution functionality. The prediction market serves as a real-world use case showing how external DApps can integrate with Alethea Oracle for trustless event resolution.
+
 ### How It Works
 
 **Simple 3-Step Process:**
@@ -47,6 +49,17 @@ Alethea is a **decentralized oracle protocol** that provides truthful resolution
 **Real-World Data:** Sports results, weather, IoT sensors  
 **Governance:** DAO proposals, multi-sig validation  
 **Gaming:** Tournament results, NFT rarity verification
+
+### Example Implementation: Prediction Market
+
+This repository includes a **working prediction market** (`market-chain/`) that demonstrates oracle integration:
+
+- **Purpose:** Test and showcase Alethea Oracle resolution capabilities
+- **Features:** Create markets, buy shares, request oracle resolution
+- **Integration:** Automatic cross-chain communication with Oracle Registry
+- **Status:** Fully functional example for developers
+
+The prediction market is an **example DApp** showing how external applications can leverage Alethea Oracle for trustless resolution of real-world events.
 
 ---
 
@@ -188,11 +201,20 @@ Smart Contract → Identify correct voters
 
 ### **For Users:**
 
+**As a Voter:**
 1. Open dashboard at http://localhost:3000
 2. Register as voter (minimum 100 tokens, takes ~30 seconds)
 3. Build reputation through accurate voting
 4. Get selected for queries based on your power
 5. Earn proportional rewards!
+
+**As a Market Creator (Testing Oracle):**
+1. Open dashboard at http://localhost:3000
+2. Click "Create Market" button
+3. Enter question, outcomes, and deadline
+4. Submit to create prediction market
+5. After deadline, request oracle resolution
+6. Watch Alethea Oracle automatically resolve the market!
 
 ### **For Developers:**
 
@@ -228,7 +250,35 @@ npm run dev
 # Click "Register as Voter" and follow the flow
 ```
 
-See [docs/QUICK_START_DASHBOARD_NOV17.md](docs/QUICK_START_DASHBOARD_NOV17.md) for detailed instructions.
+**Test Oracle Resolution with Prediction Market:**
+
+```bash
+# 1. Start dashboard
+cd alethea-dashboard
+npm run dev
+
+# 2. Create a test market
+# - Open http://localhost:3000
+# - Click "Create Market"
+# - Question: "Test: Will it rain tomorrow?"
+# - Outcomes: ["Yes", "No"]
+# - Deadline: Tomorrow at 12:00 PM
+# - Submit
+
+# 3. After deadline passes
+# - Click "Request Resolution" on the market
+# - Oracle automatically selects voters
+# - Voters submit their answers
+# - Market resolves with oracle result
+
+# 4. Verify resolution
+curl -X POST http://localhost:8080/chains/$CHAIN_ID/applications/$MARKET_CHAIN_ID \
+  -H "Content-Type: application/json" \
+  -d '{"query":"{ markets { id question status finalOutcome } }"}'
+```
+
+See [docs/QUICK_START_DASHBOARD_NOV17.md](docs/QUICK_START_DASHBOARD_NOV17.md) for detailed instructions.  
+See [docs/CARA_CREATE_MARKET.md](docs/CARA_CREATE_MARKET.md) for market creation guide.
 
 ---
 
@@ -240,6 +290,11 @@ See [docs/QUICK_START_DASHBOARD_NOV17.md](docs/QUICK_START_DASHBOARD_NOV17.md) f
 - **Who Can Be Voter** - [docs/WHO_CAN_BE_VOTER.md](docs/WHO_CAN_BE_VOTER.md)
 - **Dashboard Update** - [docs/DASHBOARD_UPDATE_COMPLETE.md](docs/DASHBOARD_UPDATE_COMPLETE.md)
 - **Indonesian Guide** - [docs/CARA_MENDAFTAR_VOTER.md](docs/CARA_MENDAFTAR_VOTER.md) (Bahasa Indonesia)
+
+### Prediction Market Example
+- **Create Market Guide** - [docs/CARA_CREATE_MARKET.md](docs/CARA_CREATE_MARKET.md)
+- **Market Display Fix** - [docs/MARKET_DISPLAY_FIX.md](docs/MARKET_DISPLAY_FIX.md)
+- **Market Chain README** - [market-chain/README.md](market-chain/README.md)
 
 ### Technical Documentation
 - **Network Overview** - [docs/ALETHEA_NETWORK_OVERVIEW.md](docs/ALETHEA_NETWORK_OVERVIEW.md)
@@ -261,37 +316,49 @@ See [docs/QUICK_START_DASHBOARD_NOV17.md](docs/QUICK_START_DASHBOARD_NOV17.md) f
 ## 🏗️ Architecture
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│              Alethea Oracle Network                          │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Frontend (Next.js + React)                                  │
-│    ├─ Voter Registration with Polling                       │
-│    ├─ Query Management                                       │
-│    ├─ Vote Submission                                        │
-│    └─ Progress Tracking                                      │
-│                    ↓ HTTP API                                │
-│  Backend (Rust + Axum) - Transaction Executor                │
-│    ├─ Transaction Builder                                    │
-│    ├─ Transaction Submitter                                  │
-│    ├─ GraphQL Client                                         │
-│    └─ Certificate Handler                                    │
-│                    ↓ GraphQL Mutations                       │
-│  Linera Service (Port 8080)                                  │
-│    ├─ GraphQL API                                            │
-│    ├─ Block Management                                       │
-│    └─ Chain State                                            │
-│                    ↓ Contract Operations                     │
-│  Oracle Registry Contract                                    │
-│    ├─ Voter Registration                                     │
-│    ├─ Query Creation                                         │
-│    ├─ Vote Submission                                        │
-│    ├─ Query Resolution                                       │
-│    └─ Reward Distribution                                    │
-│                    ↓                                         │
-│  Linera Blockchain (Conway Testnet)                          │
-│                                                              │
-└──────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│                    Alethea Oracle Network                            │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  Frontend (Next.js + React)                                          │
+│    ├─ Voter Registration with Polling                               │
+│    ├─ Query Management                                               │
+│    ├─ Vote Submission                                                │
+│    ├─ Market Creation & Trading (Example DApp)                       │
+│    └─ Progress Tracking                                              │
+│                    ↓ HTTP API                                        │
+│  Backend (Rust + Axum) - Transaction Executor                        │
+│    ├─ Transaction Builder                                            │
+│    ├─ Transaction Submitter                                          │
+│    ├─ GraphQL Client                                                 │
+│    └─ Certificate Handler                                            │
+│                    ↓ GraphQL Mutations                               │
+│  Linera Service (Port 8080)                                          │
+│    ├─ GraphQL API                                                    │
+│    ├─ Block Management                                               │
+│    └─ Chain State                                                    │
+│                    ↓ Contract Operations                             │
+│  ┌────────────────────────────────────────────────────────────────┐ │
+│  │  Oracle Registry Contract (Core)                               │ │
+│  │    ├─ Voter Registration                                        │ │
+│  │    ├─ Query Creation                                            │ │
+│  │    ├─ Vote Submission                                           │ │
+│  │    ├─ Query Resolution                                          │ │
+│  │    └─ Reward Distribution                                       │ │
+│  └────────────────────────────────────────────────────────────────┘ │
+│                    ↕ Cross-Chain Messages                            │
+│  ┌────────────────────────────────────────────────────────────────┐ │
+│  │  Market Chain Contract (Example DApp)                          │ │
+│  │    ├─ Market Creation                                           │ │
+│  │    ├─ Share Trading (AMM)                                       │ │
+│  │    ├─ Resolution Request → Oracle Registry                      │ │
+│  │    ├─ Receive Oracle Result                                     │ │
+│  │    └─ Winnings Distribution                                     │ │
+│  └────────────────────────────────────────────────────────────────┘ │
+│                    ↓                                                 │
+│  Linera Blockchain (Conway Testnet - Local)                          │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
 
 Key Features:
 ✅ Complete transaction executor backend
@@ -299,7 +366,40 @@ Key Features:
 ✅ Certificate hash verification
 ✅ Progress tracking with UI feedback
 ✅ Comprehensive error handling
+✅ Cross-chain oracle integration (Market Chain ↔ Oracle Registry)
 ✅ Production-ready architecture
+```
+
+### Oracle Integration Flow (Market Chain Example)
+
+```
+1. Market Created
+   Market Chain → Store market with deadline
+
+2. Deadline Passes
+   User → Market Chain: requestResolution(marketId)
+
+3. Oracle Request
+   Market Chain → Oracle Registry: CreateQuery (cross-chain message)
+   - Question: Market question
+   - Outcomes: Market outcomes
+   - Callback: Market Chain address + market ID
+
+4. Voter Selection
+   Oracle Registry → Select top voters by power
+
+5. Voting
+   Selected Voters → Oracle Registry: Submit votes
+
+6. Resolution
+   Oracle Registry → Aggregate votes → Determine result
+
+7. Callback
+   Oracle Registry → Market Chain: Resolution result (cross-chain message)
+
+8. Market Settlement
+   Market Chain → Update market status with oracle result
+   Market Chain → Enable winnings claims
 ```
 
 ---
@@ -349,8 +449,9 @@ Status: PRODUCTION READY 🚀
 
 ### Current Deployment (Wave 2)
 - **Chain ID:** `8a80fe20530eb03889f28ac1fda8628430c30b2564763522e1b7268eaecdf7ef`
-- **App ID:** `9936172d5d1f3fb3ae65ea2bb51391afc561d9f8b80927c9e8e32c1efe9380d2`
-- **Network:** Linera Conway Testnet
+- **Oracle Registry App ID:** `9936172d5d1f3fb3ae65ea2bb51391afc561d9f8b80927c9e8e32c1efe9380d2`
+- **Market Chain App ID:** `438a180a65594f69d27d0d53eb2072213a476489d439aeef5f857ef9699f245b`
+- **Network:** Linera Conway Testnet (Local)
 - **Backend:** http://localhost:3001
 - **Dashboard:** http://localhost:3000
 - **GraphQL:** http://localhost:8080
@@ -503,6 +604,64 @@ See [alethea-dashboard/RESTART_INSTRUCTIONS.md](alethea-dashboard/RESTART_INSTRU
 - `src/contract.rs` - Core contract logic
 - `src/service.rs` - GraphQL service layer
 - `src/lib.rs` - Type definitions
+
+### **Market Chain** (`market-chain/`) - Example DApp
+- **Purpose:** Demonstration of oracle integration for prediction markets
+- **Features:** Market creation, share trading, automated oracle resolution
+- **Integration:** Cross-chain communication with Oracle Registry
+- **Status:** Fully functional example for testing oracle capabilities
+
+**Key Features:**
+- Create prediction markets with questions and outcomes
+- Buy/sell shares using automated market maker (AMM)
+- Request oracle resolution when market deadline passes
+- Automatic voter selection and resolution via Alethea Oracle
+- Claim winnings based on oracle-determined outcome
+
+**Key Files:**
+- `src/contract.rs` - Market logic and AMM implementation
+- `src/service.rs` - GraphQL API for market operations
+- `src/state.rs` - Market state management
+
+**GraphQL Operations:**
+```graphql
+# Create a new prediction market
+mutation {
+  createMarket(
+    question: "Will Bitcoin reach $100k by 2025?"
+    outcomes: ["Yes", "No"]
+    resolutionDeadline: 1735689600000000  # microseconds
+    initialLiquidity: "1000000"
+  )
+}
+
+# Buy shares for an outcome
+mutation {
+  buyShares(marketId: 0, outcomeIndex: 0, amount: "100")
+}
+
+# Request oracle resolution (after deadline)
+mutation {
+  requestResolution(marketId: 0)
+}
+
+# Query all markets
+query {
+  markets {
+    id
+    question
+    outcomes
+    status
+    resolutionDeadline
+  }
+}
+```
+
+**Dashboard Integration:**
+- View all prediction markets at http://localhost:3000
+- Create markets through UI form
+- Real-time market status updates
+- Automatic deadline tracking
 
 ### **Backend API** (`oracle-api-backend/`)
 - **Transaction Executor** - Complete blockchain operation handler
