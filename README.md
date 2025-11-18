@@ -295,10 +295,6 @@ See [docs/CREATE_MARKET_GUIDE.md](docs/CREATE_MARKET_GUIDE.md) for market creati
 - **Market Display Fix** - [docs/MARKET_DISPLAY_FIX.md](docs/MARKET_DISPLAY_FIX.md)
 - **Market Chain README** - [market-chain/README.md](market-chain/README.md)
 
-### Indonesian Documentation (Bahasa Indonesia)
-- **Voter Registration** - [docs/CARA_MENDAFTAR_VOTER.md](docs/CARA_MENDAFTAR_VOTER.md)
-- **Create Market** - [docs/CARA_CREATE_MARKET.md](docs/CARA_CREATE_MARKET.md)
-
 ### Technical Documentation
 - **Network Overview** - [docs/ALETHEA_NETWORK_OVERVIEW.md](docs/ALETHEA_NETWORK_OVERVIEW.md)
 - **Architecture** - [docs/ALETHEA_CORRECT_ARCHITECTURE.md](docs/ALETHEA_CORRECT_ARCHITECTURE.md)
@@ -469,7 +465,7 @@ Status: PRODUCTION READY 🚀
 - ✅ Complete query lifecycle management
 - ✅ Voter leaderboard and analytics dashboard
 - ✅ 99.9% uptime, 95%+ accuracy
-- ✅ Comprehensive documentation (English + Indonesian)
+- ✅ Comprehensive documentation
 
 ---
 
