@@ -278,7 +278,7 @@ curl -X POST http://localhost:8080/chains/$CHAIN_ID/applications/$MARKET_CHAIN_I
 ```
 
 See [docs/QUICK_START_DASHBOARD_NOV17.md](docs/QUICK_START_DASHBOARD_NOV17.md) for detailed instructions.  
-See [docs/CARA_CREATE_MARKET.md](docs/CARA_CREATE_MARKET.md) for market creation guide.
+See [docs/CREATE_MARKET_GUIDE.md](docs/CREATE_MARKET_GUIDE.md) for market creation guide.
 
 ---
 
@@ -289,12 +289,15 @@ See [docs/CARA_CREATE_MARKET.md](docs/CARA_CREATE_MARKET.md) for market creation
 - **Voter Registration Guide** - [docs/VOTER_REGISTRATION_GUIDE.md](docs/VOTER_REGISTRATION_GUIDE.md)
 - **Who Can Be Voter** - [docs/WHO_CAN_BE_VOTER.md](docs/WHO_CAN_BE_VOTER.md)
 - **Dashboard Update** - [docs/DASHBOARD_UPDATE_COMPLETE.md](docs/DASHBOARD_UPDATE_COMPLETE.md)
-- **Indonesian Guide** - [docs/CARA_MENDAFTAR_VOTER.md](docs/CARA_MENDAFTAR_VOTER.md) (Bahasa Indonesia)
 
 ### Prediction Market Example
-- **Create Market Guide** - [docs/CARA_CREATE_MARKET.md](docs/CARA_CREATE_MARKET.md)
+- **Create Market Guide** - [docs/CREATE_MARKET_GUIDE.md](docs/CREATE_MARKET_GUIDE.md)
 - **Market Display Fix** - [docs/MARKET_DISPLAY_FIX.md](docs/MARKET_DISPLAY_FIX.md)
 - **Market Chain README** - [market-chain/README.md](market-chain/README.md)
+
+### Indonesian Documentation (Bahasa Indonesia)
+- **Voter Registration** - [docs/CARA_MENDAFTAR_VOTER.md](docs/CARA_MENDAFTAR_VOTER.md)
+- **Create Market** - [docs/CARA_CREATE_MARKET.md](docs/CARA_CREATE_MARKET.md)
 
 ### Technical Documentation
 - **Network Overview** - [docs/ALETHEA_NETWORK_OVERVIEW.md](docs/ALETHEA_NETWORK_OVERVIEW.md)
