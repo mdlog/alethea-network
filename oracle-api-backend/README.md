@@ -24,11 +24,13 @@ cargo build --release
 ### 2. Configure
 
 ```bash
-# Set environment variables (Latest deployment - November 16, 2025)
-export CHAIN_ID="95f032d7f5160450d8aef843ad32b868b02e32c35026019064a26e2d05586aa4"
-export APP_ID="99740274ffaa04d9ac49a6fe9af3763d7d9dbdf98379a6d68a7e04fcfb77a0e0"
-export WALLET_PATH="$HOME/.config/linera/wallet.json"
-export STORAGE_PATH="rocksdb:$HOME/.config/linera/client.db"
+# Set environment variables (Latest deployment - November 18, 2025)
+export LINERA_GRAPHQL_URL="http://localhost:8080"
+export CHAIN_ID="8a80fe20530eb03889f28ac1fda8628430c30b2564763522e1b7268eaecdf7ef"
+export APP_ID="9936172d5d1f3fb3ae65ea2bb51391afc561d9f8b80927c9e8e32c1efe9380d2"
+export REGISTRY_ID="9936172d5d1f3fb3ae65ea2bb51391afc561d9f8b80927c9e8e32c1efe9380d2"
+export MARKET_CHAIN_ID="438a180a65594f69d27d0d53eb2072213a476489d439aeef5f857ef9699f245b"
+export PORT="3001"
 
 # Or use the provided .env file
 cp .env.example .env
@@ -224,13 +226,21 @@ Currently uses CLI subprocess as fallback until full SDK integration is complete
 
 ## 📝 Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `CHAIN_ID` | Linera chain ID | `95f032d7f5160450d8aef843ad32b868b02e32c35026019064a26e2d05586aa4` |
-| `APP_ID` | Application ID | `99740274ffaa04d9ac49a6fe9af3763d7d9dbdf98379a6d68a7e04fcfb77a0e0` |
-| `WALLET_PATH` | Path to wallet file | `~/.config/linera/wallet.json` |
-| `STORAGE_PATH` | Path to storage | `rocksdb:~/.config/linera/client.db` |
+| Variable | Description | Current Value |
+|----------|-------------|---------------|
+| `LINERA_GRAPHQL_URL` | Linera GraphQL endpoint | `http://localhost:8080` |
+| `CHAIN_ID` | Application chain ID | `8a80fe20530eb03889f28ac1fda8628430c30b2564763522e1b7268eaecdf7ef` |
+| `APP_ID` | Oracle Registry v2 app ID | `9936172d5d1f3fb3ae65ea2bb51391afc561d9f8b80927c9e8e32c1efe9380d2` |
+| `REGISTRY_ID` | Oracle Registry v2 ID (same as APP_ID) | `9936172d5d1f3fb3ae65ea2bb51391afc561d9f8b80927c9e8e32c1efe9380d2` |
+| `MARKET_CHAIN_ID` | Market Chain app ID (example DApp) | `438a180a65594f69d27d0d53eb2072213a476489d439aeef5f857ef9699f245b` |
+| `PORT` | Backend server port | `3001` |
 | `RUST_LOG` | Log level | `info` |
+
+### Application IDs Explained
+
+- **CHAIN_ID**: The main Linera chain where applications are deployed
+- **APP_ID / REGISTRY_ID**: Oracle Registry v2 - Core oracle protocol with voter selection
+- **MARKET_CHAIN_ID**: Prediction Market - Example DApp demonstrating oracle integration
 
 ## 🐛 Troubleshooting
 
@@ -321,6 +331,13 @@ For issues or questions:
 
 ---
 
-**Status:** 🚧 In Development  
-**Version:** 0.1.0  
-**Last Updated:** November 15, 2025
+**Status:** ✅ Production Ready  
+**Version:** 0.2.0  
+**Last Updated:** November 18, 2025
+
+### Current Deployment
+
+- **Chain ID**: `8a80fe20530eb03889f28ac1fda8628430c30b2564763522e1b7268eaecdf7ef`
+- **Oracle Registry v2**: `9936172d5d1f3fb3ae65ea2bb51391afc561d9f8b80927c9e8e32c1efe9380d2`
+- **Market Chain**: `438a180a65594f69d27d0d53eb2072213a476489d439aeef5f857ef9699f245b`
+- **Network**: Linera Conway Testnet (Local)
