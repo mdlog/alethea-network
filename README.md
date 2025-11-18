@@ -179,6 +179,14 @@ Smart Contract → Identify correct voters
 - ✅ **Complete Query Lifecycle** - Creation to reward distribution
 - ✅ **Transparent** - All votes and resolutions on-chain
 - ✅ **Scalable** - Handles 1000+ voters with <100ms selection
+- ✅ **Multi-Chain Wallet Support** - Dynamic integration (EVM, Solana, Bitcoin, etc.)
+
+### Wallet & Authentication
+- ✅ **Dynamic Wallet Integration** - Email/social login support
+- ✅ **Multi-Chain Support** - Ethereum, Solana, and more
+- ✅ **Automatic Chain Creation** - Linera chain via testnet faucet
+- ✅ **Seamless UX** - No manual wallet setup required
+- ✅ **Custom Signer** - Linera transaction signing with Dynamic wallets
 
 ### Resolution Strategies
 - **Majority** - Most voted outcome wins (categorical data)
@@ -190,6 +198,8 @@ Smart Contract → Identify correct voters
 - ✅ **Transaction Executor Backend** - Rust + Actix-web REST API
 - ✅ **GraphQL Integration** - Direct blockchain communication
 - ✅ **Next.js Dashboard** - Real-time voter leaderboard and analytics
+- ✅ **Dynamic Wallet Integration** - Multi-chain wallet support in dashboard
+- ✅ **Linera Wallet Adapter** - Bridge between Dynamic and Linera blockchain
 - ✅ **State Management** - React hooks for clean UI state
 - ✅ **Error Handling** - Comprehensive error recovery
 - ✅ **Production-Ready** - 99.9% uptime, tested and documented
@@ -305,6 +315,11 @@ See [docs/CREATE_MARKET_GUIDE.md](docs/CREATE_MARKET_GUIDE.md) for market creati
 - **Deployment Success** - [docs/DEPLOYMENT_SUCCESS.md](docs/DEPLOYMENT_SUCCESS.md)
 - **Clean Deploy Guide** - [docs/CLEAN_DEPLOY_GUIDE.md](docs/CLEAN_DEPLOY_GUIDE.md)
 - **Wave Updates** - [docs/WAVE_UPDATES_SUMMARY.md](docs/WAVE_UPDATES_SUMMARY.md)
+
+### Wallet Integration
+- **Dynamic Integration Complete** - [docs/DYNAMIC_INTEGRATION_COMPLETE.md](docs/DYNAMIC_INTEGRATION_COMPLETE.md)
+- **Dynamic Production Setup** - [docs/DYNAMIC_PRODUCTION_SETUP.md](docs/DYNAMIC_PRODUCTION_SETUP.md)
+- **Correct Linera Dynamic Flow** - [docs/CORRECT_LINERA_DYNAMIC_FLOW.md](docs/CORRECT_LINERA_DYNAMIC_FLOW.md)
 
 ### All Documentation
 - **Documentation Index** - [docs/README.md](docs/README.md)
@@ -425,12 +440,16 @@ Key Features:
 - **Styling** - Tailwind CSS
 - **State Management** - React Hooks
 - **HTTP Client** - Fetch API
+- **Wallet Integration** - Dynamic (Multi-chain support)
+- **Blockchain Adapter** - Custom Linera adapter for Dynamic
+- **Wallet Integration** - Dynamic.xyz (Multi-chain wallet support)
 
 ### Integration Layer
 - **API** - REST + GraphQL
 - **Transaction Executor** - Custom Rust implementation
 - **Polling System** - TypeScript with progress tracking
 - **Certificate Verification** - Hash-based proof system
+- **Wallet Provider** - Dynamic.xyz SDK for seamless authentication
 
 ---
 
@@ -464,6 +483,8 @@ Status: PRODUCTION READY 🚀
 - ✅ Multiple resolution strategies (Majority, Weighted, Consensus)
 - ✅ Complete query lifecycle management
 - ✅ Voter leaderboard and analytics dashboard
+- ✅ Dynamic wallet integration (multi-chain support with email/social login)
+- ✅ Prediction market example DApp with oracle integration
 - ✅ 99.9% uptime, 95%+ accuracy
 - ✅ Comprehensive documentation
 
@@ -686,19 +707,30 @@ query {
 - **Progress Tracking** - Real-time feedback
 - **Error Recovery** - Graceful failure handling
 - **Testnet Warnings** - User communication
+- **Dynamic Wallet Integration** - Multi-chain wallet support with email/social login
 
 **Key Files:**
 - `lib/api/oracleApi.ts` - API client with polling
 - `hooks/useRegisterVoter.ts` - State management hook
 - `components/VoterRegistrationWithPolling.tsx` - UI component
+- `components/VoterRegistrationDynamic.tsx` - Dynamic wallet voter registration
+- `components/DynamicProvider.tsx` - Dynamic wallet provider setup
 - `components/TestnetBanner.tsx` - Warning banner
+- `lib/linera-adapter.ts` - Linera blockchain adapter for Dynamic wallets
+- `lib/dynamic-signer.ts` - Custom signer for Linera transactions
 - `app/test-polling/page.tsx` - Test interface
 - `app/voters/page.tsx` - Main voters page
 
 **Pages:**
-- `/` - Home page
+- `/` - Home page with market overview
 - `/voters` - Voter registration and management
 - `/test-polling` - Polling system test page
+
+**Wallet Features:**
+- Email/Social login via Dynamic.xyz
+- Multi-chain support (Ethereum, Solana, etc.)
+- Automatic Linera chain creation via faucet
+- Seamless transaction signing
 
 ---
 
