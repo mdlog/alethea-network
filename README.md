@@ -308,60 +308,18 @@ See [docs/CREATE_MARKET_GUIDE.md](docs/CREATE_MARKET_GUIDE.md) for market creati
 
 ## 📖 Documentation
 
-### 🚀 Quick Start Guides
+### 🚀 Getting Started
 - **Quick Start** - [docs/QUICK_START_DASHBOARD_NOV17.md](docs/QUICK_START_DASHBOARD_NOV17.md)
-- **Voter Registration Guide** - [docs/VOTER_REGISTRATION_GUIDE.md](docs/VOTER_REGISTRATION_GUIDE.md)
-- **Dashboard Registration Guide** - [DASHBOARD_REGISTRATION_GUIDE.md](DASHBOARD_REGISTRATION_GUIDE.md)
-- **Who Can Be Voter** - [docs/WHO_CAN_BE_VOTER.md](docs/WHO_CAN_BE_VOTER.md)
-- **Dashboard Update** - [docs/DASHBOARD_UPDATE_COMPLETE.md](docs/DASHBOARD_UPDATE_COMPLETE.md)
+- **Voter Registration** - [docs/VOTER_REGISTRATION_GUIDE.md](docs/VOTER_REGISTRATION_GUIDE.md)
+- **Create Market** - [docs/CREATE_MARKET_GUIDE.md](docs/CREATE_MARKET_GUIDE.md)
 
-### 🗳️ Voting & Oracle Operations
-- **Final Documentation** - [FINAL_DOCUMENTATION.md](FINAL_DOCUMENTATION.md) ⭐ **MASTER DOC**
-- **Quick Reference** - [QUICK_REFERENCE.md](QUICK_REFERENCE.md) ⚡ **CHEAT SHEET**
-- **Quick Commands** - [QUICK_COMMANDS.md](QUICK_COMMANDS.md) 🔧 **CLI REFERENCE**
-- **Commit-Reveal Verification** - [VERIFIKASI_COMMIT_REVEAL_REAL.md](VERIFIKASI_COMMIT_REVEAL_REAL.md)
-- **Voting Success Verification** - [VOTING_SUCCESS_VERIFICATION.md](VOTING_SUCCESS_VERIFICATION.md)
-- **Visual Commit-Reveal Flow** - [VISUAL_COMMIT_REVEAL_FLOW.md](VISUAL_COMMIT_REVEAL_FLOW.md)
-
-### 📊 Market & Dashboard
-- **Status All Markets** - [STATUS_SEMUA_MARKETS.md](STATUS_SEMUA_MARKETS.md)
-- **Active Market Fix** - [FIX_GRACE_PERIOD_365_DAYS.md](FIX_GRACE_PERIOD_365_DAYS.md)
-- **Combine Oracle & Market Chain** - [FIX_COMBINE_ORACLE_MARKET_CHAIN.md](FIX_COMBINE_ORACLE_MARKET_CHAIN.md)
-- **Create Market Guide** - [docs/CREATE_MARKET_GUIDE.md](docs/CREATE_MARKET_GUIDE.md)
-- **Market Display Fix** - [docs/MARKET_DISPLAY_FIX.md](docs/MARKET_DISPLAY_FIX.md)
-- **Market Chain README** - [market-chain/README.md](market-chain/README.md)
-
-### 🔧 Technical Documentation
-- **Network Overview** - [docs/ALETHEA_NETWORK_OVERVIEW.md](docs/ALETHEA_NETWORK_OVERVIEW.md)
+### 🏗️ Technical
 - **Architecture** - [docs/ALETHEA_CORRECT_ARCHITECTURE.md](docs/ALETHEA_CORRECT_ARCHITECTURE.md)
-- **Voter Selection Implementation** - [docs/VOTER_SELECTION_IMPLEMENTED.md](docs/VOTER_SELECTION_IMPLEMENTED.md)
-- **Implementation Gap Analysis** - [docs/IMPLEMENTATION_GAP_ANALYSIS.md](docs/IMPLEMENTATION_GAP_ANALYSIS.md)
-- **Voter Registry Analysis** - [ANALISIS_VOTER_REGISTRY_KEY.md](ANALISIS_VOTER_REGISTRY_KEY.md)
-- **Registry Implementation Fix** - [PERBAIKAN_IMPLEMENTASI_REGISTRY.md](PERBAIKAN_IMPLEMENTASI_REGISTRY.md)
+- **Voter Selection** - [docs/VOTER_SELECTION_IMPLEMENTED.md](docs/VOTER_SELECTION_IMPLEMENTED.md)
+- **Deployment Guide** - [docs/CLEAN_DEPLOY_GUIDE.md](docs/CLEAN_DEPLOY_GUIDE.md)
 
-### 🚀 Deployment Documentation
-- **Deployment Success** - [docs/DEPLOYMENT_SUCCESS.md](docs/DEPLOYMENT_SUCCESS.md)
-- **Clean Deploy Guide** - [docs/CLEAN_DEPLOY_GUIDE.md](docs/CLEAN_DEPLOY_GUIDE.md)
-- **Wave Updates** - [docs/WAVE_UPDATES_SUMMARY.md](docs/WAVE_UPDATES_SUMMARY.md)
-
-### 💼 Wallet Integration
-- **Dynamic Integration Complete** - [docs/DYNAMIC_INTEGRATION_COMPLETE.md](docs/DYNAMIC_INTEGRATION_COMPLETE.md)
-- **Dynamic Production Setup** - [docs/DYNAMIC_PRODUCTION_SETUP.md](docs/DYNAMIC_PRODUCTION_SETUP.md)
-- **Correct Linera Dynamic Flow** - [docs/CORRECT_LINERA_DYNAMIC_FLOW.md](docs/CORRECT_LINERA_DYNAMIC_FLOW.md)
-- **Dynamic Signing Analysis** - [ANALISIS_DYNAMIC_SIGNING.md](ANALISIS_DYNAMIC_SIGNING.md)
-
-### 🐛 Troubleshooting & Solutions
-- **Register Voter Summary** - [RINGKASAN_REGISTER_VOTER.md](RINGKASAN_REGISTER_VOTER.md)
-- **Register Voter Backend Process** - [PROSES_REGISTER_VOTER_BACKEND.md](PROSES_REGISTER_VOTER_BACKEND.md)
-- **Final Balance Solution** - [SOLUSI_FINAL_BALANCE.md](SOLUSI_FINAL_BALANCE.md)
-- **Vote Blockchain Verification** - [VERIFIKASI_VOTE_BLOCKCHAIN.md](VERIFIKASI_VOTE_BLOCKCHAIN.md)
-- **Commit Vote Failed Issue** - [MASALAH_COMMIT_VOTE_GAGAL.md](MASALAH_COMMIT_VOTE_GAGAL.md)
-- **Microcard Registry Solution** - [ANALISIS_MICROCARD_SOLUSI_REGISTRY.md](ANALISIS_MICROCARD_SOLUSI_REGISTRY.md)
-- **Microcard Solution Summary** - [RINGKASAN_SOLUSI_MICROCARD.md](RINGKASAN_SOLUSI_MICROCARD.md)
-
-### 📚 All Documentation
-- **Documentation Index** - [docs/README.md](docs/README.md)
-- **Test Files** - [tests/README.md](tests/README.md)
+### 📚 More
+- **All Documentation** - [docs/README.md](docs/README.md) - Complete index
 
 ---
 
