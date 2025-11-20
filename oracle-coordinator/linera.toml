@@ -1,5 +1,0 @@
-# Alethea Oracle Coordinator - Linera Configuration
-
-[application]
-name = "alethea-oracle-coordinator"
-description = "Decentralized oracle coordinator for Alethea Network"
