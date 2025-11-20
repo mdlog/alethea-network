@@ -1,18 +1,18 @@
 // GraphQL Client for Alethea Oracle Registry v2
 // Updated: November 17, 2025 - Latest Deployment with Voter Selection
 
-// Oracle Registry v2 Configuration - LATEST
+// Oracle Registry v2 Configuration - LATEST (Updated Nov 19, 2025 - 16:31:32)
 // Chain ID: 8a80fe20530eb03889f28ac1fda8628430c30b2564763522e1b7268eaecdf7ef
-// App ID: 9936172d5d1f3fb3ae65ea2bb51391afc561d9f8b80927c9e8e32c1efe9380d2 (Voter Selection System)
+// App ID: 6cf34d723b88cbbb2087f72f8395567217a0a1038ebfc4246bc168a3655303ca (Fixed Chain ID Tracking + AccountOwner)
 const CHAIN_ID = process.env.NEXT_PUBLIC_CHAIN_ID || '8a80fe20530eb03889f28ac1fda8628430c30b2564763522e1b7268eaecdf7ef';
-const REGISTRY_ID = process.env.NEXT_PUBLIC_REGISTRY_ID || process.env.NEXT_PUBLIC_APP_ID || '9936172d5d1f3fb3ae65ea2bb51391afc561d9f8b80927c9e8e32c1efe9380d2';
+const REGISTRY_ID = process.env.NEXT_PUBLIC_REGISTRY_ID || process.env.NEXT_PUBLIC_APP_ID || '6cf34d723b88cbbb2087f72f8395567217a0a1038ebfc4246bc168a3655303ca';
 
 // Registry URL
 const REGISTRY_URL = process.env.NEXT_PUBLIC_REGISTRY_URL ||
   `http://localhost:8080/chains/${CHAIN_ID}/applications/${REGISTRY_ID}`;
 
 // Market Chain URL (for prediction markets)
-const MARKET_CHAIN_ID = process.env.NEXT_PUBLIC_MARKET_CHAIN_ID || process.env.NEXT_PUBLIC_APP_ID || REGISTRY_ID;
+const MARKET_CHAIN_ID = process.env.NEXT_PUBLIC_MARKET_CHAIN_ID || '438a180a65594f69d27d0d53eb2072213a476489d439aeef5f857ef9699f245b';
 const MARKET_CHAIN_URL = process.env.NEXT_PUBLIC_MARKET_CHAIN_URL ||
   `http://localhost:8080/chains/${CHAIN_ID}/applications/${MARKET_CHAIN_ID}`;
 
@@ -22,16 +22,24 @@ const REPUTATION_ENABLED = process.env.NEXT_PUBLIC_REPUTATION_ENABLED === 'true'
 
 // Debug logging
 if (typeof window !== 'undefined') {
-  console.log('🚀 Oracle Registry v2 Configuration:');
+  console.log('🚀 Alethea Network Configuration:');
   console.log('CHAIN_ID:', CHAIN_ID);
   console.log('REGISTRY_ID:', REGISTRY_ID);
-  console.log('REGISTRY_URL:', REGISTRY_URL);
+  console.log('MARKET_CHAIN_ID:', MARKET_CHAIN_ID);
+  console.log('');
+  console.log('📍 Endpoints:');
+  console.log('Registry URL:', REGISTRY_URL);
+  console.log('Market Chain URL:', MARKET_CHAIN_URL);
+  console.log('');
+  console.log('⚙️  Features:');
   console.log('ACCOUNT_BASED:', ACCOUNT_BASED);
   console.log('REPUTATION_ENABLED:', REPUTATION_ENABLED);
-  console.log('Environment:', {
-    NEXT_PUBLIC_CHAIN_ID: process.env.NEXT_PUBLIC_CHAIN_ID,
-    NEXT_PUBLIC_REGISTRY_ID: process.env.NEXT_PUBLIC_REGISTRY_ID,
-  });
+  console.log('');
+  console.log('🔧 Environment Variables:');
+  console.log('NEXT_PUBLIC_CHAIN_ID:', process.env.NEXT_PUBLIC_CHAIN_ID);
+  console.log('NEXT_PUBLIC_REGISTRY_ID:', process.env.NEXT_PUBLIC_REGISTRY_ID);
+  console.log('NEXT_PUBLIC_MARKET_CHAIN_ID:', process.env.NEXT_PUBLIC_MARKET_CHAIN_ID);
+  console.log('NEXT_PUBLIC_MARKET_CHAIN_URL:', process.env.NEXT_PUBLIC_MARKET_CHAIN_URL);
 }
 
 export const ENDPOINTS = {
@@ -43,6 +51,7 @@ export const ENDPOINTS = {
 export const CONFIG = {
   chainId: CHAIN_ID,
   registryId: REGISTRY_ID,
+  marketChainId: MARKET_CHAIN_ID,
   accountBased: ACCOUNT_BASED,
   reputationEnabled: REPUTATION_ENABLED,
 };
@@ -55,7 +64,7 @@ interface GraphQLResponse<T = any> {
 export async function queryGraphQL<T = any>(
   query: string,
   endpoint: 'registry' | 'marketChain' | 'voter' = 'registry',
-  timeoutMs = 10000
+  timeoutMs = 3000 // Reduced from 10s to 3s for faster failure
 ): Promise<T | null> {
   const url = ENDPOINTS[endpoint];
 
@@ -113,98 +122,159 @@ export async function queryGraphQL<T = any>(
 
 // Specific query functions
 export async function getProtocolStats() {
-  return queryGraphQL(`
-    query {
-      protocolStats {
-        totalMarkets
-        activeMarkets
-        resolvedMarkets
-        totalVoters
+  try {
+    // Get voter count from registry
+    const registryResult = await queryGraphQL(`
+      query {
+        voterCount
       }
-    }
-  `);
+    `, 'registry').catch(() => ({ voterCount: 0 }));
+
+    // Get market stats from market chain
+    const marketResult = await queryGraphQL(`
+      query {
+        markets {
+          id
+          status
+        }
+      }
+    `, 'marketChain').catch(() => ({ markets: [] }));
+
+    const markets = marketResult?.markets || [];
+    const activeMarkets = markets.filter((m: any) => m.status === 'Active' || m.status === 'ACTIVE').length;
+    const resolvedMarkets = markets.filter((m: any) => m.status === 'Resolved' || m.status === 'RESOLVED').length;
+
+    return {
+      totalVoters: registryResult?.voterCount || 0,
+      totalMarkets: markets.length,
+      activeMarkets,
+      resolvedMarkets
+    };
+  } catch (error) {
+    console.error('Failed to get protocol stats:', error);
+    return {
+      totalVoters: 0,
+      totalMarkets: 0,
+      activeMarkets: 0,
+      resolvedMarkets: 0
+    };
+  }
 }
 
 export async function getActiveMarkets() {
-  // Prediction Market dApp: Hanya menggunakan Market Chain
-  // Registry hanya digunakan untuk resolution (setelah requestResolution)
-  console.log('Market Chain URL:', MARKET_CHAIN_URL);
+  // Load from BOTH Oracle and Market Chain, then combine
+  console.log('Fetching markets from Oracle and Market Chain...');
 
-  const markets: any[] = [];
+  const allMarkets: any[] = [];
 
-  // Query Market Chain markets (primary source untuk prediction market)
-  const marketChainResult = await (MARKET_CHAIN_URL && !MARKET_CHAIN_URL.includes('YOUR_MARKET_CHAIN_ID')
-    ? Promise.race([
-      queryGraphQL(`
-          query {
-            markets {
-              id
-              question
-              outcomes
-              status
-              resolutionDeadline
-              totalLiquidity
-              creator
-            }
-          }
-        `, 'marketChain', 20000), // 20 second timeout
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Market Chain timeout')), 20000)
-      )
-    ]).catch((err) => {
-      console.warn('Market Chain unavailable (may still be syncing):', err.message);
-      return null;
-    })
-    : Promise.resolve(null));
+  try {
+    // 1. Try Oracle application first
+    const oracleAppId = process.env.NEXT_PUBLIC_ORACLE_APP_ID;
+    if (oracleAppId) {
+      try {
+        const oracleUrl = `http://localhost:8080/chains/${CONFIG.chainId}/applications/${oracleAppId}`;
+        console.log('Querying Oracle app:', oracleUrl);
 
-  // Add Market Chain markets (convert to same format)
-  if (marketChainResult?.markets && Array.isArray(marketChainResult.markets)) {
-    const marketChainData = marketChainResult.markets;
-    console.log('Market Chain markets raw:', marketChainData);
+        const oracleResponse = await fetch(oracleUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: `query {
+              queries {
+                id
+                question
+                outcomes
+                status
+                deadline
+                commitEnd
+                revealEnd
+                resolvedOutcome
+              }
+            }`
+          })
+        });
 
-    markets.push(...marketChainData.map((m: any) => {
-      // Market Chain status: OPEN, WAITING_RESOLUTION, RESOLVED, CLOSED
-      let status = m.status;
-      if (typeof status === 'string') {
-        status = status.toUpperCase();
-        // Normalize status
-        if (status === 'OPEN') status = 'OPEN';
-        else if (status === 'RESOLVED') status = 'RESOLVED';
-        else if (status === 'WAITINGRESOLUTION' || status === 'WAITING_RESOLUTION') status = 'WAITING_RESOLUTION';
-        else if (status === 'CLOSED') status = 'CLOSED';
-        else status = 'OPEN'; // Default to OPEN
-      } else {
-        status = 'OPEN'; // Fallback
+        const oracleData = await oracleResponse.json();
+
+        if (oracleData?.data?.queries && oracleData.data.queries.length > 0) {
+          const oracleQueries = oracleData.data.queries.map((q: any) => ({
+            id: `oracle-${q.id}`, // Prefix to avoid ID collision
+            question: q.question,
+            outcomes: q.outcomes,
+            status: q.status,
+            createdAt: Date.now(),
+            deadline: q.deadline,
+            commitEnd: q.commitEnd,
+            revealEnd: q.revealEnd,
+            resolvedOutcome: q.resolvedOutcome,
+            source: 'oracle' as const,
+          }));
+
+          console.log('✅ Loaded queries from Oracle:', oracleQueries.length, 'queries');
+          allMarkets.push(...oracleQueries);
+        } else {
+          console.log('⚠️ No Oracle queries found');
+        }
+      } catch (oracleErr) {
+        console.warn('⚠️ Oracle query failed:', oracleErr);
       }
+    }
 
-      // Convert resolutionDeadline dari microseconds ke milliseconds
-      const deadline = m.resolutionDeadline
-        ? Math.floor(Number(m.resolutionDeadline) / 1000) // microseconds to milliseconds
-        : Date.now() + 86400000; // Default to 1 day from now
+    // 2. Load from Market Chain (always, not fallback)
+    console.log('Querying Market Chain:', MARKET_CHAIN_URL);
+    try {
+      const result = await queryGraphQL(`
+        query {
+          markets {
+            id
+            question
+            outcomes
+            status
+            finalOutcome
+            resolutionDeadline
+          }
+        }
+      `, 'marketChain', 5000);
 
-      const market = {
-        id: Number(m.id) || 0,
-        question: m.question || '',
-        outcomes: Array.isArray(m.outcomes) ? m.outcomes : [],
-        status: status,
-        deadline: deadline,
-        createdAt: deadline - 86400000, // Default to 1 day before deadline
-        totalLiquidity: m.totalLiquidity || '0',
-        creator: m.creator || null,
-        source: 'marketChain', // Semua dari Market Chain untuk prediction market
-      };
+      const rawMarkets = result?.markets || [];
 
-      console.log('Market Chain market:', market);
-      return market;
-    }));
+      if (rawMarkets.length > 0) {
+        const markets = rawMarkets.map((m: any) => ({
+          id: `market-${m.id}`, // Prefix to avoid ID collision
+          question: m.question,
+          outcomes: m.outcomes,
+          status: mapMarketStatus(m.status),
+          createdAt: Date.now(),
+          deadline: m.resolutionDeadline,
+          source: 'marketChain' as const,
+        }));
+
+        console.log('✅ Loaded markets from Market Chain:', markets.length, 'markets');
+        allMarkets.push(...markets);
+      } else {
+        console.log('⚠️ No Market Chain markets found');
+      }
+    } catch (marketErr) {
+      console.warn('⚠️ Market Chain query failed:', marketErr);
+    }
+
+    // 3. Return combined results
+    console.log('✅ Total markets loaded:', allMarkets.length, '(Oracle + Market Chain)');
+    return { activeMarkets: allMarkets };
+  } catch (err) {
+    console.warn('⚠️ Failed to load markets:', err instanceof Error ? err.message : 'Unknown error');
+    return { activeMarkets: [] };
   }
+}
 
-  // Sort by ID (newest first)
-  const sortedMarkets = markets.sort((a, b) => b.id - a.id);
-
-  console.log('Final markets array:', sortedMarkets.length, 'markets (all from Market Chain)');
-
-  return { activeMarkets: sortedMarkets };
+// Helper function to map Market Chain status to Dashboard status
+function mapMarketStatus(status: string): 'OPEN' | 'PENDING' | 'RESOLVED' | 'CLOSED' {
+  const statusUpper = status.toUpperCase();
+  if (statusUpper === 'ACTIVE') return 'OPEN';
+  if (statusUpper === 'RESOLVED') return 'RESOLVED';
+  if (statusUpper === 'PENDING_RESOLUTION') return 'PENDING';
+  if (statusUpper === 'CLOSED') return 'CLOSED';
+  return 'OPEN'; // Default to OPEN
 }
 
 export async function getMarketDetails(id: number) {
@@ -339,6 +409,88 @@ export async function submitVote(params: {
   `, 'registry');
 }
 
+export async function commitVote(params: {
+  queryId: number;
+  commitHash: string;
+}) {
+  return queryGraphQL(`
+    mutation {
+      commitVote(
+        queryId: ${params.queryId},
+        commitHash: "${params.commitHash}"
+      ) {
+        voter
+        commitHash
+        committedAt
+      }
+    }
+  `, 'registry');
+}
+
+export async function revealVote(params: {
+  queryId: number;
+  value: string;
+  salt: string;
+  confidence?: number;
+}) {
+  const confidence = params.confidence || 100;
+
+  return queryGraphQL(`
+    mutation {
+      revealVote(
+        queryId: ${params.queryId},
+        value: "${params.value}",
+        salt: "${params.salt}",
+        confidence: ${confidence}
+      ) {
+        voter
+        value
+        timestamp
+      }
+    }
+  `, 'registry');
+}
+
+export async function createQuery(params: {
+  description: string;
+  outcomes: string[];
+  strategy: string;
+  minVotes?: number;
+  rewardAmount: string;
+  deadline?: number;
+}) {
+  const outcomesStr = params.outcomes.map(o => `"${o}"`).join(', ');
+  const minVotes = params.minVotes || 3;
+  const deadlineStr = params.deadline ? params.deadline.toString() : 'null';
+
+  return queryGraphQL(`
+    mutation {
+      createQuery(
+        description: "${params.description}",
+        outcomes: [${outcomesStr}],
+        strategy: "${params.strategy}",
+        minVotes: ${minVotes},
+        rewardAmount: "${params.rewardAmount}",
+        deadline: ${deadlineStr}
+      ) {
+        id
+        description
+        outcomes
+        strategy
+        minVotes
+        rewardAmount
+        creator
+        createdAt
+        deadline
+        commitPhaseEnd
+        revealPhaseEnd
+        phase
+        status
+      }
+    }
+  `, 'registry');
+}
+
 export async function registerVoter(params: {
   stake: string;
   name?: string;
@@ -430,32 +582,77 @@ export async function getVoter(address: string) {
 }
 
 export async function getVoters(limit: number = 100, offset: number = 0, activeOnly: boolean = false) {
+  // Use voterLeaderboard to get list of voters
   return queryGraphQL(`
     query {
-      voters(limit: ${limit}, offset: ${offset}, activeOnly: ${activeOnly}) {
-        address
-        stake
-        lockedStake
-        availableStake
-        reputation
-        reputationTier
-        reputationWeight
+      voterLeaderboard(limit: ${limit}) {
+        voterApp
+        reputationScore
         totalVotes
-        correctVotes
-        accuracyPercentage
-        registeredAt
-        isActive
-        name
-        metadataUrl
+        accuracyRate
       }
     }
-  `, 'registry');
+  `, 'registry').then(data => {
+    // Transform to match expected format
+    const voters = data.voterLeaderboard?.map((entry: any, index: number) => {
+      // Extract chain ID from voterApp
+      // Format: "ApplicationId { application_description_hash: <hash> }" or just "<chain_id>"
+      let chainId = entry.voterApp;
+
+      // If it's the full ApplicationId format, extract the hash
+      if (chainId.includes('application_description_hash:')) {
+        const match = chainId.match(/application_description_hash:\s*([a-f0-9]+)/);
+        if (match) {
+          chainId = match[1];
+        }
+      }
+
+      // Clean up any remaining formatting
+      chainId = chainId.replace(/[{}]/g, '').trim();
+
+      return {
+        address: chainId,
+        stake: '0',
+        lockedStake: '0',
+        availableStake: '0',
+        reputation: entry.reputationScore,
+        reputationTier: getReputationTier(entry.reputationScore),
+        reputationWeight: entry.reputationScore / 100,
+        totalVotes: entry.totalVotes,
+        correctVotes: Math.floor(entry.totalVotes * entry.accuracyRate),
+        accuracyPercentage: entry.accuracyRate * 100,
+        isActive: true,
+        name: `Voter #${index + 1}`,
+        metadataUrl: '',
+        registeredAt: 0,
+      };
+    }) || [];
+
+    return { voters };
+  }).catch(error => {
+    console.warn('getVoters query failed, returning empty array:', error.message);
+    return { voters: [] };
+  });
 }
 
-export async function getMyVoterInfo() {
+// Helper function to determine reputation tier
+function getReputationTier(reputation: number): string {
+  if (reputation >= 900) return 'Master';
+  if (reputation >= 700) return 'Expert';
+  if (reputation >= 500) return 'Journeyman';
+  if (reputation >= 300) return 'Apprentice';
+  return 'Novice';
+}
+
+export async function getMyVoterInfo(address?: string) {
+  // If no address provided, return null (user not connected)
+  if (!address) {
+    return { myVoterInfo: null };
+  }
+
   return queryGraphQL(`
     query {
-      myVoterInfo {
+      myVoterInfo(address: "${address}") {
         address
         stake
         lockedStake
@@ -534,9 +731,94 @@ export async function getActiveQueries(limit: number = 100) {
         creator
         createdAt
         deadline
+        commitPhaseEnd
+        revealPhaseEnd
+        phase
         status
         voteCount
+        commitCount
         timeRemaining
+      }
+    }
+  `, 'registry');
+}
+
+export async function getUpcomingQueries(limit: number = 100) {
+  return queryGraphQL(`
+    query {
+      queries(limit: ${limit}) {
+        id
+        description
+        outcomes
+        strategy
+        minVotes
+        rewardAmount
+        creator
+        createdAt
+        deadline
+        commitPhaseEnd
+        revealPhaseEnd
+        phase
+        status
+        voteCount
+        commitCount
+        timeRemaining
+      }
+    }
+  `, 'registry');
+}
+
+export async function getPastQueries(limit: number = 100) {
+  return queryGraphQL(`
+    query {
+      queries(limit: ${limit}) {
+        id
+        description
+        outcomes
+        strategy
+        minVotes
+        rewardAmount
+        creator
+        createdAt
+        deadline
+        commitPhaseEnd
+        revealPhaseEnd
+        phase
+        status
+        result
+        resolvedAt
+        voteCount
+        commitCount
+      }
+    }
+  `, 'registry');
+}
+
+export async function getQueryById(id: number) {
+  return queryGraphQL(`
+    query {
+      query(id: ${id}) {
+        id
+        description
+        outcomes
+        strategy
+        minVotes
+        rewardAmount
+        creator
+        createdAt
+        deadline
+        commitPhaseEnd
+        revealPhaseEnd
+        phase
+        status
+        result
+        resolvedAt
+        voteCount
+        commitCount
+        timeRemaining
+        selectedVoters
+        hasCommitted
+        hasRevealed
       }
     }
   `, 'registry');
@@ -551,11 +833,50 @@ export async function getMyPendingRewards() {
 }
 
 export async function getStatistics() {
-  // Use simple queries that exist in the schema
+  // Use protocolStats to get statistics
   return queryGraphQL(`
     query {
-      voterCount
-      totalStake
+      protocolStats {
+        totalMarkets
+        activeMarkets
+        resolvedMarkets
+        totalVoters
+        activeVoters
+        totalValueLocked
+      }
     }
-  `, 'registry');
+  `, 'registry').then(data => {
+    // Transform to match expected format
+    const stats = data.protocolStats;
+    return {
+      statistics: {
+        totalVoters: stats.totalVoters,
+        activeVoters: stats.activeVoters,
+        totalMarkets: stats.totalMarkets,
+        activeMarkets: stats.activeMarkets,
+        resolvedMarkets: stats.resolvedMarkets,
+        totalStaked: stats.totalValueLocked,
+        protocolTreasury: '0',
+        averageReputation: 0,
+        protocolStatus: 'Active',
+        resolutionRate: stats.totalMarkets > 0 ? (stats.resolvedMarkets / stats.totalMarkets) * 100 : 0,
+      }
+    };
+  }).catch(error => {
+    console.warn('getStatistics query failed:', error.message);
+    return {
+      statistics: {
+        totalVoters: 0,
+        activeVoters: 0,
+        totalMarkets: 0,
+        activeMarkets: 0,
+        resolvedMarkets: 0,
+        totalStaked: '0',
+        protocolTreasury: '0',
+        averageReputation: 0,
+        protocolStatus: 'Unknown',
+        resolutionRate: 0,
+      }
+    };
+  });
 }

@@ -110,14 +110,28 @@ Requester → Create Query → Smart Contract
 - Reward pool incentivizes voters
 - Multiple resolution strategies available
 
-### 4️⃣ Vote Submission
+### 4️⃣ Vote Submission (Commit-Reveal Scheme)
 ```
-Selected Voters → Submit Votes → Smart Contract
-                                      ↓
-                              Permission check
-                                      ↓
-                              Votes recorded on-chain
+Phase 1: Commit (24 hours)
+Selected Voters → Generate salt → Create hash
+                       ↓
+                SHA-256(answer + salt)
+                       ↓
+                Submit commit hash → Smart Contract
+                       ↓
+                Store salt locally for reveal
+
+Phase 2: Reveal (24 hours)
+Selected Voters → Submit answer + salt → Smart Contract
+                       ↓
+                Verify: SHA-256(answer + salt) == commit hash
+                       ↓
+                Record vote on-chain
 ```
+- **Privacy:** Only hash visible during commit phase
+- **Security:** Cannot change vote after commit
+- **Verification:** Automatic hash matching on reveal
+- **Wallet Signature:** Required for both commit and reveal
 - Only selected voters can vote
 - Non-selected voters receive clear error
 - Votes immutable and timestamped
@@ -294,34 +308,58 @@ See [docs/CREATE_MARKET_GUIDE.md](docs/CREATE_MARKET_GUIDE.md) for market creati
 
 ## 📖 Documentation
 
-### Quick Start Guides
+### 🚀 Quick Start Guides
 - **Quick Start** - [docs/QUICK_START_DASHBOARD_NOV17.md](docs/QUICK_START_DASHBOARD_NOV17.md)
 - **Voter Registration Guide** - [docs/VOTER_REGISTRATION_GUIDE.md](docs/VOTER_REGISTRATION_GUIDE.md)
+- **Dashboard Registration Guide** - [DASHBOARD_REGISTRATION_GUIDE.md](DASHBOARD_REGISTRATION_GUIDE.md)
 - **Who Can Be Voter** - [docs/WHO_CAN_BE_VOTER.md](docs/WHO_CAN_BE_VOTER.md)
 - **Dashboard Update** - [docs/DASHBOARD_UPDATE_COMPLETE.md](docs/DASHBOARD_UPDATE_COMPLETE.md)
 
-### Prediction Market Example
+### 🗳️ Voting & Oracle Operations
+- **Final Documentation** - [FINAL_DOCUMENTATION.md](FINAL_DOCUMENTATION.md) ⭐ **MASTER DOC**
+- **Quick Reference** - [QUICK_REFERENCE.md](QUICK_REFERENCE.md) ⚡ **CHEAT SHEET**
+- **Quick Commands** - [QUICK_COMMANDS.md](QUICK_COMMANDS.md) 🔧 **CLI REFERENCE**
+- **Commit-Reveal Verification** - [VERIFIKASI_COMMIT_REVEAL_REAL.md](VERIFIKASI_COMMIT_REVEAL_REAL.md)
+- **Voting Success Verification** - [VOTING_SUCCESS_VERIFICATION.md](VOTING_SUCCESS_VERIFICATION.md)
+- **Visual Commit-Reveal Flow** - [VISUAL_COMMIT_REVEAL_FLOW.md](VISUAL_COMMIT_REVEAL_FLOW.md)
+
+### 📊 Market & Dashboard
+- **Status All Markets** - [STATUS_SEMUA_MARKETS.md](STATUS_SEMUA_MARKETS.md)
+- **Active Market Fix** - [FIX_GRACE_PERIOD_365_DAYS.md](FIX_GRACE_PERIOD_365_DAYS.md)
+- **Combine Oracle & Market Chain** - [FIX_COMBINE_ORACLE_MARKET_CHAIN.md](FIX_COMBINE_ORACLE_MARKET_CHAIN.md)
 - **Create Market Guide** - [docs/CREATE_MARKET_GUIDE.md](docs/CREATE_MARKET_GUIDE.md)
 - **Market Display Fix** - [docs/MARKET_DISPLAY_FIX.md](docs/MARKET_DISPLAY_FIX.md)
 - **Market Chain README** - [market-chain/README.md](market-chain/README.md)
 
-### Technical Documentation
+### 🔧 Technical Documentation
 - **Network Overview** - [docs/ALETHEA_NETWORK_OVERVIEW.md](docs/ALETHEA_NETWORK_OVERVIEW.md)
 - **Architecture** - [docs/ALETHEA_CORRECT_ARCHITECTURE.md](docs/ALETHEA_CORRECT_ARCHITECTURE.md)
 - **Voter Selection Implementation** - [docs/VOTER_SELECTION_IMPLEMENTED.md](docs/VOTER_SELECTION_IMPLEMENTED.md)
 - **Implementation Gap Analysis** - [docs/IMPLEMENTATION_GAP_ANALYSIS.md](docs/IMPLEMENTATION_GAP_ANALYSIS.md)
+- **Voter Registry Analysis** - [ANALISIS_VOTER_REGISTRY_KEY.md](ANALISIS_VOTER_REGISTRY_KEY.md)
+- **Registry Implementation Fix** - [PERBAIKAN_IMPLEMENTASI_REGISTRY.md](PERBAIKAN_IMPLEMENTASI_REGISTRY.md)
 
-### Deployment Documentation
+### 🚀 Deployment Documentation
 - **Deployment Success** - [docs/DEPLOYMENT_SUCCESS.md](docs/DEPLOYMENT_SUCCESS.md)
 - **Clean Deploy Guide** - [docs/CLEAN_DEPLOY_GUIDE.md](docs/CLEAN_DEPLOY_GUIDE.md)
 - **Wave Updates** - [docs/WAVE_UPDATES_SUMMARY.md](docs/WAVE_UPDATES_SUMMARY.md)
 
-### Wallet Integration
+### 💼 Wallet Integration
 - **Dynamic Integration Complete** - [docs/DYNAMIC_INTEGRATION_COMPLETE.md](docs/DYNAMIC_INTEGRATION_COMPLETE.md)
 - **Dynamic Production Setup** - [docs/DYNAMIC_PRODUCTION_SETUP.md](docs/DYNAMIC_PRODUCTION_SETUP.md)
 - **Correct Linera Dynamic Flow** - [docs/CORRECT_LINERA_DYNAMIC_FLOW.md](docs/CORRECT_LINERA_DYNAMIC_FLOW.md)
+- **Dynamic Signing Analysis** - [ANALISIS_DYNAMIC_SIGNING.md](ANALISIS_DYNAMIC_SIGNING.md)
 
-### All Documentation
+### 🐛 Troubleshooting & Solutions
+- **Register Voter Summary** - [RINGKASAN_REGISTER_VOTER.md](RINGKASAN_REGISTER_VOTER.md)
+- **Register Voter Backend Process** - [PROSES_REGISTER_VOTER_BACKEND.md](PROSES_REGISTER_VOTER_BACKEND.md)
+- **Final Balance Solution** - [SOLUSI_FINAL_BALANCE.md](SOLUSI_FINAL_BALANCE.md)
+- **Vote Blockchain Verification** - [VERIFIKASI_VOTE_BLOCKCHAIN.md](VERIFIKASI_VOTE_BLOCKCHAIN.md)
+- **Commit Vote Failed Issue** - [MASALAH_COMMIT_VOTE_GAGAL.md](MASALAH_COMMIT_VOTE_GAGAL.md)
+- **Microcard Registry Solution** - [ANALISIS_MICROCARD_SOLUSI_REGISTRY.md](ANALISIS_MICROCARD_SOLUSI_REGISTRY.md)
+- **Microcard Solution Summary** - [RINGKASAN_SOLUSI_MICROCARD.md](RINGKASAN_SOLUSI_MICROCARD.md)
+
+### 📚 All Documentation
 - **Documentation Index** - [docs/README.md](docs/README.md)
 - **Test Files** - [tests/README.md](tests/README.md)
 
@@ -465,9 +503,10 @@ Current Wave: Wave 2 COMPLETE
 Status: PRODUCTION READY 🚀
 ```
 
-### Current Deployment (Wave 2)
+### Current Deployment (Wave 2 - Updated Nov 20, 2025)
 - **Chain ID:** `8a80fe20530eb03889f28ac1fda8628430c30b2564763522e1b7268eaecdf7ef`
-- **Oracle Registry App ID:** `9936172d5d1f3fb3ae65ea2bb51391afc561d9f8b80927c9e8e32c1efe9380d2`
+- **Oracle Registry App ID:** `6cf34d723b88cbbb2087f72f8395567217a0a1038ebfc4246bc168a3655303ca`
+- **Oracle Application ID:** `e798118f2608603f61f73888e57d17cac734f56df11b0de733943b7e3e274621`
 - **Market Chain App ID:** `438a180a65594f69d27d0d53eb2072213a476489d439aeef5f857ef9699f245b`
 - **Network:** Linera Conway Testnet (Local)
 - **Backend:** http://localhost:3001
@@ -485,6 +524,10 @@ Status: PRODUCTION READY 🚀
 - ✅ Voter leaderboard and analytics dashboard
 - ✅ Dynamic wallet integration (multi-chain support with email/social login)
 - ✅ Prediction market example DApp with oracle integration
+- ✅ **Commit-Reveal Voting Scheme** - Privacy-preserving vote submission
+- ✅ **Real Blockchain Operations** - Commit & reveal votes on-chain
+- ✅ **Multi-Source Market Loading** - Oracle + Market Chain integration
+- ✅ **Grace Period System** - Flexible testing with expired markets
 - ✅ 99.9% uptime, 95%+ accuracy
 - ✅ Comprehensive documentation
 
@@ -533,6 +576,21 @@ source .env.fresh
 curl -X POST "http://localhost:8080/chains/$CHAIN_ID/applications/$APP_ID" \
   -H "Content-Type: application/json" \
   -d '{"query": "{ voterCount }"}'
+
+# Test Oracle queries
+curl -X POST "http://localhost:8080/chains/$CHAIN_ID/applications/$ORACLE_APP_ID" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "{ queries { id question outcomes status deadline commitEnd revealEnd } }"}'
+
+# Test commit vote
+curl -X POST "http://localhost:8080/chains/$CHAIN_ID/applications/$ORACLE_APP_ID" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "mutation { commitVote(queryId: 0, commitHash: \"abc123...\") }"}'
+
+# Test reveal vote
+curl -X POST "http://localhost:8080/chains/$CHAIN_ID/applications/$ORACLE_APP_ID" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "mutation { revealVote(queryId: 0, value: \"Yes\", salt: \"xyz789\") }"}'
 ```
 
 **Test Results:** 
@@ -540,6 +598,8 @@ curl -X POST "http://localhost:8080/chains/$CHAIN_ID/applications/$APP_ID" \
 - ✅ Transaction submission: Certificate hash received
 - ✅ Polling system: Progress tracking working
 - ✅ UI components: All states functional
+- ✅ Commit-Reveal: Real blockchain operations
+- ✅ Multi-source loading: Oracle + Market Chain
 - ⏳ Testnet execution: Delayed (expected)
 
 ---
@@ -801,9 +861,16 @@ For questions and support:
 
 **Network:** Linera Conway Testnet
 
-**Last Updated:** November 17, 2025
+**Last Updated:** November 20, 2025
 
-**Achievements:** Power-based voter selection, four-tier reputation system, proportional rewards, account-based registration, 99.9% uptime!
+**Latest Updates:**
+- ✅ Commit-Reveal voting scheme implemented
+- ✅ Real blockchain operations for commit & reveal
+- ✅ Multi-source market loading (Oracle + Market Chain)
+- ✅ Grace period system for flexible testing
+- ✅ 10 active markets ready for voting
+
+**Achievements:** Power-based voter selection, four-tier reputation system, proportional rewards, account-based registration, commit-reveal privacy, 99.9% uptime!
 
 ---
 
