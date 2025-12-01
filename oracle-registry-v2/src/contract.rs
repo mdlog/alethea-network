@@ -1,13 +1,13 @@
 // Copyright (c) Alethea Network
 // SPDX-License-Identifier: MIT
 
-#![cfg_attr(target_arch = "wasm32", no_main)]
+#![cfg_attr(target_arch="wasm32", no_main)]
 
 mod state;
 
 use linera_sdk::{
     linera_base_types::{Amount, WithContractAbi},
-    views::View,
+    views::{View, RootView},
     Contract, ContractRuntime,
 };
 use state::{OracleRegistryV2, ProtocolParameters};
@@ -38,28 +38,28 @@ impl Contract for OracleRegistryV2Contract {
     }
 
     async fn instantiate(&mut self, _argument: ()) {
-        // The chain owner who instantiates the contract becomes the admin
-        let ownership = self.runtime.chain_ownership();
-        let admin = ownership.super_owners.iter().next()
-            .or_else(|| ownership.owners.keys().next())
-            .copied()
-            .expect("No chain owner found");
+        // The chain that instantiates the contract becomes the admin
+        let admin_chain = self.runtime.chain_id();
         
         // Use default parameters
         let params = ProtocolParameters::default();
-        self.state.initialize(params, admin).await;
+        self.state.initialize(params, admin_chain).await;
         
         // Initialize test voters for development/testing
         OracleRegistryV2Contract::initialize_test_voters_internal(&mut self.state).await;
+        
+        // Save state after initialization
+        self.state.save().await.expect("Failed to save initial state");
     }
     
     async fn store(mut self) {
-        // State is automatically persisted by Linera SDK
-        // No explicit save needed with RootView
+        // CRITICAL: Must explicitly save state!
+        // Without this, all state changes are lost after operation completes
+        self.state.save().await.expect("Failed to save state");
     }
 
     async fn execute_operation(&mut self, operation: Self::Operation) -> Self::Response {
-        use oracle_registry_v2::{Operation, OperationResponse, ResponseData, RegistryError};
+        use oracle_registry_v2::{Operation, OperationResponse};
         
         // Check if paused (except for admin operations)
         if self.state.is_paused().await {
@@ -71,7 +71,7 @@ impl Contract for OracleRegistryV2Contract {
         
         match operation {
             Operation::RegisterVoter { stake, name, metadata_url } => {
-                self.register_voter(stake, name, metadata_url).await
+                self.register_voter_chainid(stake, name, metadata_url).await
             }
             
             Operation::RegisterVoterFor { voter_address, stake, name, metadata_url } => {
@@ -90,7 +90,7 @@ impl Contract for OracleRegistryV2Contract {
                 self.deregister_voter().await
             }
             
-            Operation::CreateQuery { description, outcomes, strategy, min_votes, reward_amount, deadline } => {
+            Operation::CreateQuery { description, outcomes, strategy, min_votes, reward_amount, deadline, duration_secs } => {
                 // Convert from lib DecisionStrategy to state DecisionStrategy
                 let state_strategy = match strategy {
                     oracle_registry_v2::state::DecisionStrategy::Majority => state::DecisionStrategy::Majority,
@@ -98,11 +98,19 @@ impl Contract for OracleRegistryV2Contract {
                     oracle_registry_v2::state::DecisionStrategy::WeightedByStake => state::DecisionStrategy::WeightedByStake,
                     oracle_registry_v2::state::DecisionStrategy::WeightedByReputation => state::DecisionStrategy::WeightedByReputation,
                 };
-                self.create_query(description, outcomes, state_strategy, min_votes, reward_amount, deadline).await
+                self.create_query(description, outcomes, state_strategy, min_votes, reward_amount, deadline, duration_secs).await
             }
             
             Operation::SubmitVote { query_id, value, confidence } => {
                 self.submit_vote(query_id, value, confidence).await
+            }
+            
+            Operation::CommitVote { query_id, commit_hash } => {
+                self.commit_vote(query_id, commit_hash).await
+            }
+            
+            Operation::RevealVote { query_id, value, salt, confidence } => {
+                self.reveal_vote(query_id, value, salt, confidence).await
             }
             
             Operation::ResolveQuery { query_id } => {
@@ -142,6 +150,41 @@ impl Contract for OracleRegistryV2Contract {
             Operation::ExpireQuery { query_id } => {
                 self.expire_query_operation(query_id).await
             }
+            
+            Operation::AutoResolveQueries => {
+                self.auto_resolve_queries_operation().await
+            }
+            
+            Operation::CreateQueryWithCallback {
+                description,
+                outcomes,
+                strategy,
+                min_votes,
+                reward_amount,
+                deadline,
+                callback_chain,
+                callback_app,
+                callback_data,
+            } => {
+                // Convert from lib DecisionStrategy to state DecisionStrategy
+                let state_strategy = match strategy {
+                    oracle_registry_v2::state::DecisionStrategy::Majority => state::DecisionStrategy::Majority,
+                    oracle_registry_v2::state::DecisionStrategy::Median => state::DecisionStrategy::Median,
+                    oracle_registry_v2::state::DecisionStrategy::WeightedByStake => state::DecisionStrategy::WeightedByStake,
+                    oracle_registry_v2::state::DecisionStrategy::WeightedByReputation => state::DecisionStrategy::WeightedByReputation,
+                };
+                self.create_query_with_callback(
+                    description,
+                    outcomes,
+                    state_strategy,
+                    min_votes,
+                    reward_amount,
+                    deadline,
+                    callback_chain,
+                    callback_app,
+                    callback_data,
+                ).await
+            }
         }
     }
 
@@ -171,8 +214,42 @@ impl Contract for OracleRegistryV2Contract {
                 self.submit_vote(query_id, value, confidence).await
             }
             
+            Message::CommitVote { query_id, commit_hash } => {
+                self.commit_vote(query_id, commit_hash).await
+            }
+            
+            Message::RevealVote { query_id, value, salt, confidence } => {
+                self.reveal_vote(query_id, value, salt, confidence).await
+            }
+            
             Message::ClaimRewards => {
                 self.claim_rewards().await
+            }
+            
+            // NEW: Handle automatic query creation from expired markets
+            Message::CreateQueryFromMarket {
+                market_id,
+                question,
+                outcomes,
+                deadline,
+                callback_chain,
+                callback_data,
+            } => {
+                self.handle_create_query_from_market(
+                    market_id,
+                    question,
+                    outcomes,
+                    deadline,
+                    callback_chain,
+                    callback_data,
+                ).await
+            }
+            
+            // Handle query resolution callback (not used in Registry, but required for Message enum)
+            Message::QueryResolutionCallback { .. } => {
+                // This message is sent FROM Registry TO Market, not received by Registry
+                // If we receive it, just ignore it
+                oracle_registry_v2::OperationResponse::error("Registry does not handle QueryResolutionCallback")
             }
         };
         
@@ -232,8 +309,8 @@ impl OracleRegistryV2Contract {
     }
     
     /// Validate voter is registered and active
-    async fn validate_voter_registered(&self, voter: &linera_sdk::linera_base_types::AccountOwner) -> Result<state::VoterInfo, String> {
-        match self.state.get_voter(voter).await {
+    async fn validate_voter_registered(&self, voter_chain: &linera_sdk::linera_base_types::ChainId) -> Result<state::VoterInfo, String> {
+        match self.state.get_voter(voter_chain).await {
             Some(info) => {
                 if !info.is_active {
                     return Err("Voter is not active".to_string());
@@ -245,8 +322,8 @@ impl OracleRegistryV2Contract {
     }
     
     /// Validate voter is not already registered
-    async fn validate_voter_not_registered(&self, voter: &linera_sdk::linera_base_types::AccountOwner) -> Result<(), String> {
-        if self.state.get_voter(voter).await.is_some() {
+    async fn validate_voter_not_registered(&self, voter_chain: &linera_sdk::linera_base_types::ChainId) -> Result<(), String> {
+        if self.state.get_voter(voter_chain).await.is_some() {
             return Err("Already registered as voter".to_string());
         }
         Ok(())
@@ -298,13 +375,13 @@ impl OracleRegistryV2Contract {
     }
     
     /// Validate voter has no active votes (for withdrawal/deregistration)
-    async fn validate_no_active_votes(&self, voter: &linera_sdk::linera_base_types::AccountOwner) -> Result<(), String> {
+    async fn validate_no_active_votes(&self, voter_chain: &linera_sdk::linera_base_types::ChainId) -> Result<(), String> {
         // Check if voter has any votes on active queries
         let active_queries = self.state.get_active_queries().await;
         
         for query_id in active_queries {
             if let Some(query) = self.state.get_query(query_id).await {
-                if query.votes.contains_key(voter) {
+                if query.votes.contains_key(voter_chain) {
                     return Err(format!(
                         "Cannot proceed: voter has active vote on query {}",
                         query_id
@@ -317,8 +394,8 @@ impl OracleRegistryV2Contract {
     }
     
     /// Validate voter has no pending rewards (for deregistration)
-    async fn validate_no_pending_rewards(&self, voter: &linera_sdk::linera_base_types::AccountOwner) -> Result<(), String> {
-        let pending = self.state.get_pending_rewards(voter).await;
+    async fn validate_no_pending_rewards(&self, voter_chain: &linera_sdk::linera_base_types::ChainId) -> Result<(), String> {
+        let pending = self.state.get_pending_rewards(voter_chain).await;
         if pending > Amount::ZERO {
             return Err(format!(
                 "Cannot deregister: {} pending rewards must be claimed first",
@@ -410,12 +487,19 @@ impl OracleRegistryV2Contract {
     ) -> oracle_registry_v2::OperationResponse {
         use oracle_registry_v2::{OperationResponse, ResponseData};
         use state::VoterInfo;
-        use linera_sdk::linera_base_types::AccountOwner;
+        use linera_sdk::linera_base_types::ChainId;
         
-        // Parse voter address from hex string
-        let voter = match voter_address.parse::<AccountOwner>() {
-            Ok(addr) => addr,
-            Err(_) => return OperationResponse::error("Invalid voter address format"),
+        // Strip "0x" prefix if present before parsing
+        let address_hex = if voter_address.starts_with("0x") || voter_address.starts_with("0X") {
+            &voter_address[2..]
+        } else {
+            &voter_address
+        };
+        
+        // Parse voter chain ID from hex string
+        let voter_chain = match address_hex.parse::<ChainId>() {
+            Ok(chain) => chain,
+            Err(_) => return OperationResponse::error("Invalid chain ID format: failed to parse hex string"),
         };
         
         // Validate registration parameters
@@ -424,7 +508,7 @@ impl OracleRegistryV2Contract {
         }
         
         // Check if already registered
-        if let Err(e) = self.validate_voter_not_registered(&voter).await {
+        if let Err(e) = self.validate_voter_not_registered(&voter_chain).await {
             return OperationResponse::error(e);
         }
         
@@ -436,7 +520,7 @@ impl OracleRegistryV2Contract {
         
         // Create voter info with default reputation
         let voter_info = VoterInfo {
-            address: voter,
+            chain_id: voter_chain,
             stake,
             locked_stake: Amount::ZERO,
             reputation: 50,
@@ -449,7 +533,7 @@ impl OracleRegistryV2Contract {
         };
         
         // Store voter
-        self.state.voters.insert(&voter, voter_info).expect("Failed to insert voter");
+        self.state.voters.insert(&voter_chain, voter_info).expect("Failed to insert voter");
         
         // Update totals
         let current_stake = *self.state.total_stake.get();
@@ -463,7 +547,7 @@ impl OracleRegistryV2Contract {
         OperationResponse::success_with_data(
             "Voter registered successfully (admin operation)",
             ResponseData {
-                voter_address: Some(voter.to_string()),
+                voter_address: Some(voter_chain.to_string()),
                 query_id: None,
                 vote_count: None,
                 rewards_claimed: None,
@@ -471,7 +555,144 @@ impl OracleRegistryV2Contract {
         )
     }
     
-    /// Register a new voter
+    /// Register a new voter using chain ID (CORRECT SOLUTION - Microcard Pattern!)
+    /// Uses runtime.chain_id() to identify the voter - no address parsing needed!
+    async fn register_voter_chainid(
+        &mut self,
+        stake: Amount,
+        name: Option<String>,
+        metadata_url: Option<String>,
+    ) -> oracle_registry_v2::OperationResponse {
+        use oracle_registry_v2::{OperationResponse, ResponseData};
+        use state::VoterInfo;
+        
+        // Get voter's chain ID - this ALWAYS works! (Microcard pattern)
+        let voter_chain = self.runtime.chain_id();
+        
+        // Validate registration parameters
+        if let Err(e) = self.validate_registration_params(stake, &name, &metadata_url) {
+            return OperationResponse::error(e);
+        }
+        
+        // Check if already registered
+        if let Ok(Some(_)) = self.state.voters.get(&voter_chain).await {
+            return OperationResponse::error("Chain already registered as voter");
+        }
+        
+        // Check minimum stake
+        let params = self.state.get_parameters().await;
+        if let Err(e) = self.validate_minimum_stake(stake, params.min_stake) {
+            return OperationResponse::error(e);
+        }
+        
+        // Create voter info with chain ID
+        let voter_info = VoterInfo {
+            chain_id: voter_chain,  // ← Use chain ID as identifier!
+            stake,
+            locked_stake: Amount::ZERO,
+            reputation: 50, // Default reputation for new voters
+            total_votes: 0,
+            correct_votes: 0,
+            registered_at: self.runtime.system_time(),
+            is_active: true,
+            name,
+            metadata_url,
+        };
+        
+        // Store voter by chain ID
+        self.state.voters.insert(&voter_chain, voter_info).expect("Failed to insert voter");
+        
+        // Update totals
+        let current_stake = *self.state.total_stake.get();
+        let current_value: u128 = current_stake.into();
+        let stake_value: u128 = stake.into();
+        self.state.total_stake.set(Amount::from_tokens(current_value + stake_value));
+        
+        let current_count = *self.state.voter_count.get();
+        self.state.voter_count.set(current_count + 1);
+        
+        OperationResponse::success_with_data(
+            "Voter registered successfully using chain ID",
+            ResponseData {
+                voter_address: Some(voter_chain.to_string()),
+                query_id: None,
+                vote_count: None,
+                rewards_claimed: None,
+            },
+        )
+    }
+    
+    /// Register a new voter with explicit address (DEPRECATED - for backward compatibility)
+    async fn register_voter_with_address(
+        &mut self,
+        voter_address: String,
+        stake: Amount,
+        name: Option<String>,
+        metadata_url: Option<String>,
+    ) -> oracle_registry_v2::OperationResponse {
+        use oracle_registry_v2::{OperationResponse, ResponseData};
+        use state::VoterInfo;
+        
+        // Parse voter chain ID from string
+        let voter_chain = match voter_address.parse::<linera_sdk::linera_base_types::ChainId>() {
+            Ok(chain) => chain,
+            Err(_) => return OperationResponse::error("Invalid chain ID format"),
+        };
+        
+        // Validate registration parameters
+        if let Err(e) = self.validate_registration_params(stake, &name, &metadata_url) {
+            return OperationResponse::error(e);
+        }
+        
+        // Check if already registered
+        if let Err(e) = self.validate_voter_not_registered(&voter_chain).await {
+            return OperationResponse::error(e);
+        }
+        
+        // Check minimum stake
+        let params = self.state.get_parameters().await;
+        if let Err(e) = self.validate_minimum_stake(stake, params.min_stake) {
+            return OperationResponse::error(e);
+        }
+        
+        // Create voter info with default reputation
+        let voter_info = VoterInfo {
+            chain_id: voter_chain,
+            stake,
+            locked_stake: Amount::ZERO,
+            reputation: 50, // Default reputation for new voters
+            total_votes: 0,
+            correct_votes: 0,
+            registered_at: self.runtime.system_time(),
+            is_active: true,
+            name,
+            metadata_url,
+        };
+        
+        // Store voter
+        self.state.voters.insert(&voter_chain, voter_info).expect("Failed to insert voter");
+        
+        // Update totals
+        let current_stake = *self.state.total_stake.get();
+        let current_value: u128 = current_stake.into();
+        let stake_value: u128 = stake.into();
+        self.state.total_stake.set(Amount::from_tokens(current_value + stake_value));
+        
+        let current_count = *self.state.voter_count.get();
+        self.state.voter_count.set(current_count + 1);
+        
+        OperationResponse::success_with_data(
+            "Voter registered successfully",
+            ResponseData {
+                voter_address: Some(voter_chain.to_string()),
+                query_id: None,
+                vote_count: None,
+                rewards_claimed: None,
+            },
+        )
+    }
+    
+    /// Register a new voter (for cross-chain messages with authentication)
     async fn register_voter(
         &mut self,
         stake: Amount,
@@ -481,10 +702,8 @@ impl OracleRegistryV2Contract {
         use oracle_registry_v2::{OperationResponse, ResponseData};
         use state::VoterInfo;
         
-        let voter = match self.runtime.authenticated_signer() {
-            Some(signer) => signer,
-            None => return OperationResponse::error("Authentication required"),
-        };
+        // Use chain_id as voter identifier (Microcard pattern)
+        let voter_chain = self.runtime.chain_id();
         
         // Validate registration parameters
         if let Err(e) = self.validate_registration_params(stake, &name, &metadata_url) {
@@ -492,7 +711,7 @@ impl OracleRegistryV2Contract {
         }
         
         // Check if already registered
-        if let Err(e) = self.validate_voter_not_registered(&voter).await {
+        if let Err(e) = self.validate_voter_not_registered(&voter_chain).await {
             return OperationResponse::error(e);
         }
         
@@ -507,7 +726,7 @@ impl OracleRegistryV2Contract {
         
         // Create voter info with default reputation
         let voter_info = VoterInfo {
-            address: voter,
+            chain_id: voter_chain,
             stake,
             locked_stake: Amount::ZERO,
             reputation: 50, // Default reputation for new voters (neutral starting point)
@@ -523,7 +742,7 @@ impl OracleRegistryV2Contract {
         let initial_reputation = self.state.calculate_reputation(&voter_info);
         
         // Store voter
-        self.state.voters.insert(&voter, voter_info).expect("Failed to insert voter");
+        self.state.voters.insert(&voter_chain, voter_info).expect("Failed to insert voter");
         
         // Update totals
         let current_stake = *self.state.total_stake.get();
@@ -537,7 +756,7 @@ impl OracleRegistryV2Contract {
         OperationResponse::success_with_data(
             "Voter registered successfully",
             ResponseData {
-                voter_address: Some(voter.to_string()),
+                voter_address: Some(voter_chain.to_string()),
                 query_id: None,
                 vote_count: None,
                 rewards_claimed: None,
@@ -549,10 +768,7 @@ impl OracleRegistryV2Contract {
     async fn update_stake(&mut self, additional_stake: Amount) -> oracle_registry_v2::OperationResponse {
         use oracle_registry_v2::OperationResponse;
         
-        let voter = match self.runtime.authenticated_signer() {
-            Some(signer) => signer,
-            None => return OperationResponse::error("Authentication required"),
-        };
+        let voter_chain = self.runtime.chain_id();
         
         // Validate additional stake is positive
         if additional_stake == Amount::ZERO {
@@ -560,7 +776,7 @@ impl OracleRegistryV2Contract {
         }
         
         // Validate voter is registered and active
-        let mut voter_info = match self.validate_voter_registered(&voter).await {
+        let mut voter_info = match self.validate_voter_registered(&voter_chain).await {
             Ok(info) => info,
             Err(e) => return OperationResponse::error(e),
         };
@@ -572,7 +788,7 @@ impl OracleRegistryV2Contract {
         let stake_value: u128 = voter_info.stake.into();
         let additional_value: u128 = additional_stake.into();
         voter_info.stake = Amount::from_tokens(stake_value + additional_value);
-        self.state.voters.insert(&voter, voter_info).expect("Failed to update voter");
+        self.state.voters.insert(&voter_chain, voter_info).expect("Failed to update voter");
         
         // Update total
         let current_stake = *self.state.total_stake.get();
@@ -586,10 +802,7 @@ impl OracleRegistryV2Contract {
     async fn withdraw_stake(&mut self, amount: Amount) -> oracle_registry_v2::OperationResponse {
         use oracle_registry_v2::OperationResponse;
         
-        let voter = match self.runtime.authenticated_signer() {
-            Some(signer) => signer,
-            None => return OperationResponse::error("Authentication required"),
-        };
+        let voter_chain = self.runtime.chain_id();
         
         // Validate withdrawal amount is positive
         if amount == Amount::ZERO {
@@ -597,7 +810,7 @@ impl OracleRegistryV2Contract {
         }
         
         // Validate voter is registered and active
-        let mut voter_info = match self.validate_voter_registered(&voter).await {
+        let mut voter_info = match self.validate_voter_registered(&voter_chain).await {
             Ok(info) => info,
             Err(e) => return OperationResponse::error(e),
         };
@@ -614,7 +827,7 @@ impl OracleRegistryV2Contract {
         }
         
         // Validate no active votes
-        if let Err(e) = self.validate_no_active_votes(&voter).await {
+        if let Err(e) = self.validate_no_active_votes(&voter_chain).await {
             return OperationResponse::error(e);
         }
         
@@ -622,7 +835,7 @@ impl OracleRegistryV2Contract {
         let stake_value: u128 = voter_info.stake.into();
         let amount_value: u128 = amount.into();
         voter_info.stake = Amount::from_tokens(stake_value.saturating_sub(amount_value));
-        self.state.voters.insert(&voter, voter_info).expect("Failed to update voter");
+        self.state.voters.insert(&voter_chain, voter_info).expect("Failed to update voter");
         
         // Update total
         let current_stake = *self.state.total_stake.get();
@@ -639,24 +852,21 @@ impl OracleRegistryV2Contract {
     async fn deregister_voter(&mut self) -> oracle_registry_v2::OperationResponse {
         use oracle_registry_v2::OperationResponse;
         
-        let voter = match self.runtime.authenticated_signer() {
-            Some(signer) => signer,
-            None => return OperationResponse::error("Authentication required"),
-        };
+        let voter_chain = self.runtime.chain_id();
         
         // Validate voter is registered and active
-        let voter_info = match self.validate_voter_registered(&voter).await {
+        let voter_info = match self.validate_voter_registered(&voter_chain).await {
             Ok(info) => info,
             Err(e) => return OperationResponse::error(e),
         };
         
         // Validate no pending rewards
-        if let Err(e) = self.validate_no_pending_rewards(&voter).await {
+        if let Err(e) = self.validate_no_pending_rewards(&voter_chain).await {
             return OperationResponse::error(e);
         }
         
         // Validate no active votes
-        if let Err(e) = self.validate_no_active_votes(&voter).await {
+        if let Err(e) = self.validate_no_active_votes(&voter_chain).await {
             return OperationResponse::error(e);
         }
         
@@ -664,7 +874,7 @@ impl OracleRegistryV2Contract {
         let stake = voter_info.stake;
         
         // Remove voter
-        self.state.voters.remove(&voter).expect("Failed to remove voter");
+        self.state.voters.remove(&voter_chain).expect("Failed to remove voter");
         
         // Update totals
         let current_stake = *self.state.total_stake.get();
@@ -690,9 +900,15 @@ impl OracleRegistryV2Contract {
     /// 
     /// NOTE: This is for testing only. In production, remove this function.
     async fn initialize_test_voters_internal(_state: &mut OracleRegistryV2) {
-        // Disabled for now due to parsing issues in WASM
-        // Test voters should be registered through normal registration flow
-        // or added via a separate initialization script
+        // Disabled: ChainId parsing doesn't work reliably in WASM initialization context
+        // Test voters should be registered through normal registration flow after deployment
+        // 
+        // To register a test voter after deployment, use:
+        // curl -X POST http://localhost:8080/chains/{CHAIN}/applications/{APP} \
+        //   -H "Content-Type: application/json" \
+        //   -d '{"query": "mutation { registerVoter(stake: \"1000\", name: \"TestVoter\") }"}'
+        //
+        // Or use the admin RegisterVoterFor operation from the contract owner chain
     }
 }
 
@@ -708,14 +924,12 @@ impl OracleRegistryV2Contract {
         min_votes: Option<usize>,
         reward_amount: Amount,
         deadline: Option<linera_sdk::linera_base_types::Timestamp>,
+        duration_secs: Option<u64>,
     ) -> oracle_registry_v2::OperationResponse {
         use oracle_registry_v2::{OperationResponse, ResponseData};
         use state::{Query, QueryStatus};
         
-        let creator = match self.runtime.authenticated_signer() {
-            Some(signer) => signer,
-            None => return OperationResponse::error("Authentication required"),
-        };
+        let creator = self.runtime.chain_id();
         
         // Validate query parameters
         if let Err(e) = self.validate_query_params(&description, &outcomes, &reward_amount, &deadline) {
@@ -739,15 +953,26 @@ impl OracleRegistryV2Contract {
             return OperationResponse::error(e);
         }
         
-        // Determine deadline (use provided or default)
-        let query_deadline = deadline.unwrap_or_else(|| {
-            let current_time = self.runtime.system_time();
-            let duration_micros = params.default_query_duration * 1_000_000;
-            current_time.saturating_add(linera_sdk::linera_base_types::TimeDelta::from_micros(duration_micros))
-        });
+        // Calculate commit/reveal phases
+        // Use custom duration if provided, otherwise use default
+        // Duration is split 50/50 between commit and reveal phases
+        let current_time = self.runtime.system_time();
+        let total_duration_secs = duration_secs.unwrap_or(params.default_query_duration);
+        let total_duration_micros = total_duration_secs * 1_000_000;
+        let commit_duration_micros = total_duration_micros / 2;
+        let reveal_duration_micros = total_duration_micros / 2;
+        
+        let commit_phase_end = current_time.saturating_add(
+            linera_sdk::linera_base_types::TimeDelta::from_micros(commit_duration_micros)
+        );
+        let reveal_phase_end = commit_phase_end.saturating_add(
+            linera_sdk::linera_base_types::TimeDelta::from_micros(reveal_duration_micros)
+        );
+        
+        // Determine final deadline (use provided or calculated reveal_phase_end)
+        let query_deadline = deadline.unwrap_or(reveal_phase_end);
         
         // Validate deadline is in the future
-        let current_time = self.runtime.system_time();
         if query_deadline <= current_time {
             return OperationResponse::error("Deadline must be in the future");
         }
@@ -770,7 +995,8 @@ impl OracleRegistryV2Contract {
             )),
         };
         
-        // Create query with selected voters
+        // Create query with selected voters and commit/reveal phases
+        // Manual queries don't have callback info (only market-created queries do)
         let query = Query {
             id: query_id,
             description,
@@ -781,12 +1007,18 @@ impl OracleRegistryV2Contract {
             creator,
             created_at: current_time,
             deadline: query_deadline,
+            commit_phase_end,
+            reveal_phase_end,
+            phase: state::VotingPhase::Commit,
             status: QueryStatus::Active,
             result: None,
             resolved_at: None,
+            commits: std::collections::BTreeMap::new(),
             votes: std::collections::BTreeMap::new(),
             selected_voters,
             max_voters,
+            callback_chain: None,  // No callback for manual queries
+            callback_data: None,   // No callback for manual queries
         };
         
         // Store query
@@ -809,6 +1041,135 @@ impl OracleRegistryV2Contract {
         
         OperationResponse::success_with_data(
             format!("Query {} created successfully", query_id),
+            ResponseData {
+                voter_address: None,
+                query_id: Some(query_id),
+                vote_count: None,
+                rewards_claimed: None,
+            }
+        )
+    }
+    
+    /// Create a new query with callback information (for cross-application calls)
+    /// This allows other applications (like Simple Market) to create queries
+    /// and receive callbacks when the query is resolved
+    async fn create_query_with_callback(
+        &mut self,
+        description: String,
+        outcomes: Vec<String>,
+        strategy: state::DecisionStrategy,
+        min_votes: Option<usize>,
+        reward_amount: Amount,
+        deadline: Option<linera_sdk::linera_base_types::Timestamp>,
+        callback_chain: linera_sdk::linera_base_types::ChainId,
+        callback_app: linera_sdk::linera_base_types::ApplicationId,
+        callback_data: Vec<u8>,
+    ) -> oracle_registry_v2::OperationResponse {
+        use oracle_registry_v2::{OperationResponse, ResponseData};
+        use state::{Query, QueryStatus};
+        
+        eprintln!(
+            "📥 CreateQueryWithCallback: description={}, callback_chain={}, callback_app={}",
+            description, callback_chain, callback_app
+        );
+        
+        let creator = self.runtime.chain_id();
+        
+        // Validate query parameters
+        if let Err(e) = self.validate_query_params(&description, &outcomes, &reward_amount, &deadline) {
+            return OperationResponse::error(e);
+        }
+        
+        // Get protocol parameters
+        let params = self.state.get_parameters().await;
+        
+        // Determine min_votes (use provided or default)
+        let min_votes_required = min_votes.unwrap_or(params.min_votes_default);
+        
+        // Validate min_votes is reasonable
+        let voter_count = *self.state.voter_count.get();
+        if let Err(e) = self.validate_min_votes_param(min_votes_required, voter_count) {
+            return OperationResponse::error(e);
+        }
+        
+        // Validate strategy is compatible with outcomes
+        if let Err(e) = self.validate_strategy_compatibility(&strategy, &outcomes) {
+            return OperationResponse::error(e);
+        }
+        
+        // Calculate commit/reveal phases (1 hour each for cross-app queries)
+        let current_time = self.runtime.system_time();
+        let commit_duration = linera_sdk::linera_base_types::TimeDelta::from_micros(1 * 60 * 60 * 1_000_000u64);
+        let reveal_duration = linera_sdk::linera_base_types::TimeDelta::from_micros(1 * 60 * 60 * 1_000_000u64);
+        
+        let commit_phase_end = current_time.saturating_add(commit_duration);
+        let reveal_phase_end = commit_phase_end.saturating_add(reveal_duration);
+        
+        // Determine final deadline (use provided or calculated reveal_phase_end)
+        let query_deadline = deadline.unwrap_or(reveal_phase_end);
+        
+        // Get next query ID
+        let query_id = *self.state.next_query_id.get();
+        self.state.next_query_id.set(query_id + 1);
+        
+        // Determine max_voters (2x min_votes to allow for non-participation)
+        let max_voters = min_votes_required * 2;
+        
+        // SELECT VOTERS BY POWER
+        let selected_voters = match self.state
+            .select_voters_for_query(min_votes_required, max_voters)
+            .await
+        {
+            Ok(voters) => voters,
+            Err(e) => return OperationResponse::error(format!(
+                "Failed to select voters: {}", e
+            )),
+        };
+        
+        // Create query with callback information
+        let query = Query {
+            id: query_id,
+            description,
+            outcomes,
+            strategy,
+            min_votes: min_votes_required,
+            reward_amount,
+            creator,
+            created_at: current_time,
+            deadline: query_deadline,
+            commit_phase_end,
+            reveal_phase_end,
+            phase: state::VotingPhase::Commit,
+            status: QueryStatus::Active,
+            result: None,
+            resolved_at: None,
+            commits: std::collections::BTreeMap::new(),
+            votes: std::collections::BTreeMap::new(),
+            selected_voters,
+            max_voters,
+            callback_chain: Some(callback_chain),
+            callback_data: Some(callback_data),
+        };
+        
+        // Store query
+        self.state.queries.insert(&query_id, query).expect("Failed to insert query");
+        
+        // Add to active queries
+        let mut active = self.state.get_active_queries().await;
+        active.push(query_id);
+        self.state.active_queries.set(active);
+        
+        // Initialize vote count
+        self.state.vote_counts.insert(&query_id, 0).expect("Failed to initialize vote count");
+        
+        // Update statistics
+        let total_created = *self.state.total_queries_created.get();
+        self.state.total_queries_created.set(total_created + 1);
+        
+        eprintln!("✅ Query {} created with callback to chain {} app {}", query_id, callback_chain, callback_app);
+        
+        OperationResponse::success_with_data(
+            format!("Query {} created with callback", query_id),
             ResponseData {
                 voter_address: None,
                 query_id: Some(query_id),
@@ -925,11 +1286,11 @@ impl OracleRegistryV2Contract {
     }
     
     /// Validate voter has not already voted on query
-    fn validate_voter_not_voted(&self, query: &state::Query, voter: &linera_sdk::linera_base_types::AccountOwner) -> Result<(), String> {
-        if query.votes.contains_key(voter) {
+    fn validate_voter_not_voted(&self, query: &state::Query, voter_chain: &linera_sdk::linera_base_types::ChainId) -> Result<(), String> {
+        if query.votes.contains_key(voter_chain) {
             return Err(format!(
                 "Voter {} has already voted on query {}",
-                voter, query.id
+                voter_chain, query.id
             ));
         }
         Ok(())
@@ -1038,13 +1399,10 @@ impl OracleRegistryV2Contract {
         use oracle_registry_v2::OperationResponse;
         use state::Vote;
         
-        let voter = match self.runtime.authenticated_signer() {
-            Some(signer) => signer,
-            None => return OperationResponse::error("Authentication required"),
-        };
+        let voter_chain = self.runtime.chain_id();
         
         // Validate voter is registered and active
-        let voter_info = match self.validate_voter_registered(&voter).await {
+        let voter_info = match self.validate_voter_registered(&voter_chain).await {
             Ok(info) => info,
             Err(e) => return OperationResponse::error(e),
         };
@@ -1061,7 +1419,7 @@ impl OracleRegistryV2Contract {
         }
         
         // CHECK IF VOTER IS SELECTED FOR THIS QUERY
-        if !query.selected_voters.contains(&voter) {
+        if !query.selected_voters.contains(&voter_chain) {
             return OperationResponse::error(format!(
                 "You are not selected to vote on this query. \
                 Only {} selected voters (by stake × reputation power) can participate. \
@@ -1088,7 +1446,7 @@ impl OracleRegistryV2Contract {
         }
         
         // Validate voter hasn't already voted
-        if let Err(e) = self.validate_voter_not_voted(&query, &voter) {
+        if let Err(e) = self.validate_voter_not_voted(&query, &voter_chain) {
             return OperationResponse::error(e);
         }
         
@@ -1107,37 +1465,261 @@ impl OracleRegistryV2Contract {
         let stake_to_lock = self.calculate_stake_to_lock(&voter_info, &query, &params);
         
         // Lock stake for this vote
-        if let Err(e) = self.state.lock_stake(&voter, stake_to_lock).await {
+        if let Err(e) = self.state.lock_stake(&voter_chain, stake_to_lock).await {
             return OperationResponse::error(format!("Failed to lock stake: {}", e));
         }
         
         // Create vote
         let vote = Vote {
-            voter,
+            voter: voter_chain,
             value: value.clone(),
             timestamp: self.runtime.system_time(),
+            salt: None, // Direct voting (no commit/reveal)
             confidence,
         };
         
         // Store vote
-        query.votes.insert(voter, vote.clone());
+        query.votes.insert(voter_chain, vote.clone());
         self.state.queries.insert(&query_id, query).expect("Failed to update query");
-        self.state.votes.insert(&(query_id, voter), vote).expect("Failed to store vote");
+        self.state.votes.insert(&(query_id, voter_chain), vote).expect("Failed to store vote");
         
         // Update vote count
         let current_count = self.state.vote_counts.get(&query_id).await.ok().flatten().unwrap_or(0);
         self.state.vote_counts.insert(&query_id, current_count + 1).expect("Failed to update vote count");
         
         // Update voter stats
-        let mut updated_voter_info = self.state.get_voter(&voter).await.expect("Voter should exist");
+        let mut updated_voter_info = self.state.get_voter(&voter_chain).await.expect("Voter should exist");
         updated_voter_info.total_votes += 1;
-        self.state.voters.insert(&voter, updated_voter_info).expect("Failed to update voter");
+        self.state.voters.insert(&voter_chain, updated_voter_info).expect("Failed to update voter");
         
         // Update total votes submitted
         let total_votes = *self.state.total_votes_submitted.get();
         self.state.total_votes_submitted.set(total_votes + 1);
         
         OperationResponse::success(format!("Vote submitted successfully, {} stake locked", stake_to_lock))
+    }
+    
+    /// Commit a vote (phase 1 of commit/reveal)
+    async fn commit_vote(
+        &mut self,
+        query_id: u64,
+        commit_hash: String,
+    ) -> oracle_registry_v2::OperationResponse {
+        use oracle_registry_v2::OperationResponse;
+        use state::VoteCommit;
+        
+        let voter_chain = self.runtime.chain_id();
+        
+        // Validate voter is registered and active
+        let voter_info = match self.validate_voter_registered(&voter_chain).await {
+            Ok(info) => info,
+            Err(e) => return OperationResponse::error(e),
+        };
+        
+        // Validate query exists
+        let mut query = match self.validate_query_exists(query_id).await {
+            Ok(q) => q,
+            Err(e) => return OperationResponse::error(e),
+        };
+        
+        // Validate query is active
+        if let Err(e) = self.validate_query_active(&query) {
+            return OperationResponse::error(e);
+        }
+        
+        // Check if voter is selected for this query
+        if !query.selected_voters.contains(&voter_chain) {
+            return OperationResponse::error(format!(
+                "You are not selected to vote on this query"
+            ));
+        }
+        
+        // Validate query is in commit phase
+        let current_time = self.runtime.system_time();
+        if query.phase != state::VotingPhase::Commit {
+            return OperationResponse::error(format!(
+                "Query is not in commit phase (current phase: {:?})",
+                query.phase
+            ));
+        }
+        
+        // Check if commit phase has ended
+        if current_time > query.commit_phase_end {
+            // Auto-transition to reveal phase
+            query.phase = state::VotingPhase::Reveal;
+            self.state.queries.insert(&query_id, query.clone()).expect("Failed to update query");
+            return OperationResponse::error("Commit phase has ended, now in reveal phase");
+        }
+        
+        // Validate voter hasn't already committed
+        if query.commits.contains_key(&voter_chain) {
+            return OperationResponse::error("You have already committed a vote");
+        }
+        
+        // Validate commit hash format (should be hex string)
+        if commit_hash.is_empty() || commit_hash.len() > 128 {
+            return OperationResponse::error("Invalid commit hash format");
+        }
+        
+        // Calculate stake to lock
+        let params = self.state.get_parameters().await;
+        let stake_to_lock = self.calculate_stake_to_lock(&voter_info, &query, &params);
+        
+        // Lock stake for this vote
+        if let Err(e) = self.state.lock_stake(&voter_chain, stake_to_lock).await {
+            return OperationResponse::error(format!("Failed to lock stake: {}", e));
+        }
+        
+        // Create commit
+        let commit = VoteCommit {
+            voter: voter_chain,
+            commit_hash: commit_hash.clone(),
+            committed_at: current_time,
+            revealed: false,
+        };
+        
+        // Store commit and get commit_phase_end before moving query
+        let commit_phase_end = query.commit_phase_end;
+        query.commits.insert(voter_chain, commit);
+        self.state.queries.insert(&query_id, query).expect("Failed to update query");
+        
+        // Update voter stats - increment total_votes on commit
+        let mut updated_voter_info = self.state.get_voter(&voter_chain).await.expect("Voter should exist");
+        updated_voter_info.total_votes += 1;
+        self.state.voters.insert(&voter_chain, updated_voter_info).expect("Failed to update voter");
+        
+        OperationResponse::success(format!(
+            "Vote committed successfully. Reveal your vote after {} to complete voting.",
+            commit_phase_end
+        ))
+    }
+    
+    /// Reveal a vote (phase 2 of commit/reveal)
+    async fn reveal_vote(
+        &mut self,
+        query_id: u64,
+        value: String,
+        salt: String,
+        confidence: Option<u8>,
+    ) -> oracle_registry_v2::OperationResponse {
+        use oracle_registry_v2::OperationResponse;
+        use state::Vote;
+        
+        let voter_chain = self.runtime.chain_id();
+        
+        // Validate voter is registered and active
+        let _voter_info = match self.validate_voter_registered(&voter_chain).await {
+            Ok(info) => info,
+            Err(e) => return OperationResponse::error(e),
+        };
+        
+        // Validate query exists
+        let mut query = match self.validate_query_exists(query_id).await {
+            Ok(q) => q,
+            Err(e) => return OperationResponse::error(e),
+        };
+        
+        // Validate query is active
+        if let Err(e) = self.validate_query_active(&query) {
+            return OperationResponse::error(e);
+        }
+        
+        // Validate query is in reveal phase
+        let current_time = self.runtime.system_time();
+        if query.phase != state::VotingPhase::Reveal {
+            // Check if we should transition to reveal phase
+            if query.phase == state::VotingPhase::Commit && current_time > query.commit_phase_end {
+                query.phase = state::VotingPhase::Reveal;
+                self.state.queries.insert(&query_id, query.clone()).expect("Failed to update query");
+            } else {
+                return OperationResponse::error(format!(
+                    "Query is not in reveal phase (current phase: {:?})",
+                    query.phase
+                ));
+            }
+        }
+        
+        // Check if reveal phase has ended
+        if current_time > query.reveal_phase_end {
+            // Auto-transition to completed
+            query.phase = state::VotingPhase::Completed;
+            self.state.queries.insert(&query_id, query.clone()).expect("Failed to update query");
+            return OperationResponse::error("Reveal phase has ended");
+        }
+        
+        // Validate voter has committed
+        let mut commit = match query.commits.get(&voter_chain) {
+            Some(c) => c.clone(),
+            None => return OperationResponse::error("You must commit a vote before revealing"),
+        };
+        
+        // Validate voter hasn't already revealed
+        if commit.revealed {
+            return OperationResponse::error("You have already revealed your vote");
+        }
+        
+        // Validate vote value is valid
+        if let Err(e) = self.validate_vote_value(&query, &value) {
+            return OperationResponse::error(e);
+        }
+        
+        // Validate confidence score
+        if let Err(e) = self.validate_confidence(confidence) {
+            return OperationResponse::error(e);
+        }
+        
+        // Verify commit hash matches
+        let computed_hash = self.compute_commit_hash(&value, &salt);
+        if computed_hash != commit.commit_hash {
+            return OperationResponse::error(
+                "Commit hash verification failed. The value and salt do not match your commit."
+            );
+        }
+        
+        // Create vote
+        let vote = Vote {
+            voter: voter_chain,
+            value: value.clone(),
+            timestamp: current_time,
+            salt: Some(salt),
+            confidence,
+        };
+        
+        // Store vote
+        query.votes.insert(voter_chain, vote.clone());
+        
+        // Mark commit as revealed
+        commit.revealed = true;
+        query.commits.insert(voter_chain, commit);
+        
+        // Update query
+        self.state.queries.insert(&query_id, query).expect("Failed to update query");
+        self.state.votes.insert(&(query_id, voter_chain), vote).expect("Failed to store vote");
+        
+        // Update vote count
+        let current_count = self.state.vote_counts.get(&query_id).await.ok().flatten().unwrap_or(0);
+        self.state.vote_counts.insert(&query_id, current_count + 1).expect("Failed to update vote count");
+        
+        // Note: total_votes is already incremented in commit_vote, no need to increment again here
+        
+        // Update total votes submitted
+        let total_votes = *self.state.total_votes_submitted.get();
+        self.state.total_votes_submitted.set(total_votes + 1);
+        
+        OperationResponse::success("Vote revealed successfully")
+    }
+    
+    /// Compute commit hash from value and salt
+    fn compute_commit_hash(&self, value: &str, salt: &str) -> String {
+        use sha2::{Sha256, Digest};
+        
+        let mut hasher = Sha256::new();
+        hasher.update(value.as_bytes());
+        hasher.update(salt.as_bytes());
+        let result = hasher.finalize();
+        
+        // Convert to hex string
+        format!("{:x}", result)
     }
     
     /// Calculate how much stake to lock for a vote
@@ -1165,8 +1747,8 @@ impl OracleRegistryV2Contract {
     }
     
     /// Get voter reputation information
-    async fn get_voter_reputation_info(&self, voter: &linera_sdk::linera_base_types::AccountOwner) -> Option<(u32, &'static str, f64)> {
-        let voter_info = self.state.get_voter(voter).await?;
+    async fn get_voter_reputation_info(&self, voter_chain: &linera_sdk::linera_base_types::ChainId) -> Option<(u32, &'static str, f64)> {
+        let voter_info = self.state.get_voter(voter_chain).await?;
         let reputation = voter_info.reputation;
         let tier = self.state.get_reputation_tier(reputation);
         let weight = self.state.calculate_reputation_weight(reputation);
@@ -1175,15 +1757,15 @@ impl OracleRegistryV2Contract {
     }
     
     /// Calculate potential slash amount for a voter (for preview/estimation)
-    async fn calculate_potential_slash(&self, voter: &linera_sdk::linera_base_types::AccountOwner) -> Option<Amount> {
-        let voter_info = self.state.get_voter(voter).await?;
+    async fn calculate_potential_slash(&self, voter_chain: &linera_sdk::linera_base_types::ChainId) -> Option<Amount> {
+        let voter_info = self.state.get_voter(voter_chain).await?;
         let params = self.state.get_parameters().await;
         Some(self.state.calculate_slash_amount(&voter_info, &params))
     }
     
     /// Check if voter would be deactivated after slashing
-    async fn would_be_deactivated_after_slash(&self, voter: &linera_sdk::linera_base_types::AccountOwner) -> Option<bool> {
-        let voter_info = self.state.get_voter(voter).await?;
+    async fn would_be_deactivated_after_slash(&self, voter_chain: &linera_sdk::linera_base_types::ChainId) -> Option<bool> {
+        let voter_info = self.state.get_voter(voter_chain).await?;
         let params = self.state.get_parameters().await;
         let slash_amount = self.state.calculate_slash_amount(&voter_info, &params);
         Some(self.state.should_deactivate_after_slash(&voter_info, slash_amount, &params))
@@ -1314,6 +1896,112 @@ impl OracleRegistryV2Contract {
         }
     }
     
+    /// Handle cross-chain message from Market Chain to create query
+    async fn handle_create_query_from_market(
+        &mut self,
+        market_id: u64,
+        question: String,
+        outcomes: Vec<String>,
+        deadline: linera_sdk::linera_base_types::Timestamp,
+        callback_chain: linera_sdk::linera_base_types::ChainId,
+        callback_data: Vec<u8>,
+    ) -> oracle_registry_v2::OperationResponse {
+        use oracle_registry_v2::{OperationResponse, ResponseData};
+        use linera_sdk::linera_base_types::TimeDelta;
+        
+        eprintln!(
+            "📥 Received CreateQueryFromMarket: market_id={}, question={}, callback_chain={}",
+            market_id, question, callback_chain
+        );
+        
+        // Validate parameters
+        if let Err(e) = self.validate_query_params(&question, &outcomes, &Amount::ZERO, &Some(deadline)) {
+            return OperationResponse::error(format!("Invalid query parameters: {}", e));
+        }
+        
+        // Get parameters
+        let params = self.state.get_parameters().await;
+        let current_time = self.runtime.system_time();
+        let min_votes_required = params.min_votes_default;
+        
+        // Calculate commit/reveal phases (1 hour each for testing)
+        let commit_duration = TimeDelta::from_micros(1 * 60 * 60 * 1_000_000u64);
+        let reveal_duration = TimeDelta::from_micros(1 * 60 * 60 * 1_000_000u64);
+        
+        let commit_phase_end = current_time.saturating_add(commit_duration);
+        let reveal_phase_end = commit_phase_end.saturating_add(reveal_duration);
+        
+        // Get next query ID
+        let query_id = *self.state.next_query_id.get();
+        self.state.next_query_id.set(query_id + 1);
+        
+        // Select voters for this query
+        let max_voters = min_votes_required * 2;
+        let selected_voters = match self.state
+            .select_voters_for_query(min_votes_required, max_voters)
+            .await
+        {
+            Ok(voters) => voters,
+            Err(e) => return OperationResponse::error(format!(
+                "Failed to select voters: {}", e
+            )),
+        };
+        
+        // Create query with callback information
+        let query = state::Query {
+            id: query_id,
+            description: format!("Market #{}: {}", market_id, question),
+            outcomes: outcomes.clone(),
+            commit_phase_end,
+            reveal_phase_end,
+            deadline: reveal_phase_end,
+            phase: state::VotingPhase::Commit,
+            status: state::QueryStatus::Active,
+            strategy: state::DecisionStrategy::Majority,
+            min_votes: min_votes_required,
+            max_voters,
+            reward_amount: Amount::ZERO,
+            creator: callback_chain,
+            created_at: current_time,
+            commits: std::collections::BTreeMap::new(),
+            votes: std::collections::BTreeMap::new(),
+            selected_voters,
+            result: None,
+            resolved_at: None,
+            callback_chain: Some(callback_chain),
+            callback_data: Some(callback_data),
+        };
+        
+        // Store query
+        if let Err(e) = self.state.queries.insert(&query_id, query) {
+            return OperationResponse::error(format!("Failed to store query: {}", e));
+        }
+        
+        // Add to active queries
+        let mut active = self.state.get_active_queries().await;
+        active.push(query_id);
+        self.state.active_queries.set(active);
+        
+        // Initialize vote count
+        let _ = self.state.vote_counts.insert(&query_id, 0);
+        
+        // Update statistics
+        let total = *self.state.total_queries_created.get();
+        self.state.total_queries_created.set(total + 1);
+        
+        eprintln!("✅ Query {} created from market {}", query_id, market_id);
+        
+        OperationResponse::success_with_data(
+            format!("Query {} created for market {}. Voters can now commit and reveal votes.", query_id, market_id),
+            ResponseData {
+                voter_address: None,
+                query_id: Some(query_id),
+                vote_count: None,
+                rewards_claimed: None,
+            }
+        )
+    }
+    
     /// Resolve a query
     async fn resolve_query(
         &mut self,
@@ -1363,7 +2051,7 @@ impl OracleRegistryV2Contract {
         
         // TODO: Implement proper resolution logic based on strategy
         // For now, just use simple majority
-        let result = self.calculate_result(&query);
+        let result = self.calculate_result(&query).await;
         
         // Update query status
         query.status = state::QueryStatus::Resolved;
@@ -1563,6 +2251,35 @@ impl OracleRegistryV2Contract {
             }
         }
         
+        // Send callback to requesting chain if callback info exists
+        if let (Some(callback_chain), Some(callback_data)) = 
+            (query.callback_chain, query.callback_data.clone()) 
+        {
+            eprintln!(
+                "📤 Sending QueryResolutionCallback to chain {}: query_id={}, result={}",
+                callback_chain, query_id, result
+            );
+            
+            // Create callback message with resolution result
+            let callback_message = oracle_registry_v2::Message::QueryResolutionCallback {
+                query_id,
+                resolved_outcome: result.clone(),
+                resolved_at: current_time,
+                callback_data,
+            };
+            
+            // Send callback to Market Chain with authentication
+            self.runtime.prepare_message(callback_message)
+                .with_authentication()
+                .send_to(callback_chain);
+            
+            eprintln!("✅ Callback sent successfully to {}", callback_chain);
+            // Note: send_to() doesn't return Result, it panics on error
+            // The query is still resolved, callback delivery is guaranteed by Linera
+        } else {
+            eprintln!("ℹ️ No callback configured for query {}", query_id);
+        }
+        
         // Build detailed response message
         let mut response_msg = format!(
             "Query resolved with result: {} ({} correct, {} incorrect)",
@@ -1588,11 +2305,11 @@ impl OracleRegistryV2Contract {
     }
     
     /// Calculate result based on votes and decision strategy
-    fn calculate_result(&self, query: &state::Query) -> String {
+    async fn calculate_result(&self, query: &state::Query) -> String {
         match query.strategy {
             state::DecisionStrategy::Majority => self.calculate_majority_result(query),
-            state::DecisionStrategy::WeightedByReputation => self.calculate_reputation_weighted_result(query),
-            state::DecisionStrategy::WeightedByStake => self.calculate_stake_weighted_result(query),
+            state::DecisionStrategy::WeightedByReputation => self.calculate_reputation_weighted_result(query).await,
+            state::DecisionStrategy::WeightedByStake => self.calculate_stake_weighted_result(query).await,
             state::DecisionStrategy::Median => self.calculate_median_result(query),
         }
     }
@@ -1614,12 +2331,12 @@ impl OracleRegistryV2Contract {
     }
     
     /// Calculate result weighted by voter reputation
-    fn calculate_reputation_weighted_result(&self, query: &state::Query) -> String {
+    async fn calculate_reputation_weighted_result(&self, query: &state::Query) -> String {
         let mut weighted_votes: std::collections::HashMap<String, f64> = std::collections::HashMap::new();
         
         for vote in query.votes.values() {
             // Get voter reputation (default to 50 if not found)
-            let reputation = if let Some(voter_info) = futures::executor::block_on(self.state.get_voter(&vote.voter)) {
+            let reputation = if let Some(voter_info) = self.state.get_voter(&vote.voter).await {
                 voter_info.reputation
             } else {
                 50
@@ -1640,12 +2357,12 @@ impl OracleRegistryV2Contract {
     }
     
     /// Calculate result weighted by voter stake
-    fn calculate_stake_weighted_result(&self, query: &state::Query) -> String {
+    async fn calculate_stake_weighted_result(&self, query: &state::Query) -> String {
         let mut weighted_votes: std::collections::HashMap<String, u128> = std::collections::HashMap::new();
         
         for vote in query.votes.values() {
             // Get voter stake (default to 0 if not found)
-            let stake = if let Some(voter_info) = futures::executor::block_on(self.state.get_voter(&vote.voter)) {
+            let stake = if let Some(voter_info) = self.state.get_voter(&vote.voter).await {
                 u128::from(voter_info.stake)
             } else {
                 0
@@ -1689,18 +2406,15 @@ impl OracleRegistryV2Contract {
     async fn claim_rewards(&mut self) -> oracle_registry_v2::OperationResponse {
         use oracle_registry_v2::{OperationResponse, ResponseData};
         
-        let voter = match self.runtime.authenticated_signer() {
-            Some(signer) => signer,
-            None => return OperationResponse::error("Authentication required"),
-        };
+        let voter_chain = self.runtime.chain_id();
         
         // Validate voter is registered
-        if let Err(e) = self.validate_voter_registered(&voter).await {
+        if let Err(e) = self.validate_voter_registered(&voter_chain).await {
             return OperationResponse::error(e);
         }
         
         // Get pending rewards
-        let pending_rewards = self.state.get_pending_rewards(&voter).await;
+        let pending_rewards = self.state.get_pending_rewards(&voter_chain).await;
         
         // Check if there are any rewards to claim
         if pending_rewards == Amount::ZERO {
@@ -1712,7 +2426,7 @@ impl OracleRegistryV2Contract {
         // For now, we'll just clear the pending rewards
         
         // Clear pending rewards
-        if let Err(e) = self.state.pending_rewards.remove(&voter) {
+        if let Err(e) = self.state.pending_rewards.remove(&voter_chain) {
             return OperationResponse::error(format!("Failed to clear pending rewards: {}", e));
         }
         
@@ -1726,7 +2440,7 @@ impl OracleRegistryV2Contract {
         OperationResponse::success_with_data(
             format!("Successfully claimed {} rewards", pending_rewards),
             ResponseData {
-                voter_address: Some(voter.to_string()),
+                voter_address: Some(voter_chain.to_string()),
                 query_id: None,
                 vote_count: None,
                 rewards_claimed: Some(pending_rewards.to_string()),
@@ -1741,14 +2455,10 @@ impl OracleRegistryV2Contract {
     ) -> oracle_registry_v2::OperationResponse {
         use oracle_registry_v2::OperationResponse;
         
-        // Verify caller is authenticated
-        let caller = match self.runtime.authenticated_signer() {
-            Some(signer) => signer,
-            None => return OperationResponse::error("Authentication required"),
-        };
+        let caller_chain = self.runtime.chain_id();
         
         // Verify caller is admin
-        if !self.state.is_admin(&caller).await {
+        if !self.state.is_admin(&caller_chain).await {
             return OperationResponse::error("Unauthorized: only admin can update parameters");
         }
         
@@ -1767,14 +2477,10 @@ impl OracleRegistryV2Contract {
     async fn pause_protocol(&mut self) -> oracle_registry_v2::OperationResponse {
         use oracle_registry_v2::OperationResponse;
         
-        // Verify caller is authenticated
-        let caller = match self.runtime.authenticated_signer() {
-            Some(signer) => signer,
-            None => return OperationResponse::error("Authentication required"),
-        };
+        let caller_chain = self.runtime.chain_id();
         
         // Verify caller is admin
-        if !self.state.is_admin(&caller).await {
+        if !self.state.is_admin(&caller_chain).await {
             return OperationResponse::error("Unauthorized: only admin can pause protocol");
         }
         
@@ -1793,14 +2499,10 @@ impl OracleRegistryV2Contract {
     async fn unpause_protocol(&mut self) -> oracle_registry_v2::OperationResponse {
         use oracle_registry_v2::OperationResponse;
         
-        // Verify caller is authenticated
-        let caller = match self.runtime.authenticated_signer() {
-            Some(signer) => signer,
-            None => return OperationResponse::error("Authentication required"),
-        };
+        let caller_chain = self.runtime.chain_id();
         
         // Verify caller is admin
-        if !self.state.is_admin(&caller).await {
+        if !self.state.is_admin(&caller_chain).await {
             return OperationResponse::error("Unauthorized: only admin can unpause protocol");
         }
         
@@ -1837,18 +2539,68 @@ impl OracleRegistryV2Contract {
         }
     }
     
+    /// Auto-resolve queries that have completed reveal phase
+    async fn auto_resolve_queries(&mut self) -> Vec<u64> {
+        let mut resolved_query_ids = Vec::new();
+        let active_queries = self.state.get_active_queries().await;
+        let current_time = self.runtime.system_time();
+        
+        for query_id in active_queries {
+            if let Some(query) = self.state.get_query(query_id).await {
+                // Check if reveal phase has ended
+                if query.phase == state::VotingPhase::Reveal && current_time >= query.reveal_phase_end {
+                    // Check if we have minimum votes
+                    if query.votes.len() >= query.min_votes {
+                        // Auto-resolve this query
+                        let result = self.resolve_query(query_id).await;
+                        if result.success {
+                            resolved_query_ids.push(query_id);
+                        } else {
+                            eprintln!("Warning: Failed to auto-resolve query {}: {}", query_id, result.message);
+                        }
+                    } else {
+                        // Not enough votes, mark as expired
+                        if let Err(e) = self.mark_query_expired(query_id).await {
+                            eprintln!("Warning: Failed to mark query {} as expired: {}", query_id, e);
+                        }
+                    }
+                }
+            }
+        }
+        
+        resolved_query_ids
+    }
+    
+    /// Check and auto-resolve queries operation (maintenance)
+    async fn auto_resolve_queries_operation(&mut self) -> oracle_registry_v2::OperationResponse {
+        use oracle_registry_v2::{OperationResponse, ResponseData};
+        
+        // Auto-resolve all queries that have completed reveal phase
+        let resolved_ids = self.auto_resolve_queries().await;
+        
+        if resolved_ids.is_empty() {
+            OperationResponse::success("No queries ready for resolution")
+        } else {
+            OperationResponse::success_with_data(
+                format!("Auto-resolved {} queries", resolved_ids.len()),
+                ResponseData {
+                    voter_address: None,
+                    query_id: None,
+                    vote_count: Some(resolved_ids.len()),
+                    rewards_claimed: None,
+                }
+            )
+        }
+    }
+    
     /// Manually expire a specific query (admin operation)
     async fn expire_query_operation(&mut self, query_id: u64) -> oracle_registry_v2::OperationResponse {
         use oracle_registry_v2::OperationResponse;
         
-        // Verify caller is authenticated
-        let caller = match self.runtime.authenticated_signer() {
-            Some(signer) => signer,
-            None => return OperationResponse::error("Authentication required"),
-        };
+        let caller_chain = self.runtime.chain_id();
         
         // Verify caller is admin
-        if !self.state.is_admin(&caller).await {
+        if !self.state.is_admin(&caller_chain).await {
             return OperationResponse::error("Unauthorized: only admin can manually expire queries");
         }
         
@@ -1871,10 +2623,10 @@ impl OracleRegistryV2Contract {
             .ok_or("Query not resolved")?;
         
         // Get correct voters
-        let correct_voters: Vec<linera_sdk::linera_base_types::AccountOwner> = query.votes
+        let correct_voters: Vec<linera_sdk::linera_base_types::ChainId> = query.votes
             .iter()
             .filter(|(_, vote)| vote.value == final_result)
-            .map(|(addr, _)| *addr)
+            .map(|(chain_id, _)| *chain_id)
             .collect();
         
         if correct_voters.is_empty() {
@@ -1884,14 +2636,14 @@ impl OracleRegistryV2Contract {
         
         // Calculate total power of correct voters
         let mut total_power: u128 = 0;
-        let mut voter_powers: Vec<(linera_sdk::linera_base_types::AccountOwner, u128)> = Vec::new();
+        let mut voter_powers: Vec<(linera_sdk::linera_base_types::ChainId, u128)> = Vec::new();
         
-        for voter_addr in &correct_voters {
-            let voter = self.state.get_voter(voter_addr).await
+        for voter_chain in &correct_voters {
+            let voter = self.state.get_voter(voter_chain).await
                 .ok_or("Voter not found")?;
             let power = self.state.calculate_voter_power(&voter);
             total_power = total_power.saturating_add(power);
-            voter_powers.push((*voter_addr, power));
+            voter_powers.push((*voter_chain, power));
         }
         
         if total_power == 0 {
@@ -1901,21 +2653,21 @@ impl OracleRegistryV2Contract {
         // Distribute rewards proportionally by power
         let reward_pool_value: u128 = query.reward_amount.into();
         
-        for (voter_addr, voter_power) in voter_powers {
+        for (voter_chain, voter_power) in voter_powers {
             // Calculate share: (voter_power / total_power) × reward_pool
             let share_numerator = voter_power.saturating_mul(reward_pool_value);
             let reward_value = share_numerator / total_power;
             let reward = linera_sdk::linera_base_types::Amount::from_tokens(reward_value);
             
             // Add to pending rewards
-            let current_pending = self.state.get_pending_rewards(&voter_addr).await;
+            let current_pending = self.state.get_pending_rewards(&voter_chain).await;
             let current_value: u128 = current_pending.into();
             let new_pending = linera_sdk::linera_base_types::Amount::from_tokens(
                 current_value + reward_value
             );
             
             self.state.pending_rewards
-                .insert(&voter_addr, new_pending)
+                .insert(&voter_chain, new_pending)
                 .expect("Failed to update pending rewards");
         }
         

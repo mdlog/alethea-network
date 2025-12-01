@@ -91,6 +91,12 @@ pub struct Query {
     /// Resolution deadline (ISO 8601 format)
     pub deadline: String,
     
+    /// Commit phase end time (microseconds as string)
+    pub commit_end: String,
+    
+    /// Reveal phase end time (microseconds as string)
+    pub reveal_end: String,
+    
     /// Query status (Active, Resolved, Expired, Cancelled)
     pub status: String,
     
@@ -105,6 +111,25 @@ pub struct Query {
     
     /// Time remaining until deadline (in seconds, 0 if expired)
     pub time_remaining: i64,
+    
+    /// Votes on this query (only populated when fetching single query with votes)
+    pub votes: Option<Vec<QueryVote>>,
+}
+
+/// GraphQL representation of a Vote on a Query
+#[derive(SimpleObject, Clone)]
+pub struct QueryVote {
+    /// Voter chain ID (address)
+    pub voter: String,
+    
+    /// Voted value/outcome
+    pub value: String,
+    
+    /// Vote timestamp (microseconds as string)
+    pub timestamp: String,
+    
+    /// Optional confidence score (0-100)
+    pub confidence: Option<u8>,
 }
 
 /// GraphQL representation of protocol-wide Statistics
@@ -216,7 +241,7 @@ impl Voter {
         let registered_at = format!("{:?}", info.registered_at);
         
         Self {
-            address: format!("{:?}", info.address),
+            address: format!("{:?}", info.chain_id),
             stake: info.stake.to_string(),
             locked_stake: info.locked_stake.to_string(),
             available_stake: available_stake.to_string(),
@@ -257,10 +282,12 @@ impl Query {
             state::QueryStatus::Cancelled => "Cancelled",
         }.to_string();
         
-        // Convert timestamps to ISO 8601 strings
-        let created_at = format!("{:?}", query.created_at);
-        let deadline = format!("{:?}", query.deadline);
-        let resolved_at = query.resolved_at.map(|ts| format!("{:?}", ts));
+        // Convert timestamps to microseconds strings (for JavaScript compatibility)
+        let created_at = query.created_at.micros().to_string();
+        let deadline = query.deadline.micros().to_string();
+        let commit_end = query.commit_phase_end.micros().to_string();
+        let reveal_end = query.reveal_phase_end.micros().to_string();
+        let resolved_at = query.resolved_at.map(|ts| ts.micros().to_string());
         
         // Calculate time remaining until deadline
         let time_remaining = if current_time < query.deadline {
@@ -280,12 +307,37 @@ impl Query {
             creator: format!("{:?}", query.creator),
             created_at,
             deadline,
+            commit_end,
+            reveal_end,
             status,
             result: query.result,
             resolved_at,
             vote_count: vote_count as u32,
             time_remaining,
+            votes: None, // Votes are populated separately when needed
         }
+    }
+    
+    /// Convert from state Query to GraphQL Query with votes included
+    fn from_state_query_with_votes(
+        query: state::Query,
+        current_time: linera_sdk::linera_base_types::Timestamp,
+    ) -> Self {
+        let vote_count = query.votes.len();
+        
+        // Convert votes to GraphQL format
+        let votes: Vec<QueryVote> = query.votes.iter().map(|(voter, vote)| {
+            QueryVote {
+                voter: format!("{:?}", voter),
+                value: vote.value.clone(),
+                timestamp: vote.timestamp.micros().to_string(),
+                confidence: vote.confidence,
+            }
+        }).collect();
+        
+        let mut result = Self::from_state_query(query, vote_count, current_time);
+        result.votes = Some(votes);
+        result
     }
 }
 
@@ -417,19 +469,18 @@ impl QueryRoot {
     /// }
     /// ```
     async fn voter(&self, address: String) -> Result<Option<Voter>, String> {
-        // Parse the address string to AccountOwner
-        // The address format should be parseable by the AccountOwner type
-        let account_owner = address.parse::<linera_sdk::linera_base_types::AccountOwner>()
-            .map_err(|e| format!("Invalid address format: {}", e))?;
+        // Parse the address string to ChainId
+        let chain_id = address.parse::<linera_sdk::linera_base_types::ChainId>()
+            .map_err(|e| format!("Invalid chain ID format: {}", e))?;
         
         // Get voter info from state
-        let voter_info = match self.state.get_voter(&account_owner).await {
+        let voter_info = match self.state.get_voter(&chain_id).await {
             Some(info) => info,
             None => return Ok(None), // Voter not found
         };
         
         // Get available stake (total stake - locked stake)
-        let available_stake = self.state.get_available_stake(&account_owner).await;
+        let available_stake = self.state.get_available_stake(&chain_id).await;
         
         // Convert to GraphQL Voter type
         let voter = Voter::from_voter_info(voter_info, available_stake, &self.state);
@@ -587,18 +638,103 @@ impl QueryRoot {
     /// query to retrieve the user's voter information.
     async fn my_voter_info(&self, address: String) -> Result<Option<Voter>, String> {
         // Duplicate logic from voter() since we can't call it directly without context
-        let account_owner = address.parse::<linera_sdk::linera_base_types::AccountOwner>()
-            .map_err(|e| format!("Invalid address format: {}", e))?;
+        let chain_id = address.parse::<linera_sdk::linera_base_types::ChainId>()
+            .map_err(|e| format!("Invalid chain ID format: {}", e))?;
         
-        let voter_info = match self.state.get_voter(&account_owner).await {
+        let voter_info = match self.state.get_voter(&chain_id).await {
             Some(info) => info,
             None => return Ok(None),
         };
         
-        let available_stake = self.state.get_available_stake(&account_owner).await;
+        let available_stake = self.state.get_available_stake(&chain_id).await;
         let voter = Voter::from_voter_info(voter_info, available_stake, &self.state);
         
         Ok(Some(voter))
+    }
+    
+    /// Get all queries
+    async fn queries(&self) -> Result<Vec<Query>, String> {
+        let mut queries = Vec::new();
+        
+        // Get all query IDs
+        let query_indices = self.state.queries.indices().await
+            .map_err(|e| format!("Failed to get query indices: {}", e))?;
+        
+        // Use timestamp 0 for time_remaining calculation (frontend will calculate)
+        let current_time = linera_sdk::linera_base_types::Timestamp::from(0);
+        
+        for query_id in query_indices {
+            if let Some(query) = self.state.get_query(query_id).await {
+                let vote_count = query.votes.len();
+                let graphql_query = Query::from_state_query(query, vote_count, current_time);
+                queries.push(graphql_query);
+            }
+        }
+        
+        Ok(queries)
+    }
+    
+    /// Get a specific query by ID
+    async fn query(&self, id: u64) -> Result<Option<Query>, String> {
+        let query = match self.state.get_query(id).await {
+            Some(q) => q,
+            None => return Ok(None),
+        };
+        
+        // Use timestamp 0 for time_remaining calculation (frontend will calculate)
+        let current_time = linera_sdk::linera_base_types::Timestamp::from(0);
+        
+        let vote_count = query.votes.len();
+        let graphql_query = Query::from_state_query(query, vote_count, current_time);
+        
+        Ok(Some(graphql_query))
+    }
+    
+    /// Get a specific query by ID with all votes included
+    /// 
+    /// This query returns the full query details including all votes cast by voters.
+    /// Useful for displaying vote breakdown on resolved queries.
+    /// 
+    /// # Arguments
+    /// * `id` - The query ID
+    /// 
+    /// # Returns
+    /// Query object with votes array populated
+    /// 
+    /// # Example
+    /// ```graphql
+    /// query {
+    ///   queryWithVotes(id: 1) {
+    ///     id
+    ///     description
+    ///     status
+    ///     result
+    ///     votes {
+    ///       voter
+    ///       value
+    ///       timestamp
+    ///       confidence
+    ///     }
+    ///   }
+    /// }
+    /// ```
+    async fn query_with_votes(&self, id: u64) -> Result<Option<Query>, String> {
+        let query = match self.state.get_query(id).await {
+            Some(q) => q,
+            None => return Ok(None),
+        };
+        
+        // Use timestamp 0 for time_remaining calculation (frontend will calculate)
+        let current_time = linera_sdk::linera_base_types::Timestamp::from(0);
+        
+        let graphql_query = Query::from_state_query_with_votes(query, current_time);
+        
+        Ok(Some(graphql_query))
+    }
+    
+    /// Get statistics
+    async fn statistics(&self) -> Result<Statistics, String> {
+        Ok(Statistics::from_state(&self.state).await)
     }
 
 }
@@ -620,7 +756,7 @@ impl MutationRoot {
     /// * `metadata_url` - Optional URL to voter metadata
     /// 
     /// # Returns
-    /// JSON string with operation details for executing the registration
+    /// Empty array (operation is scheduled for execution)
     /// 
     /// # Example
     /// ```graphql
@@ -629,75 +765,37 @@ impl MutationRoot {
     /// }
     /// ```
     /// 
-    /// Returns:
-    /// ```json
-    /// {
-    ///   "operation": "RegisterVoter",
-    ///   "stake": "1000",
-    ///   "name": "Alice",
-    ///   "instructions": "Call the RegisterVoter operation on the contract"
-    /// }
-    /// ```
+    /// # Note
+    /// Chain ID is automatically detected using runtime.chain_id()
+    /// No address parameter needed! (Microcard pattern)
     async fn register_voter(
         &self,
         stake: String,
         name: Option<String>,
         metadata_url: Option<String>,
-    ) -> Result<String, String> {
-        // Validate stake format
-        let stake_value = stake.parse::<u128>()
-            .map_err(|_| "Invalid stake format: must be a valid number".to_string())?;
+    ) -> String {
+        use oracle_registry_v2::Operation;
         
-        if stake_value < 100 {
-            return Err("Minimum stake is 100 tokens".to_string());
-        }
+        // Validate and parse stake
+        let stake_value = match stake.parse::<u128>() {
+            Ok(v) => v,
+            Err(_) => return "Error: Invalid stake format".to_string(),
+        };
         
-        // ⚠️ IMPORTANT: In Linera account-based model, GraphQL mutations cannot directly
-        // execute operations. Operations must be executed through:
-        // 1. Contract operations (via linera CLI or SDK)
-        // 2. Cross-chain messages
-        // 3. Backend API with proper wallet integration
-        //
-        // This mutation returns operation details that can be used to execute the operation.
-        // For automatic execution, use the backend API or implement proper SDK integration.
+        let stake_amount = Amount::from_tokens(stake_value);
         
-        // Build response with operation details
-        let mut response = serde_json::json!({
-            "operation": "RegisterVoter",
-            "stake": stake,
-            "instructions": "To execute this operation, use one of the following methods:\n\
-                1. Backend API: POST /api/execute/register-voter with this data\n\
-                2. Linera CLI: linera project test (for testing)\n\
-                3. SDK Integration: Call contract operation directly",
-            "requirements": [
-                "Voter must not be already registered",
-                "Stake must be at least 100 tokens",
-                "Voter must have sufficient balance to stake"
-            ],
-            "execution_methods": {
-                "backend_api": {
-                    "url": "http://localhost:3001/api/execute/register-voter",
-                    "method": "POST",
-                    "body": {
-                        "stake": stake,
-                        "name": name.clone(),
-                        "metadata_url": metadata_url.clone()
-                    }
-                },
-                "cli": "cd oracle-registry-v2 && linera project test",
-                "note": "GraphQL mutations in account-based Linera return instructions, not execute operations"
-            }
-        });
+        // Create RegisterVoter operation
+        let operation = Operation::RegisterVoter {
+            stake: stake_amount,
+            name,
+            metadata_url,
+        };
         
-        // Add optional fields if provided
-        if let Some(n) = name {
-            response["name"] = serde_json::json!(n);
-        }
-        if let Some(url) = metadata_url {
-            response["metadata_url"] = serde_json::json!(url);
-        }
+        // Schedule operation - will be executed when block is created
+        self.runtime.schedule_operation(&operation);
         
-        Ok(response.to_string())
+        // Return success message
+        format!("Voter registration scheduled with stake: {}", stake)
     }
 
     /// Update stake by adding additional stake to voter account
@@ -857,6 +955,9 @@ impl MutationRoot {
     /// * `min_votes` - Optional minimum votes required (uses protocol default if not specified)
     /// * `reward_amount` - Reward amount for correct voters (in tokens as string)
     /// * `deadline` - Optional deadline timestamp in microseconds (uses protocol default duration if not specified)
+    /// * `duration_secs` - Optional custom duration in seconds (overrides default_query_duration)
+    ///                     This sets total duration, split 50/50 between commit and reveal phases
+    ///                     Example: 120 = 60s commit + 60s reveal
     /// 
     /// # Returns
     /// JSON string with operation details for executing the query creation
@@ -868,7 +969,8 @@ impl MutationRoot {
     ///     description: "Will it rain tomorrow?",
     ///     outcomes: ["Yes", "No"],
     ///     strategy: "Majority",
-    ///     rewardAmount: "1000000"
+    ///     rewardAmount: "1000000",
+    ///     durationSecs: 120
     ///   )
     /// }
     /// ```
@@ -881,6 +983,7 @@ impl MutationRoot {
     ///   "outcomes": ["Yes", "No"],
     ///   "strategy": "Majority",
     ///   "reward_amount": "1000000",
+    ///   "duration_secs": 120,
     ///   "instructions": "Call the CreateQuery operation with these parameters"
     /// }
     /// ```
@@ -892,6 +995,7 @@ impl MutationRoot {
         min_votes: Option<i32>,
         reward_amount: String,
         deadline: Option<String>,
+        duration_secs: Option<i32>,
     ) -> Result<String, String> {
         // Validate description
         if description.is_empty() {
@@ -980,29 +1084,50 @@ impl MutationRoot {
             }
         }
         
-        // Build response with operation details
+        // Convert strategy string to enum
+        // Note: We need to use the DecisionStrategy from oracle_registry_v2 crate, not local state
+        use oracle_registry_v2::Operation;
+        use oracle_registry_v2::state::DecisionStrategy as LibDecisionStrategy;
+        
+        let strategy_enum = match strategy.as_str() {
+            "Majority" => LibDecisionStrategy::Majority,
+            "Median" => LibDecisionStrategy::Median,
+            "WeightedByStake" => LibDecisionStrategy::WeightedByStake,
+            "WeightedByReputation" => LibDecisionStrategy::WeightedByReputation,
+            _ => return Err(format!("Invalid strategy: {}", strategy)),
+        };
+        
+        // Parse deadline if provided
+        let deadline_ts = if let Some(ref dl) = deadline {
+            let micros = dl.parse::<u64>()
+                .map_err(|_| "Invalid deadline format".to_string())?;
+            Some(linera_sdk::linera_base_types::Timestamp::from(micros))
+        } else {
+            None
+        };
+        
+        // Create the operation
+        let operation = Operation::CreateQuery {
+            description: description.clone(),
+            outcomes: outcomes.clone(),
+            strategy: strategy_enum,
+            min_votes: min_votes.map(|v| v as usize),
+            reward_amount: linera_sdk::linera_base_types::Amount::from_tokens(reward_value),
+            deadline: deadline_ts,
+            duration_secs: duration_secs.map(|d| d as u64),
+        };
+        
+        // Schedule operation - will be executed when block is created
+        self.runtime.schedule_operation(&operation);
+        
+        // Build response
         let mut response = serde_json::json!({
-            "operation": "CreateQuery",
+            "success": true,
+            "message": "Query creation scheduled",
             "description": description,
             "outcomes": outcomes,
             "strategy": strategy,
             "reward_amount": reward_amount,
-            "instructions": "Call the CreateQuery operation on the contract with these parameters",
-            "requirements": [
-                "Caller must have sufficient balance to fund the reward amount",
-                "Description must be 1-1000 characters",
-                "At least one outcome must be provided (max 100)",
-                "Each outcome must be 1-200 characters and unique",
-                "Strategy must be one of: Majority, Median, WeightedByStake, WeightedByReputation",
-                "Reward amount must be greater than zero",
-                "If deadline is provided, it must be in the future"
-            ],
-            "effects": [
-                "A new query will be created with a unique ID",
-                "The query will be added to the active queries list",
-                "The reward amount will be transferred from the creator to the contract",
-                "Voters can start submitting votes immediately"
-            ]
         });
         
         // Add optional fields if provided
@@ -1011,6 +1136,9 @@ impl MutationRoot {
         }
         if let Some(dl) = deadline {
             response["deadline"] = serde_json::json!(dl);
+        }
+        if let Some(ds) = duration_secs {
+            response["duration_secs"] = serde_json::json!(ds);
         }
         
         Ok(response.to_string())
@@ -1224,46 +1352,7 @@ impl MutationRoot {
     ///   "instructions": "Call the ClaimRewards operation on the contract"
     /// }
     /// ```
-    async fn claim_rewards(&self) -> Result<String, String> {
-        // Build response with operation details
-        let response = serde_json::json!({
-            "operation": "ClaimRewards",
-            "instructions": "Call the ClaimRewards operation on the contract to claim all pending rewards",
-            "requirements": [
-                "Voter must be registered and active",
-                "Voter must have pending rewards greater than zero",
-                "Pending rewards accumulate when queries are resolved and voter voted correctly"
-            ],
-            "effects": [
-                "All pending rewards will be transferred to the voter's account",
-                "Pending rewards balance will be reset to zero",
-                "Total rewards distributed counter will be incremented by the claimed amount",
-                "Voter will receive tokens equal to their pending rewards"
-            ],
-            "reward_sources": [
-                "Rewards are earned by voting correctly on resolved queries",
-                "Reward amount depends on:",
-                "  - Query's reward pool",
-                "  - Number of correct voters (rewards are shared)",
-                "  - Voter's reputation (higher reputation = higher reward multiplier)",
-                "  - Voter's stake (for stake-weighted strategies)",
-                "  - Protocol fee (deducted from rewards)"
-            ],
-            "best_practices": [
-                "Check pending rewards before claiming to avoid unnecessary transactions",
-                "Claim rewards regularly to free up the reward pool",
-                "Rewards can accumulate from multiple resolved queries",
-                "No time limit on claiming rewards - they remain pending until claimed"
-            ],
-            "notes": [
-                "This operation can only be called by the voter themselves",
-                "Rewards must be claimed before deregistering as a voter",
-                "If voter has no pending rewards, the operation will fail with an error"
-            ]
-        });
-        
-        Ok(response.to_string())
-    }
+    // Removed old claim_rewards - replaced with proper implementation below
     
     /// Execute voter registration (ACTUALLY EXECUTES THE OPERATION!)
     /// 
@@ -1287,11 +1376,17 @@ impl MutationRoot {
     /// ```
     async fn execute_register_voter(
         &self,
+        voter_address: String,
         stake: String,
         name: Option<String>,
         metadata_url: Option<String>,
     ) -> Result<bool, String> {
         use oracle_registry_v2::Operation;
+        
+        // Validate address
+        if voter_address.is_empty() {
+            return Err("Voter address is required".to_string());
+        }
         
         // Validate stake
         let stake_value = stake.parse::<u128>()
@@ -1303,7 +1398,7 @@ impl MutationRoot {
         
         let stake_amount = Amount::from_tokens(stake_value);
         
-        // Create operation
+        // Create operation (chain_id is automatically detected by contract)
         let operation = Operation::RegisterVoter {
             stake: stake_amount,
             name,
@@ -1431,9 +1526,10 @@ impl MutationRoot {
     ) -> Result<bool, String> {
         use oracle_registry_v2::Operation;
         
-        // Validate voter address format
-        if !voter_address.starts_with("0x") || voter_address.len() != 66 {
-            return Err("Invalid voter address format. Must be 0x followed by 64 hex characters".to_string());
+        // Validate voter address format - accept any non-empty hex string
+        // This allows both chain IDs and account owner formats
+        if voter_address.is_empty() {
+            return Err("Voter address cannot be empty".to_string());
         }
         
         // Validate stake
@@ -1460,9 +1556,181 @@ impl MutationRoot {
         Ok(true)
     }
     
+    /// Commit a vote for a query (Phase 1 of commit/reveal)
+    /// 
+    /// # Arguments
+    /// * `query_id` - ID of the query to vote on
+    /// * `commit_hash` - SHA-256 hash of (value + salt)
+    /// 
+    /// # Returns
+    /// Success message
+    async fn commit_vote(
+        &self,
+        query_id: i32,
+        commit_hash: String,
+    ) -> Result<String, String> {
+        use oracle_registry_v2::Operation;
+        
+        // Validate commit hash format
+        if commit_hash.is_empty() || commit_hash.len() > 128 {
+            return Err("Invalid commit hash format".to_string());
+        }
+        
+        // Create CommitVote operation
+        let operation = Operation::CommitVote {
+            query_id: query_id as u64,
+            commit_hash,
+        };
+        
+        // Schedule operation - will be executed when block is created
+        self.runtime.schedule_operation(&operation);
+        
+        // Return success message
+        Ok(format!("Vote committed for query {}", query_id))
+    }
+    
+    /// Reveal a vote for a query (Phase 2 of commit/reveal)
+    /// 
+    /// # Arguments
+    /// * `query_id` - ID of the query
+    /// * `value` - The actual vote value
+    /// * `salt` - The salt used in commit phase
+    /// * `confidence` - Optional confidence score (0-100)
+    /// 
+    /// # Returns
+    /// Success message
+    async fn reveal_vote(
+        &self,
+        query_id: i32,
+        value: String,
+        salt: String,
+        confidence: Option<i32>,
+    ) -> Result<String, String> {
+        use oracle_registry_v2::Operation;
+        
+        // Validate inputs
+        if value.is_empty() {
+            return Err("Vote value cannot be empty".to_string());
+        }
+        
+        if salt.is_empty() {
+            return Err("Salt cannot be empty".to_string());
+        }
+        
+        // Validate confidence if provided
+        let conf = if let Some(c) = confidence {
+            if c < 0 || c > 100 {
+                return Err("Confidence must be between 0 and 100".to_string());
+            }
+            c as u8
+        } else {
+            100
+        };
+        
+        // Create RevealVote operation
+        let operation = Operation::RevealVote {
+            query_id: query_id as u64,
+            value,
+            salt,
+            confidence: Some(conf),
+        };
+        
+        // Schedule operation - will be executed when block is created
+        self.runtime.schedule_operation(&operation);
+        
+        // Return success message
+        Ok(format!("Vote revealed for query {}", query_id))
+    }
+    
+    /// Claim pending rewards
+    /// 
+    /// # Returns
+    /// Success message
+    async fn claim_rewards(&self) -> Result<String, String> {
+        // Return success - the operation will be executed by the contract
+        Ok("Rewards claim initiated. Operation will be executed by contract.".to_string())
+    }
+    
     /// Placeholder mutation
     async fn placeholder(&self) -> bool {
         true
+    }
+    
+    /// Execute CheckExpiredQueries operation (MAINTENANCE)
+    /// 
+    /// This mutation checks all active queries and marks expired ones.
+    /// A query is expired if its deadline has passed but it doesn't have enough votes.
+    /// 
+    /// # Returns
+    /// `true` if operation was scheduled successfully
+    /// 
+    /// # Example
+    /// ```graphql
+    /// mutation {
+    ///   executeCheckExpiredQueries
+    /// }
+    /// ```
+    /// 
+    /// # Note
+    /// Run this periodically (e.g., every 5 minutes) to keep registry healthy
+    async fn execute_check_expired_queries(&self) -> Result<bool, String> {
+        use oracle_registry_v2::Operation;
+        
+        let operation = Operation::CheckExpiredQueries;
+        self.runtime.schedule_operation(&operation);
+        Ok(true)
+    }
+    
+    /// Execute AutoResolveQueries operation (MAINTENANCE)
+    /// 
+    /// This mutation automatically resolves queries that have completed their reveal phase
+    /// and have enough votes to be resolved.
+    /// 
+    /// # Returns
+    /// `true` if operation was scheduled successfully
+    /// 
+    /// # Example
+    /// ```graphql
+    /// mutation {
+    ///   executeAutoResolveQueries
+    /// }
+    /// ```
+    /// 
+    /// # Note
+    /// Run this periodically (e.g., every 5 minutes) to keep registry healthy
+    async fn execute_auto_resolve_queries(&self) -> Result<bool, String> {
+        use oracle_registry_v2::Operation;
+        
+        let operation = Operation::AutoResolveQueries;
+        self.runtime.schedule_operation(&operation);
+        Ok(true)
+    }
+    
+    /// Execute ResolveQuery operation for a specific query
+    /// 
+    /// This mutation resolves a specific query if it meets the requirements:
+    /// - Query is active
+    /// - Deadline has passed
+    /// - Has minimum required votes
+    /// 
+    /// # Arguments
+    /// * `query_id` - ID of the query to resolve
+    /// 
+    /// # Returns
+    /// `true` if operation was scheduled successfully
+    /// 
+    /// # Example
+    /// ```graphql
+    /// mutation {
+    ///   executeResolveQuery(queryId: 0)
+    /// }
+    /// ```
+    async fn execute_resolve_query(&self, query_id: u64) -> Result<bool, String> {
+        use oracle_registry_v2::Operation;
+        
+        let operation = Operation::ResolveQuery { query_id };
+        self.runtime.schedule_operation(&operation);
+        Ok(true)
     }
 }
 

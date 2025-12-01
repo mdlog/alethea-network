@@ -7,17 +7,17 @@
 //! instead of deploying separate applications.
 
 use linera_sdk::{
-    linera_base_types::{AccountOwner, Amount, Timestamp},
+    linera_base_types::{Amount, ChainId, Timestamp},
     views::{linera_views, MapView, RegisterView, RootView, ViewStorageContext},
 };
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
-/// Voter information (account-based)
+/// Voter information (chain-based - Microcard pattern!)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VoterInfo {
-    /// Voter's account address
-    pub address: AccountOwner,
+    /// Voter's chain ID (natural identifier - no parsing needed!)
+    pub chain_id: ChainId,
     
     /// Staked amount
     pub stake: Amount,
@@ -66,14 +66,23 @@ pub struct Query {
     /// Reward amount for correct voters
     pub reward_amount: Amount,
     
-    /// Query creator
-    pub creator: AccountOwner,
+    /// Query creator (chain ID)
+    pub creator: ChainId,
     
     /// Creation timestamp
     pub created_at: Timestamp,
     
-    /// Resolution deadline
+    /// Resolution deadline (end of reveal phase)
     pub deadline: Timestamp,
+    
+    /// Commit phase end timestamp
+    pub commit_phase_end: Timestamp,
+    
+    /// Reveal phase end timestamp
+    pub reveal_phase_end: Timestamp,
+    
+    /// Current voting phase
+    pub phase: VotingPhase,
     
     /// Query status
     pub status: QueryStatus,
@@ -84,27 +93,53 @@ pub struct Query {
     /// Resolution timestamp
     pub resolved_at: Option<Timestamp>,
     
-    /// Votes on this query (voter -> vote)
-    pub votes: BTreeMap<AccountOwner, Vote>,
+    /// Commit hashes (voter chain -> commit)
+    pub commits: BTreeMap<ChainId, VoteCommit>,
+    
+    /// Votes on this query (voter chain -> vote)
+    pub votes: BTreeMap<ChainId, Vote>,
     
     /// Selected voters for this query (by power)
-    pub selected_voters: Vec<AccountOwner>,
+    pub selected_voters: Vec<ChainId>,
     
     /// Maximum number of voters to select
     pub max_voters: usize,
+    
+    /// Callback information for sending resolution result back to requester
+    pub callback_chain: Option<ChainId>,
+    pub callback_data: Option<Vec<u8>>,
+}
+
+/// Vote commit information (for commit/reveal voting)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VoteCommit {
+    /// Voter chain ID
+    pub voter: ChainId,
+    
+    /// Commit hash (hash of value + salt)
+    pub commit_hash: String,
+    
+    /// Commit timestamp
+    pub committed_at: Timestamp,
+    
+    /// Whether vote has been revealed
+    pub revealed: bool,
 }
 
 /// Vote information
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Vote {
-    /// Voter address
-    pub voter: AccountOwner,
+    /// Voter chain ID
+    pub voter: ChainId,
     
     /// Voted value/outcome
     pub value: String,
     
-    /// Vote timestamp
+    /// Vote timestamp (reveal timestamp for commit/reveal)
     pub timestamp: Timestamp,
+    
+    /// Salt used for commit/reveal
+    pub salt: Option<String>,
     
     /// Optional confidence score (0-100)
     pub confidence: Option<u8>,
@@ -124,6 +159,19 @@ pub enum DecisionStrategy {
     
     /// Weighted by reputation
     WeightedByReputation,
+}
+
+/// Voting phase for commit/reveal voting
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum VotingPhase {
+    /// Commit phase - voters submit commit hashes
+    Commit,
+    
+    /// Reveal phase - voters reveal their votes
+    Reveal,
+    
+    /// Voting completed, ready for resolution
+    Completed,
 }
 
 /// Query status
@@ -169,7 +217,7 @@ impl Default for ProtocolParameters {
         Self {
             min_stake: Amount::from_tokens(100),
             min_votes_default: 3,
-            default_query_duration: 86400, // 24 hours
+            default_query_duration: 3600, // 1 hour (for faster testing)
             reward_percentage: 1000,        // 10%
             slash_percentage: 500,          // 5%
             protocol_fee: 100,              // 1%
@@ -181,8 +229,8 @@ impl Default for ProtocolParameters {
 #[derive(RootView)]
 #[view(context = ViewStorageContext)]
 pub struct OracleRegistryV2 {
-    // Voter management (account-based)
-    pub voters: MapView<AccountOwner, VoterInfo>,
+    // Voter management (chain-based - Microcard pattern!)
+    pub voters: MapView<ChainId, VoterInfo>,
     pub total_stake: RegisterView<Amount>,
     pub voter_count: RegisterView<u64>,
     
@@ -191,20 +239,20 @@ pub struct OracleRegistryV2 {
     pub queries: MapView<u64, Query>,
     pub active_queries: RegisterView<Vec<u64>>,
     
-    // Voting records (query_id -> voter -> vote)
-    pub votes: MapView<(u64, AccountOwner), Vote>,
+    // Voting records (query_id -> voter_chain -> vote)
+    pub votes: MapView<(u64, ChainId), Vote>,
     pub vote_counts: MapView<u64, usize>,
     
     // Rewards
     pub reward_pool: RegisterView<Amount>,
-    pub pending_rewards: MapView<AccountOwner, Amount>,
+    pub pending_rewards: MapView<ChainId, Amount>,
     pub total_rewards_distributed: RegisterView<Amount>,
     
     // Protocol
     pub parameters: RegisterView<ProtocolParameters>,
     pub protocol_treasury: RegisterView<Amount>,
     pub is_paused: RegisterView<bool>,
-    pub admin: RegisterView<Option<AccountOwner>>,
+    pub admin: RegisterView<Option<ChainId>>,
     
     // Statistics
     pub total_queries_created: RegisterView<u64>,
@@ -214,7 +262,7 @@ pub struct OracleRegistryV2 {
 
 impl OracleRegistryV2 {
     /// Initialize the registry
-    pub async fn initialize(&mut self, params: ProtocolParameters, admin: AccountOwner) {
+    pub async fn initialize(&mut self, params: ProtocolParameters, admin: ChainId) {
         self.next_query_id.set(1);
         self.total_stake.set(Amount::ZERO);
         self.voter_count.set(0);
@@ -240,22 +288,22 @@ impl OracleRegistryV2 {
         self.parameters.get().clone()
     }
     
-    /// Get admin address
-    pub async fn get_admin(&self) -> Option<AccountOwner> {
+    /// Get admin chain ID
+    pub async fn get_admin(&self) -> Option<ChainId> {
         *self.admin.get()
     }
     
-    /// Check if the given address is the admin
-    pub async fn is_admin(&self, address: &AccountOwner) -> bool {
+    /// Check if the given chain is the admin
+    pub async fn is_admin(&self, chain: &ChainId) -> bool {
         match *self.admin.get() {
-            Some(admin) => admin == *address,
+            Some(admin) => admin == *chain,
             None => false,
         }
     }
     
-    /// Get voter info
-    pub async fn get_voter(&self, address: &AccountOwner) -> Option<VoterInfo> {
-        self.voters.get(address).await.ok().flatten()
+    /// Get voter info by chain ID
+    pub async fn get_voter(&self, chain: &ChainId) -> Option<VoterInfo> {
+        self.voters.get(chain).await.ok().flatten()
     }
     
     /// Get query info
@@ -263,9 +311,9 @@ impl OracleRegistryV2 {
         self.queries.get(&query_id).await.ok().flatten()
     }
     
-    /// Get vote for a query
-    pub async fn get_vote(&self, query_id: u64, voter: &AccountOwner) -> Option<Vote> {
-        self.votes.get(&(query_id, *voter)).await.ok().flatten()
+    /// Get vote for a query by chain ID
+    pub async fn get_vote(&self, query_id: u64, voter_chain: &ChainId) -> Option<Vote> {
+        self.votes.get(&(query_id, *voter_chain)).await.ok().flatten()
     }
     
     /// Get all votes for a query
@@ -308,10 +356,10 @@ impl OracleRegistryV2 {
     /// the reputation of voters who participated
     pub async fn update_voter_reputation(
         &mut self,
-        voter: &AccountOwner,
+        voter_chain: &ChainId,
         was_correct: bool,
     ) -> Result<(), String> {
-        let mut voter_info = self.get_voter(voter).await
+        let mut voter_info = self.get_voter(voter_chain).await
             .ok_or_else(|| "Voter not found".to_string())?;
         
         // Update vote counts
@@ -324,7 +372,7 @@ impl OracleRegistryV2 {
         voter_info.reputation = self.calculate_reputation(&voter_info);
         
         // Save updated voter info
-        self.voters.insert(voter, voter_info)
+        self.voters.insert(voter_chain, voter_info)
             .map_err(|e| format!("Failed to update voter reputation: {}", e))?;
         
         Ok(())
@@ -390,14 +438,14 @@ impl OracleRegistryV2 {
         self.active_queries.get().clone()
     }
     
-    /// Get pending rewards for a voter
-    pub async fn get_pending_rewards(&self, voter: &AccountOwner) -> Amount {
-        self.pending_rewards.get(voter).await.ok().flatten().unwrap_or(Amount::ZERO)
+    /// Get pending rewards for a voter by chain ID
+    pub async fn get_pending_rewards(&self, voter_chain: &ChainId) -> Amount {
+        self.pending_rewards.get(voter_chain).await.ok().flatten().unwrap_or(Amount::ZERO)
     }
     
     /// Lock stake for a voter (when they vote on a query)
-    pub async fn lock_stake(&mut self, voter: &AccountOwner, amount: Amount) -> Result<(), String> {
-        let mut voter_info = self.get_voter(voter).await
+    pub async fn lock_stake(&mut self, voter_chain: &ChainId, amount: Amount) -> Result<(), String> {
+        let mut voter_info = self.get_voter(voter_chain).await
             .ok_or_else(|| "Voter not found".to_string())?;
         
         let stake_value: u128 = voter_info.stake.into();
@@ -414,15 +462,15 @@ impl OracleRegistryV2 {
         
         let amount_value: u128 = amount.into();
         voter_info.locked_stake = Amount::from_tokens(locked_value + amount_value);
-        self.voters.insert(voter, voter_info)
+        self.voters.insert(voter_chain, voter_info)
             .map_err(|e| format!("Failed to update voter: {}", e))?;
         
         Ok(())
     }
     
     /// Unlock stake for a voter (when query is resolved)
-    pub async fn unlock_stake(&mut self, voter: &AccountOwner, amount: Amount) -> Result<(), String> {
-        let mut voter_info = self.get_voter(voter).await
+    pub async fn unlock_stake(&mut self, voter_chain: &ChainId, amount: Amount) -> Result<(), String> {
+        let mut voter_info = self.get_voter(voter_chain).await
             .ok_or_else(|| "Voter not found".to_string())?;
         
         if voter_info.locked_stake < amount {
@@ -435,15 +483,15 @@ impl OracleRegistryV2 {
         let locked_value: u128 = voter_info.locked_stake.into();
         let amount_value: u128 = amount.into();
         voter_info.locked_stake = Amount::from_tokens(locked_value.saturating_sub(amount_value));
-        self.voters.insert(voter, voter_info)
+        self.voters.insert(voter_chain, voter_info)
             .map_err(|e| format!("Failed to update voter: {}", e))?;
         
         Ok(())
     }
     
     /// Get available (unlocked) stake for a voter
-    pub async fn get_available_stake(&self, voter: &AccountOwner) -> Amount {
-        match self.get_voter(voter).await {
+    pub async fn get_available_stake(&self, voter_chain: &ChainId) -> Amount {
+        match self.get_voter(voter_chain).await {
             Some(info) => {
                 let stake_value: u128 = info.stake.into();
                 let locked_value: u128 = info.locked_stake.into();
@@ -454,8 +502,8 @@ impl OracleRegistryV2 {
     }
     
     /// Get comprehensive reputation statistics for a voter
-    pub async fn get_reputation_stats(&self, voter: &AccountOwner) -> Option<ReputationStats> {
-        let voter_info = self.get_voter(voter).await?;
+    pub async fn get_reputation_stats(&self, voter_chain: &ChainId) -> Option<ReputationStats> {
+        let voter_info = self.get_voter(voter_chain).await?;
         
         Some(ReputationStats {
             reputation: voter_info.reputation,
@@ -548,7 +596,7 @@ impl OracleRegistryV2 {
     /// Returns (total_slashed, voters_slashed, voters_deactivated)
     pub fn calculate_slashing_stats(
         &self,
-        incorrect_voters: &[(AccountOwner, VoterInfo)],
+        incorrect_voters: &[(ChainId, VoterInfo)],
         params: &ProtocolParameters,
     ) -> (Amount, usize, usize) {
         let mut total_slashed = 0u128;
@@ -608,9 +656,9 @@ impl OracleRegistryV2 {
     pub fn calculate_stake_weighted_rewards(
         &self,
         total_reward: Amount,
-        correct_voters: &[(AccountOwner, VoterInfo)],
+        correct_voters: &[(ChainId, VoterInfo)],
         params: &ProtocolParameters,
-    ) -> std::collections::BTreeMap<AccountOwner, Amount> {
+    ) -> std::collections::BTreeMap<ChainId, Amount> {
         let mut rewards = std::collections::BTreeMap::new();
         
         if correct_voters.is_empty() {
@@ -658,9 +706,9 @@ impl OracleRegistryV2 {
     pub fn calculate_reputation_weighted_rewards(
         &self,
         total_reward: Amount,
-        correct_voters: &[(AccountOwner, VoterInfo)],
+        correct_voters: &[(ChainId, VoterInfo)],
         params: &ProtocolParameters,
-    ) -> std::collections::BTreeMap<AccountOwner, Amount> {
+    ) -> std::collections::BTreeMap<ChainId, Amount> {
         let mut rewards = std::collections::BTreeMap::new();
         
         if correct_voters.is_empty() {
@@ -702,9 +750,9 @@ impl OracleRegistryV2 {
     pub fn calculate_equal_rewards(
         &self,
         total_reward: Amount,
-        correct_voters: &[(AccountOwner, VoterInfo)],
+        correct_voters: &[(ChainId, VoterInfo)],
         params: &ProtocolParameters,
-    ) -> std::collections::BTreeMap<AccountOwner, Amount> {
+    ) -> std::collections::BTreeMap<ChainId, Amount> {
         let mut rewards = std::collections::BTreeMap::new();
         
         if correct_voters.is_empty() {
@@ -736,19 +784,19 @@ impl OracleRegistryV2 {
     }
     
     /// Get all active voters sorted by power (descending)
-    pub async fn get_voters_by_power(&self) -> Result<Vec<(AccountOwner, u128)>, String> {
-        let mut voter_powers: Vec<(AccountOwner, u128)> = Vec::new();
+    pub async fn get_voters_by_power(&self) -> Result<Vec<(ChainId, u128)>, String> {
+        let mut voter_powers: Vec<(ChainId, u128)> = Vec::new();
         
-        // Get all voter addresses
+        // Get all voter chain IDs
         let indices = self.voters.indices().await
             .map_err(|e| format!("Failed to get voter indices: {}", e))?;
         
         // Calculate power for each active voter
-        for address in indices {
-            if let Some(voter) = self.get_voter(&address).await {
+        for chain_id in indices {
+            if let Some(voter) = self.get_voter(&chain_id).await {
                 if voter.is_active {
                     let power = self.calculate_voter_power(&voter);
-                    voter_powers.push((address, power));
+                    voter_powers.push((chain_id, power));
                 }
             }
         }
@@ -764,7 +812,7 @@ impl OracleRegistryV2 {
         &self,
         min_voters: usize,
         max_voters: usize,
-    ) -> Result<Vec<AccountOwner>, String> {
+    ) -> Result<Vec<ChainId>, String> {
         // Get all voters sorted by power
         let voter_powers = self.get_voters_by_power().await?;
         
@@ -779,10 +827,10 @@ impl OracleRegistryV2 {
         
         // Select top N voters (up to max_voters)
         let n = max_voters.min(voter_powers.len());
-        let selected: Vec<AccountOwner> = voter_powers
+        let selected: Vec<ChainId> = voter_powers
             .iter()
             .take(n)
-            .map(|(addr, _power)| *addr)
+            .map(|(chain_id, _power)| *chain_id)
             .collect();
         
         Ok(selected)
@@ -792,20 +840,20 @@ impl OracleRegistryV2 {
     pub async fn is_voter_selected(
         &self,
         query_id: u64,
-        voter: &AccountOwner,
+        voter_chain: &ChainId,
     ) -> Result<bool, String> {
         let query = self.get_query(query_id).await
             .ok_or_else(|| format!("Query {} not found", query_id))?;
         
-        Ok(query.selected_voters.contains(voter))
+        Ok(query.selected_voters.contains(voter_chain))
     }
     
     /// Get voter power for display/analytics
     pub async fn get_voter_power_info(
         &self,
-        voter: &AccountOwner,
+        voter_chain: &ChainId,
     ) -> Option<(Amount, u32, u128)> {
-        let voter_info = self.get_voter(voter).await?;
+        let voter_info = self.get_voter(voter_chain).await?;
         let power = self.calculate_voter_power(&voter_info);
         Some((voter_info.stake, voter_info.reputation, power))
     }

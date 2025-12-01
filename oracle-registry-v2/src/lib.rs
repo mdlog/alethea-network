@@ -100,7 +100,9 @@ impl ServiceAbi for OracleRegistryV2Abi {
 /// Operations that can be performed on the registry
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Operation {
-    /// Register as a voter
+    /// Register as a voter (chain ID automatically detected)
+    /// No address parameter needed - uses runtime.chain_id()
+    /// This is the CORRECT way following Microcard pattern!
     RegisterVoter {
         stake: Amount,
         name: Option<String>,
@@ -131,6 +133,16 @@ pub enum Operation {
     DeregisterVoter,
     
     /// Create a new query/market
+    /// 
+    /// Parameters:
+    /// - description: Query question/description
+    /// - outcomes: Possible answers (e.g., ["Yes", "No"])
+    /// - strategy: Decision strategy (Majority, Median, etc.)
+    /// - min_votes: Minimum votes required (optional, uses default)
+    /// - reward_amount: Reward for correct voters
+    /// - deadline: Query deadline (optional, calculated from duration)
+    /// - duration_secs: Custom duration in seconds (optional, uses default_query_duration)
+    ///                  This sets total duration, split 50/50 between commit and reveal phases
     CreateQuery {
         description: String,
         outcomes: Vec<String>,
@@ -138,12 +150,28 @@ pub enum Operation {
         min_votes: Option<usize>,
         reward_amount: Amount,
         deadline: Option<Timestamp>,
+        #[serde(default)]
+        duration_secs: Option<u64>,
     },
     
-    /// Submit a vote for a query
+    /// Submit a vote for a query (direct voting, no commit/reveal)
     SubmitVote {
         query_id: u64,
         value: String,
+        confidence: Option<u8>,
+    },
+    
+    /// Commit a vote (phase 1 of commit/reveal)
+    CommitVote {
+        query_id: u64,
+        commit_hash: String,
+    },
+    
+    /// Reveal a vote (phase 2 of commit/reveal)
+    RevealVote {
+        query_id: u64,
+        value: String,
+        salt: String,
         confidence: Option<u8>,
     },
     
@@ -172,6 +200,26 @@ pub enum Operation {
     /// Manually mark a specific query as expired (admin only)
     ExpireQuery {
         query_id: u64,
+    },
+    
+    /// Auto-resolve queries that have completed reveal phase (maintenance operation)
+    AutoResolveQueries,
+    
+    /// Create a query with callback information (for cross-application calls)
+    /// This allows other applications to create queries and receive callbacks when resolved
+    CreateQueryWithCallback {
+        description: String,
+        outcomes: Vec<String>,
+        strategy: DecisionStrategy,
+        min_votes: Option<usize>,
+        reward_amount: Amount,
+        deadline: Option<Timestamp>,
+        /// Chain ID to send callback to when query is resolved
+        callback_chain: linera_sdk::linera_base_types::ChainId,
+        /// Application ID to send callback to (on callback_chain)
+        callback_app: linera_sdk::linera_base_types::ApplicationId,
+        /// Arbitrary data to include in callback (e.g., market_id)
+        callback_data: Vec<u8>,
     },
 }
 
@@ -203,15 +251,49 @@ pub enum Message {
     /// Deregister as voter
     DeregisterVoter,
     
-    /// Submit vote for a query
+    /// Submit vote for a query (direct voting)
     SubmitVote {
         query_id: u64,
         value: String,
         confidence: Option<u8>,
     },
     
+    /// Commit a vote (phase 1 of commit/reveal)
+    CommitVote {
+        query_id: u64,
+        commit_hash: String,
+    },
+    
+    /// Reveal a vote (phase 2 of commit/reveal)
+    RevealVote {
+        query_id: u64,
+        value: String,
+        salt: String,
+        confidence: Option<u8>,
+    },
+    
     /// Claim pending rewards
     ClaimRewards,
+    
+    /// Market Chain -> Registry: Create query from expired market (AUTOMATIC)
+    /// This is sent automatically when a market expires and needs resolution
+    CreateQueryFromMarket {
+        market_id: u64,
+        question: String,
+        outcomes: Vec<String>,
+        deadline: Timestamp,
+        callback_chain: linera_sdk::linera_base_types::ChainId,
+        callback_data: Vec<u8>,
+    },
+    
+    /// Registry -> Market Chain: Send resolution result back (CALLBACK)
+    /// This is sent automatically when a query is resolved
+    QueryResolutionCallback {
+        query_id: u64,
+        resolved_outcome: String,
+        resolved_at: Timestamp,
+        callback_data: Vec<u8>,
+    },
 }
 
 /// Response from operations

@@ -9,11 +9,12 @@
 //! - Import queries with proper validation
 //! - Map old voter IDs to new account addresses
 
-use linera_sdk::linera_base_types::{AccountOwner, Amount, Timestamp};
+use linera_sdk::linera_base_types::{AccountOwner, Amount, Timestamp, ChainId};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use std::str::FromStr;
 
-use crate::state::{Query, QueryStatus, DecisionStrategy, Vote};
+use crate::state::{Query, QueryStatus, DecisionStrategy, Vote, VotingPhase};
 
 // ==================== EXPORT DATA STRUCTURES ====================
 
@@ -323,6 +324,19 @@ impl OldMarketData {
         // Default min votes
         let min_votes = 3;
         
+        // Calculate commit/reveal phases (50/50 split of remaining time)
+        let time_remaining = deadline.delta_since(created_at);
+        let half_duration = time_remaining.as_micros() / 2;
+        let commit_phase_end = created_at.saturating_add(linera_sdk::linera_base_types::TimeDelta::from_micros(half_duration));
+        let reveal_phase_end = commit_phase_end.saturating_add(linera_sdk::linera_base_types::TimeDelta::from_micros(half_duration));
+        
+        // Migration: creator is AccountOwner but Query needs ChainId
+        // For migration, we'll use a placeholder ChainId since we can't convert AccountOwner to ChainId
+        // In production, this should be properly mapped
+        let creator_chain = ChainId::from_str(
+            "0000000000000000000000000000000000000000000000000000000000000000"
+        ).expect("Invalid placeholder ChainId");
+        
         // Create query
         Ok(Query {
             id: new_id,
@@ -331,20 +345,26 @@ impl OldMarketData {
             strategy,
             min_votes,
             reward_amount,
-            creator,
+            creator: creator_chain,
             created_at,
             deadline,
+            commit_phase_end,
+            reveal_phase_end,
+            phase: VotingPhase::Completed, // Migration: old queries are completed
             status: QueryStatus::Active,
             result: None,
             resolved_at: None,
+            commits: BTreeMap::new(), // Migration: no commits for old queries
             votes: BTreeMap::new(),
             selected_voters: Vec::new(), // Migration: no selected voters for old queries
             max_voters: min_votes * 2,   // Migration: default max voters
+            callback_chain: None,        // Migration: old queries don't have callbacks
+            callback_data: None,         // Migration: old queries don't have callbacks
         })
     }
     
     /// Convert old votes to new Vote structures
-    pub fn convert_votes(&self, voter_mapping: &VoterMapping) -> Result<Vec<(AccountOwner, Vote)>, String> {
+    pub fn convert_votes(&self, voter_mapping: &VoterMapping) -> Result<Vec<(ChainId, Vote)>, String> {
         let votes = match &self.votes {
             Some(v) => v,
             None => return Ok(Vec::new()),
@@ -366,8 +386,8 @@ impl OldMarketData {
                 })
                 .ok_or_else(|| format!("No mapping found for voter {}", old_vote.voter_app))?;
             
-            // Parse account owner
-            let voter = parse_account_owner(voter_address_str)?;
+            // Parse chain ID from voter address
+            let voter_chain = parse_chain_id(voter_address_str)?;
             
             // Get vote value
             let value = if let Some(idx) = old_vote.outcome_index {
@@ -383,13 +403,14 @@ impl OldMarketData {
             
             // Create new vote
             let vote = Vote {
-                voter,
+                voter: voter_chain,
                 value,
                 timestamp: Timestamp::from(old_vote.timestamp),
+                salt: None, // Migration: old votes don't have salt
                 confidence: old_vote.confidence,
             };
             
-            converted_votes.push((voter, vote));
+            converted_votes.push((voter_chain, vote));
         }
         
         Ok(converted_votes)
@@ -565,6 +586,13 @@ fn parse_account_owner(address_str: &str) -> Result<AccountOwner, String> {
         "Account owner parsing not implemented. Manual mapping required for: {}",
         address_str
     ))
+}
+
+/// Parse ChainId from string
+fn parse_chain_id(chain_str: &str) -> Result<linera_sdk::linera_base_types::ChainId, String> {
+    // Parse ChainId from hex string
+    chain_str.parse()
+        .map_err(|e| format!("Failed to parse ChainId '{}': {:?}", chain_str, e))
 }
 
 // ==================== TESTS ====================
