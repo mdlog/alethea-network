@@ -145,34 +145,147 @@ Queries are automatically resolved when reveal phase ends:
 - **VoteModal**: Commit-reveal voting interface
 - **TokenFaucet**: Auto-transfer testnet tokens from admin
 
-## GraphQL Schema
+## GraphQL API Reference
 
-### Voter Fields
+### Endpoint
+
+Base URL: `https://alethea.network/api`
+
+```
+# Registry endpoint (Oracle queries, voting, voters)
+POST https://alethea.network/api/chains/36dd869563b74586a953019006de56c838fae5731af5cd6fb0d660eca634a6e2/applications/053e39a7bb6c3fe0c034da47a7a3591cc03d110c5e964c34f693c7fed2123730
+
+# Token endpoint (ALTH token balance, transfers)
+POST https://alethea.network/api/chains/36dd869563b74586a953019006de56c838fae5731af5cd6fb0d660eca634a6e2/applications/0d024bdc17d9f4a3fb65793b40d3e6da9722d5b56af2d14ac6773079e870a2e0
+
+Content-Type: application/json
+{ "query": "{ ... }" }
+```
+
+| Resource | Chain ID | App ID |
+|----------|----------|--------|
+| Registry | `36dd869563b74586a953019006de56c838fae5731af5cd6fb0d660eca634a6e2` | `053e39a7bb6c3fe0c034da47a7a3591cc03d110c5e964c34f693c7fed2123730` |
+| Token | `36dd869563b74586a953019006de56c838fae5731af5cd6fb0d660eca634a6e2` | `0d024bdc17d9f4a3fb65793b40d3e6da9722d5b56af2d14ac6773079e870a2e0` |
+
+### Queries
+
+#### statistics
+Get network statistics:
 ```graphql
-type Voter {
-  address: String!
-  stake: String!
-  lockedStake: String!
-  availableStake: String!
-  pendingRewards: String!  # NEW: Real rewards from contract
-  reputation: Int!
-  reputationTier: String!
-  reputationWeight: Float!
-  totalVotes: Int!
-  correctVotes: Int!
-  isActive: Boolean!
-  name: String
+query {
+  statistics {
+    totalVoters
+    activeVoters
+    totalStake
+    totalQueriesCreated
+    totalQueriesResolved
+  }
 }
 ```
 
-### Statistics Fields
+#### voters
+List registered voters with stake info:
 ```graphql
-type Statistics {
-  rewardPoolBalance: String!
-  protocolTreasury: String!
-  totalRewardsDistributed: String!
-  totalVoters: Int!
-  totalStake: String!
+query {
+  voters {
+    address
+    stake
+    lockedStake
+    availableStake
+    reputation
+    reputationTier
+    totalVotes
+    isActive
+  }
+}
+```
+
+#### queries
+List oracle queries with voting status:
+```graphql
+query {
+  queries {
+    id
+    description
+    outcomes
+    status
+    phase
+    commitCount
+    voteCount
+    deadline
+    result
+  }
+}
+```
+
+#### voterProfile
+Get specific voter profile:
+```graphql
+query {
+  voterProfile(address: "0x...") {
+    address
+    stake
+    lockedStake
+    availableStake
+    reputation
+    reputationTier
+    totalVotes
+  }
+}
+```
+
+### Mutations
+
+#### createQuery
+Create new oracle query (admin):
+```graphql
+mutation {
+  createQuery(
+    description: "Will BTC reach $150k?",
+    outcomes: ["Yes", "No"],
+    strategy: "Majority",
+    minVotes: 1,
+    rewardAmount: "100",
+    durationSecs: 3600
+  )
+}
+```
+
+#### sendCommitVoteMessage
+Submit vote commitment (via WASM):
+```graphql
+mutation {
+  sendCommitVoteMessage(
+    targetChain: "36dd869...",
+    queryId: 1,
+    commitHash: "abc123..."
+  )
+}
+```
+
+#### sendRevealVoteMessage
+Reveal committed vote (via WASM):
+```graphql
+mutation {
+  sendRevealVoteMessage(
+    targetChain: "36dd869...",
+    queryId: 1,
+    value: "Yes",
+    salt: "random_salt",
+    confidence: 80
+  )
+}
+```
+
+#### sendRegisterVoterMessage
+Register as voter (via WASM):
+```graphql
+mutation {
+  sendRegisterVoterMessage(
+    targetChain: "36dd869...",
+    stake: "100",
+    name: "MyVoter"
+  )
 }
 ```
 
