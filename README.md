@@ -11,9 +11,10 @@ Decentralized Oracle Dashboard built with Vite + React + Linera WASM Client.
 - **Stake Management**: Add/withdraw stake with locked stake tracking
 - **Cross-Chain Messaging**: Token transfers and voter registration via authenticated WASM calls
 - **Commit-Reveal Voting**: Secure two-phase voting system
-- **Query Management**: Create and vote on oracle queries
+- **Query Management**: Create and vote on oracle queries with auto-resolve
 - **Token Faucet**: Auto-transfer testnet tokens for testing
 - **Real-time Stats**: Live statistics from blockchain
+- **Pending Rewards**: Track and claim voting rewards from GraphQL
 
 ## Deployed Contracts (Testnet Conway - Dec 17, 2025)
 
@@ -21,9 +22,9 @@ Decentralized Oracle Dashboard built with Vite + React + Linera WASM Client.
 |----------|-------|
 | Chain ID | `36dd869563b74586a953019006de56c838fae5731af5cd6fb0d660eca634a6e2` |
 | ALTH Token | `0d024bdc17d9f4a3fb65793b40d3e6da9722d5b56af2d14ac6773079e870a2e0` |
-| Oracle Registry v2 | `a537c7c3b018751544bfc6bfb7beefc40200ac068a78efe3c9bf661a9ec18362` |
+| Oracle Registry v2 | `053e39a7bb6c3fe0c034da47a7a3591cc03d110c5e964c34f693c7fed2123730` |
 
-> **Note**: Registry deployed with fixed stake locking mechanism (Dec 17, 2025). Cross-chain voting fully functional.
+> **Note**: Registry deployed with fixed Amount calculations, pendingRewards field, and WeightedByStake strategy (Dec 17, 2025).
 
 ## Prerequisites
 
@@ -50,7 +51,7 @@ Edit `.env.local`:
 # Testnet Configuration
 VITE_FAUCET_URL=https://faucet.testnet-conway.linera.net
 VITE_CHAIN_ID=36dd869563b74586a953019006de56c838fae5731af5cd6fb0d660eca634a6e2
-VITE_REGISTRY_APP_ID=a537c7c3b018751544bfc6bfb7beefc40200ac068a78efe3c9bf661a9ec18362
+VITE_REGISTRY_APP_ID=053e39a7bb6c3fe0c034da47a7a3591cc03d110c5e964c34f693c7fed2123730
 VITE_SERVICE_URL=
 
 # Token Configuration
@@ -92,204 +93,106 @@ available_stake = total_stake - locked_stake
 | Aspect | Impact |
 |--------|--------|
 | Voting Power | `stake × reputation` = higher influence in weighted voting |
-| Rewards | Proportional to stake - larger stake = larger rewards |
+| Rewards | Proportional to stake (WeightedByStake strategy) |
 | Slashing Risk | 5% of stake slashed if vote is incorrect |
 | Participation | More stake = can vote on more queries simultaneously |
 
+### Reward Distribution (WeightedByStake)
+Rewards are distributed proportionally based on voter stake:
+
+```
+voter_reward = (voter_stake / total_correct_voters_stake) × total_reward
+```
+
+Example with 100 token reward:
+- Voter A (500 stake): 500/700 × 100 = ~71 tokens
+- Voter B (200 stake): 200/700 × 100 = ~29 tokens
+
+### Reputation System
+Reputation is calculated based on voting accuracy:
+
+```
+reputation = (correct_votes / total_votes) × 100 + participation_bonus
+```
+
+| Tier | Range | Weight |
+|------|-------|--------|
+| Novice | 0-25 | 0.5x - 0.875x |
+| Intermediate | 26-50 | 0.89x - 1.25x |
+| Expert | 51-75 | 1.26x - 1.625x |
+| Master | 76-100 | 1.64x - 2.0x |
+
 ### Commit-Reveal Voting
-The oracle uses a two-phase commit-reveal voting system to prevent vote copying:
+The oracle uses a two-phase commit-reveal voting system:
 
 1. **Commit Phase**: Voters submit a hash of their vote (`keccak256(outcome + salt)`)
 2. **Reveal Phase**: Voters reveal their actual vote and salt for verification
-3. **Resolution**: Consensus calculated, rewards distributed, stake unlocked
+3. **Resolution**: Auto-resolved after reveal phase ends (every 30 seconds)
 
-### Cross-Chain Voting Flow
-1. User calls `sendCommitVoteMessage` via WASM from their chain
-2. Message is sent to registry chain with sender authentication
-3. Registry validates voter, locks 10% of available stake, records commit
-4. After commit phase ends, user calls `sendRevealVoteMessage`
-5. Registry verifies hash matches and records vote
-6. After resolution, locked stake is released
+### Auto-Resolve
+Queries are automatically resolved when reveal phase ends:
+- Dashboard checks every 30 seconds for ended queries
+- Calls `executeAutoResolveQueries` mutation
+- Rewards distributed to correct voters
+- Locked stake released
 
 ## Key Components
 
 - **LineraContext**: WASM client, wallet management, and application connections
 - **TokenBalance**: Display user's ALTH balance
-- **StakeInterface**: Register voter with cross-chain token staking, add/withdraw stake
-- **RegisterModal**: Quick voter registration from Voters page (with token transfer)
+- **StakeInterface**: Register voter with cross-chain token staking
+- **ClaimRewards**: Claim pending voting rewards
 - **VoteModal**: Commit-reveal voting interface
 - **TokenFaucet**: Auto-transfer testnet tokens from admin
-- **TransferToken**: Send tokens to other addresses
 
-## Cross-Chain Architecture
+## GraphQL Schema
 
-### Token Staking Flow
-1. User calls `sendTransferMessage` via WASM (authenticated with private key)
-2. Token contract receives cross-chain message `RequestTransfer`
-3. Tokens are debited from user and credited to treasury
-4. User calls `sendRegisterVoterMessage` to register as voter
-5. Registry receives message and registers voter with stake
-
-### Why Cross-Chain?
-- Token contract lives on the main chain
-- Users have their own chains (claimed from faucet)
-- WASM client provides authentication via private key
-- Cross-chain messages carry authentication proof
-
-## WASM Client Features
-
-The dashboard connects to two applications via WASM:
-
-1. **Registry Application** (`application`)
-   - `executeMutation`: Send cross-chain voter operations
-   - `executeQuery`: Query voter/query data
-
-2. **Token Application** (`tokenApplication`)
-   - `executeTokenMutation`: Send cross-chain token transfers
-
-## HTTP Fallback
-
-For read-only queries, HTTP endpoints are used:
-- `executeAppChainQuery`: Query registry data via HTTP
-- `executeAppChainMutation`: Mutations via HTTP (for admin operations on registry chain)
-
-## Development
-
-```bash
-# Run development server
-npm run dev
-
-# Build for production
-npm run build
-
-# Preview production build
-npm run preview
-```
-
-## Wallet Storage
-
-Wallet data (mnemonic, chainId, owner) is stored in IndexedDB (`alethea_wallet`).
-
-To reset wallet:
-```javascript
-// In browser console
-indexedDB.deleteDatabase('alethea_wallet');
-location.reload();
-```
-
-## Registry Contract Operations
-
-### Register Voter (via WASM)
+### Voter Fields
 ```graphql
-mutation {
-  sendRegisterVoterMessage(
-    targetChain: "REGISTRY_CHAIN_ID",
-    stake: "100",
-    name: "VoterName"
-  )
+type Voter {
+  address: String!
+  stake: String!
+  lockedStake: String!
+  availableStake: String!
+  pendingRewards: String!  # NEW: Real rewards from contract
+  reputation: Int!
+  reputationTier: String!
+  reputationWeight: Float!
+  totalVotes: Int!
+  correctVotes: Int!
+  isActive: Boolean!
+  name: String
 }
 ```
 
-### Commit Vote (via WASM)
+### Statistics Fields
 ```graphql
-mutation {
-  sendCommitVoteMessage(
-    targetChain: "REGISTRY_CHAIN_ID",
-    queryId: 1,
-    commitHash: "0x..."
-  )
+type Statistics {
+  rewardPoolBalance: String!
+  protocolTreasury: String!
+  totalRewardsDistributed: String!
+  totalVoters: Int!
+  totalStake: String!
 }
 ```
 
-### Reveal Vote (via WASM)
-```graphql
-mutation {
-  sendRevealVoteMessage(
-    targetChain: "REGISTRY_CHAIN_ID",
-    queryId: 1,
-    value: "Yes",
-    salt: "random_salt",
-    confidence: 80
-  )
-}
+## Recent Changes (Dec 17, 2025)
+
+### Contract Fixes
+- **Fixed Amount::from_tokens bugs**: Values in internal representation no longer double-converted
+- **Fixed reward pool/treasury**: Now shows correct values (not Amount::MAX)
+- **Fixed slashing calculations**: Uses Amount operations directly
+- **Fixed reward distribution**: Uses Amount::from_attos for proper conversion
+
+### Dashboard Updates
+- **Added pendingRewards**: Real value from GraphQL instead of simulated
+- **Added auto-resolve**: Queries auto-resolved every 30 seconds after reveal phase
+- **Fixed vote status display**: Correctly shows "Committed" vs "Vote revealed"
+- **Changed default strategy**: New queries use WeightedByStake (proportional rewards)
+
+### New Registry App ID
 ```
-
-### Create Query (HTTP - admin)
-```graphql
-mutation {
-  createQuery(
-    description: "Will BTC reach $150k?",
-    outcomes: ["Yes", "No"],
-    strategy: "Majority",
-    minVotes: 2,
-    rewardAmount: "100",
-    durationSecs: 3600
-  )
-}
-```
-
-### Query Voters
-```graphql
-query {
-  voters {
-    address
-    stake
-    lockedStake
-    availableStake
-    reputation
-    reputationTier
-    totalVotes
-    name
-    isActive
-  }
-}
-```
-
-### Query Details
-```graphql
-query {
-  queries {
-    id
-    description
-    status
-    phase
-    commitCount
-    voteCount
-    selectedVoters
-  }
-}
-```
-
-## Token Contract Operations
-
-### Faucet (Auto-transfer from admin)
-```graphql
-mutation {
-  transfer(
-    owner: "ADMIN_ADDRESS",
-    amount: "1000.",
-    targetChain: "USER_CHAIN_ID",
-    targetOwner: "USER_ADDRESS"
-  )
-}
-```
-
-### Cross-Chain Transfer (via WASM)
-```graphql
-mutation {
-  sendTransferMessage(
-    tokenChain: "TOKEN_CHAIN_ID",
-    amount: "100.",
-    targetOwner: "RECIPIENT_ADDRESS"
-  )
-}
-```
-
-### Check Balance
-```graphql
-query {
-  balance(owner: "0x...")
-}
+053e39a7bb6c3fe0c034da47a7a3591cc03d110c5e964c34f693c7fed2123730
 ```
 
 ## Troubleshooting
@@ -298,23 +201,17 @@ query {
 - Ensure you're using WASM (not HTTP) for voting
 - Cross-chain messages need time to propagate
 - Check browser console for errors
-- Verify your chain is registered as a voter
-- Check if you have sufficient available stake (not locked)
 
 ### "Insufficient available stake"
 - Your stake is locked in active queries
 - Wait for queries to resolve to unlock stake
 - Or add more stake via Profile page
 
+### Pending rewards showing 0
+- Rewards are only distributed after query resolution
+- Vote correctly to earn rewards
+- Check if query has been resolved
+
 ### Token balance not updating
 - Wait for cross-chain message processing
 - Refresh the page or click refresh button
-- Check if transaction was successful in console
-
-## Recent Changes (Dec 17, 2025)
-
-- **Fixed Stake Locking**: `calculate_stake_to_lock` now uses `Amount::saturating_div(10)` directly
-- **Fixed Available Stake**: `get_available_stake` uses `stake.saturating_sub(locked_stake)` 
-- **Cross-Chain Voting Working**: Commits and votes now properly recorded
-- **New Registry Deployed**: App ID `a537c7c3b018751544bfc6bfb7beefc40200ac068a78efe3c9bf661a9ec18362`
-- **Added GraphQL Fields**: `phase`, `commitCount`, `availableStake` for better debugging
