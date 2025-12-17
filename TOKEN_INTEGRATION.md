@@ -1,132 +1,232 @@
 # Alethea Token Integration
 
-Dashboard ini telah diintegrasikan penuh dengan `alethea-token` contract untuk mendukung semua fitur token termasuk stake, claim rewards, withdraw, treasury, dan slashing.
+This dashboard is fully integrated with the `alethea-token` contract to support all token features including staking, claiming rewards, withdrawing, treasury management, and slashing.
 
-## Fitur yang Terintegrasi
+## Current Deployment (Dec 17, 2025)
+
+| Contract | App ID |
+|----------|--------|
+| ALTH Token | `0d024bdc17d9f4a3fb65793b40d3e6da9722d5b56af2d14ac6773079e870a2e0` |
+| Oracle Registry v2 | `053e39a7bb6c3fe0c034da47a7a3591cc03d110c5e964c34f693c7fed2123730` |
+| Chain ID | `36dd869563b74586a953019006de56c838fae5731af5cd6fb0d660eca634a6e2` |
+
+## Integrated Features
 
 ### 1. Token Balance
-- Menampilkan balance token user di header (compact view)
-- Halaman Token dengan detail lengkap
+- Displays user's token balance in header (compact view)
+- Full details on Token page
+- Real-time balance updates
 
 ### 2. Stake Management
-- **Add Stake**: Menambah stake untuk meningkatkan voting weight
-- **Withdraw Stake**: Menarik stake yang tidak terkunci
-- **Locked Stake**: Menampilkan stake yang terkunci karena active votes
+- **Add Stake**: Increase stake to boost voting weight
+- **Withdraw Stake**: Withdraw unlocked stake
+- **Locked Stake**: Shows stake locked due to active votes
+- **Minimum Stake**: 100 ALTH tokens required to register
 
-### 3. Rewards
-- **Claim Rewards**: Klaim reward dari voting yang benar
-- **Pending Rewards**: Menampilkan reward yang tersedia untuk diklaim
-- **Reward Pool**: Info total reward pool protocol
+### 3. Rewards System
+- **Pending Rewards**: Real value from GraphQL `pendingRewards` field
+- **Claim Rewards**: Claim rewards from correct voting
+- **Reward Pool**: Protocol reward pool balance
+- **WeightedByStake**: Rewards distributed proportionally to stake
 
 ### 4. Treasury
-- **Protocol Treasury**: Total dana treasury protocol
-- **Reward Pool Balance**: Dana yang tersedia untuk rewards
-- **Total Distributed**: Total rewards yang sudah didistribusikan
-- **Total Staked**: Total stake dari semua voters
+- **Protocol Treasury**: Total protocol treasury funds
+- **Reward Pool Balance**: Available funds for rewards
+- **Total Distributed**: Total rewards already distributed
+- **Total Staked**: Total stake from all voters
 
 ### 5. Slashing
-- **Risk Level**: Indikator risiko slashing (Low/Medium/High)
-- **Potential Slash**: Estimasi jumlah yang bisa di-slash
-- **Slashing Rules**: Penjelasan aturan slashing
+- **Risk Level**: Slashing risk indicator (Low/Medium/High)
+- **Potential Slash**: Estimated slash amount (5% of stake)
+- **Slashing Rules**: Explanation of slashing mechanics
+- **Max Slash**: Capped at 50% of total stake
 
 ### 6. Token Transfer
-- Transfer token ke address lain
+- Transfer tokens to other addresses
 - Quick amount buttons
-- Max button untuk transfer semua balance
+- Max button to transfer entire balance
 
-## Konfigurasi
+## Configuration
 
-Tambahkan environment variables berikut di `.env.local`:
+Add the following environment variables to `.env.local`:
 
 ```env
+# Testnet Configuration
+VITE_FAUCET_URL=https://faucet.testnet-conway.linera.net
+VITE_CHAIN_ID=36dd869563b74586a953019006de56c838fae5731af5cd6fb0d660eca634a6e2
+VITE_REGISTRY_APP_ID=053e39a7bb6c3fe0c034da47a7a3591cc03d110c5e964c34f693c7fed2123730
+VITE_SERVICE_URL=
+
 # Token Configuration
-VITE_TOKEN_APP_ID=<your-token-app-id>
-VITE_TOKEN_CHAIN_ID=<token-chain-id>
+VITE_TOKEN_APP_ID=0d024bdc17d9f4a3fb65793b40d3e6da9722d5b56af2d14ac6773079e870a2e0
+VITE_TOKEN_CHAIN_ID=36dd869563b74586a953019006de56c838fae5731af5cd6fb0d660eca634a6e2
 ```
 
-## Komponen Baru
+## Components
 
-| Komponen | Lokasi | Deskripsi |
-|----------|--------|-----------|
-| `TokenContext` | `src/contexts/TokenContext.tsx` | Context untuk token operations |
-| `TokenBalance` | `src/components/TokenBalance.tsx` | Menampilkan balance token |
-| `ClaimRewards` | `src/components/ClaimRewards.tsx` | UI untuk claim rewards |
-| `WithdrawStake` | `src/components/WithdrawStake.tsx` | UI untuk withdraw stake |
-| `TreasuryInfo` | `src/components/TreasuryInfo.tsx` | Info treasury protocol |
-| `TransferToken` | `src/components/TransferToken.tsx` | Transfer token |
-| `SlashingInfo` | `src/components/SlashingInfo.tsx` | Info slashing risk |
-| `TokenPage` | `src/pages/TokenPage.tsx` | Halaman token lengkap |
+| Component | Location | Description |
+|-----------|----------|-------------|
+| `LineraContext` | `src/contexts/LineraContext.tsx` | WASM client, wallet, token app connection |
+| `TokenBalance` | `src/components/TokenBalance.tsx` | Display token balance |
+| `ClaimRewards` | `src/components/ClaimRewards.tsx` | UI for claiming rewards |
+| `WithdrawStake` | `src/components/WithdrawStake.tsx` | UI for withdrawing stake |
+| `TreasuryInfo` | `src/components/TreasuryInfo.tsx` | Protocol treasury info |
+| `TransferToken` | `src/components/TransferToken.tsx` | Token transfer UI |
+| `SlashingInfo` | `src/components/SlashingInfo.tsx` | Slashing risk info |
+| `StakeInterface` | `src/components/StakeInterface.tsx` | Register/add stake UI |
 
 ## Routes
 
-| Path | Halaman | Deskripsi |
-|------|---------|-----------|
-| `/` | HomePage | Dashboard utama |
-| `/voters` | VotersPage | Daftar voters |
-| `/queries` | QueriesPage | Daftar queries |
-| `/profile` | ProfilePage | Profile user dengan stake/rewards/slashing |
-| `/token` | TokenPage | Halaman token management |
+| Path | Page | Description |
+|------|------|-------------|
+| `/` | HomePage | Main dashboard with stats |
+| `/voters` | VotersPage | Voter leaderboard |
+| `/queries` | QueriesPage | Query list and voting |
+| `/profile` | ProfilePage | User profile with stake/rewards/slashing |
+| `/token` | TokenPage | Token management page |
+| `/docs` | DocsPage | API documentation |
 
-## GraphQL Queries
+## GraphQL Schema
 
-### Token Contract
+### Voter Fields
+```graphql
+type Voter {
+  address: String!
+  stake: String!
+  lockedStake: String!
+  availableStake: String!
+  pendingRewards: String!  # Real rewards from contract
+  reputation: Int!
+  reputationTier: String!
+  reputationWeight: Float!
+  totalVotes: Int!
+  correctVotes: Int!
+  isActive: Boolean!
+  name: String
+}
+```
+
+### Statistics Fields
+```graphql
+type Statistics {
+  totalVoters: Int!
+  activeVoters: Int!
+  totalStake: String!
+  totalQueries: Int!
+  activeQueries: Int!
+  resolvedQueries: Int!
+  rewardPoolBalance: String!
+  protocolTreasury: String!
+  totalRewardsDistributed: String!
+}
+```
+
+### Token Contract Queries
 ```graphql
 # Get token info
 query {
-    tokenInfo {
-        name
-        symbol
-        decimals
-        totalSupply
-        totalMinted
-        totalBurned
-    }
+  tokenInfo {
+    name
+    symbol
+    decimals
+    totalSupply
+    totalMinted
+    totalBurned
+  }
 }
 
 # Get balance
 query {
-    balance(owner: "chain-id")
+  balance(owner: "chain-id")
 }
 ```
 
-### Registry Contract
+### Registry Contract Mutations
 ```graphql
-# Get statistics
-query {
-    statistics {
-        protocolTreasury
-        rewardPoolBalance
-        totalRewardsDistributed
-        totalStake
-    }
+# Register as voter (cross-chain)
+mutation {
+  sendRegisterVoterMessage(
+    targetChain: "36dd869563b74586a953019006de56c838fae5731af5cd6fb0d660eca634a6e2"
+    stake: "100"
+    name: "MyVoter"
+  )
+}
+
+# Add stake (cross-chain)
+mutation {
+  sendUpdateStakeMessage(
+    targetChain: "36dd869563b74586a953019006de56c838fae5731af5cd6fb0d660eca634a6e2"
+    additionalStake: "50"
+  )
 }
 
 # Claim rewards
 mutation {
-    claimRewards
+  executeClaimRewards
 }
 
 # Withdraw stake
 mutation {
-    withdrawStake(amount: "100")
+  executeWithdrawStake(amount: "100")
 }
 ```
 
-## Alur Integrasi
+## Integration Flow
 
-1. User connect wallet → Chain ID tersimpan
-2. Dashboard load token balance dari token contract
-3. Dashboard load voter profile dari registry contract
-4. User bisa:
-   - Add stake (transfer token ke registry)
-   - Withdraw stake (tarik dari registry)
-   - Claim rewards (dari registry)
-   - Transfer token (langsung di token contract)
-   - Lihat slashing risk
+1. **Wallet Connection**
+   - User creates/connects wallet → Chain ID stored
+   - WASM client connects to token and registry applications
 
-## Catatan Teknis
+2. **Balance Loading**
+   - Token balance queried from token contract via WASM
+   - Voter profile loaded from registry contract via HTTP
 
-- Token balance di-query langsung ke token contract via HTTP
-- Stake operations di-handle oleh registry contract
-- Rewards dihitung berdasarkan correct votes
-- Slashing risk dihitung berdasarkan accuracy percentage
+3. **User Actions**
+   - **Add Stake**: Cross-chain message to registry
+   - **Withdraw Stake**: Direct operation on registry
+   - **Claim Rewards**: Direct operation on registry
+   - **Transfer Token**: Direct operation on token contract
+   - **View Slashing Risk**: Calculated from accuracy percentage
+
+## Stake & Reward Mechanics
+
+### Stake Locking
+When a voter commits to a query, 10% of available stake is locked:
+```
+stake_to_lock = available_stake / 10
+available_stake = total_stake - locked_stake
+```
+
+### Reward Distribution (WeightedByStake)
+Rewards are distributed proportionally based on voter stake:
+```
+voter_reward = (voter_stake / total_correct_voters_stake) × total_reward
+```
+
+**Example with 100 token reward:**
+- Voter A (500 stake): 500/700 × 100 = ~71 tokens
+- Voter B (200 stake): 200/700 × 100 = ~29 tokens
+
+### Slashing Calculation
+Incorrect voters are penalized:
+```
+slash_amount = voter_stake × 0.05 (5%)
+max_slash = voter_stake × 0.50 (50% cap)
+```
+
+## Technical Notes
+
+- Token balance queried directly from token contract via WASM
+- Stake operations handled by registry contract via cross-chain messages
+- Rewards calculated based on correct votes and stake weight
+- Slashing risk calculated based on accuracy percentage
+- Auto-resolve runs every 30 seconds to distribute rewards
+- All Amount values use internal representation (attos, 10^18)
+
+## Recent Updates (Dec 17, 2025)
+
+- Fixed Amount::from_tokens double conversion bugs
+- Added real `pendingRewards` field to GraphQL schema
+- Changed default strategy to WeightedByStake
+- Fixed reward pool and treasury calculations
+- Added auto-resolve for automatic reward distribution
