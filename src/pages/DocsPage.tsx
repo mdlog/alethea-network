@@ -69,7 +69,7 @@ function OverviewSection() {
 
             {/* Current Deployment */}
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-                <h2 className="text-lg font-semibold text-blue-900 mb-3">Current Deployment (Testnet Conway)</h2>
+                <h2 className="text-lg font-semibold text-blue-900 mb-3">Current Deployment (Testnet Conway - Dec 17, 2025)</h2>
                 <div className="grid grid-cols-1 gap-2 text-sm font-mono">
                     <div className="flex flex-col">
                         <span className="text-blue-600">Chain ID:</span>
@@ -77,13 +77,14 @@ function OverviewSection() {
                     </div>
                     <div className="flex flex-col">
                         <span className="text-blue-600">Registry App ID:</span>
-                        <span className="text-blue-800 break-all">a537c7c3b018751544bfc6bfb7beefc40200ac068a78efe3c9bf661a9ec18362</span>
+                        <span className="text-blue-800 break-all">053e39a7bb6c3fe0c034da47a7a3591cc03d110c5e964c34f693c7fed2123730</span>
                     </div>
                     <div className="flex flex-col">
                         <span className="text-blue-600">Token App ID:</span>
                         <span className="text-blue-800 break-all">0d024bdc17d9f4a3fb65793b40d3e6da9722d5b56af2d14ac6773079e870a2e0</span>
                     </div>
                 </div>
+                <p className="text-xs text-blue-600 mt-3">Features: WeightedByStake rewards, pendingRewards field, auto-resolve queries</p>
             </div>
 
             {/* Key Features */}
@@ -490,7 +491,7 @@ function IntegrationSection() {
                     </li>
                     <li className="flex items-center gap-2">
                         <CheckCircle className="w-4 h-4 text-blue-600" />
-                        Registry App ID: a537c7c3b018751544bfc6bfb7beefc40200ac068a78efe3c9bf661a9ec18362
+                        Registry App ID: 053e39a7bb6c3fe0c034da47a7a3591cc03d110c5e964c34f693c7fed2123730
                     </li>
                     <li className="flex items-center gap-2">
                         <CheckCircle className="w-4 h-4 text-blue-600" />
