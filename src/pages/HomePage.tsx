@@ -1,6 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useLinera } from '../contexts/LineraContext';
-import { useGlobalRefresh } from '../contexts/TokenContext';
 import { Users, Activity, Award, TrendingUp, Loader2, Clock, Eye, ChevronRight, Bell, Lock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import VoteModal from '../components/VoteModal';
@@ -79,12 +78,7 @@ export default function HomePage() {
         loadData();
     }, []);
 
-    // Listen for global refresh events (triggered after stake/register/transfer)
-    const handleGlobalRefresh = useCallback(() => {
-        console.log('🔄 HomePage: Global refresh triggered');
-        loadData();
-    }, []);
-    useGlobalRefresh(handleGlobalRefresh);
+
 
     const loadData = async () => {
         try {
@@ -455,16 +449,24 @@ export default function HomePage() {
     );
 }
 
+// Storage keys for vote tracking (must match VoteModal.tsx)
+const REGISTRY_APP_ID = import.meta.env.VITE_REGISTRY_APP_ID || '';
+const PENDING_REVEALS_KEY = `alethea_v2_pending_${REGISTRY_APP_ID.substring(0, 16)}`;
+const COMPLETED_VOTES_KEY = `alethea_v2_completed_${REGISTRY_APP_ID.substring(0, 16)}`;
+
 function QueryRow({ query, onVote, isPast = false }: { query: Query; onVote: () => void; isPast?: boolean }) {
+    const { chainId } = useLinera();
     const commitEnd = parseInt(query.commitEnd);
     const revealEnd = parseInt(query.revealEnd);
     const phase = getCurrentPhase(commitEnd, revealEnd);
     const createdDate = new Date(parseInt(query.deadline) / 1000 - 86400000); // Approximate
 
-    // Check if user has pending reveal or completed vote
+    // Check if user has pending reveal or completed vote (per user via chainId)
     const getPendingReveal = () => {
+        if (!chainId) return null;
         try {
-            const stored = localStorage.getItem('alethea_pending_reveals');
+            const key = `${PENDING_REVEALS_KEY}_${chainId.substring(0, 16)}`;
+            const stored = localStorage.getItem(key);
             const reveals = stored ? JSON.parse(stored) : {};
             return reveals[query.id];
         } catch {
@@ -473,8 +475,10 @@ function QueryRow({ query, onVote, isPast = false }: { query: Query; onVote: () 
     };
 
     const getCompletedVote = () => {
+        if (!chainId) return null;
         try {
-            const stored = localStorage.getItem('alethea_completed_votes');
+            const key = `${COMPLETED_VOTES_KEY}_${chainId.substring(0, 16)}`;
+            const stored = localStorage.getItem(key);
             const votes = stored ? JSON.parse(stored) : {};
             return votes[query.id];
         } catch {
@@ -484,7 +488,13 @@ function QueryRow({ query, onVote, isPast = false }: { query: Query; onVote: () 
 
     const pendingReveal = getPendingReveal();
     const completedVote = getCompletedVote();
-    const userVote = completedVote?.value || pendingReveal?.value;
+
+    // Determine vote state - use Boolean check (handles null AND undefined)
+    // If completedVote exists, user has already revealed
+    // If pendingReveal exists but no completedVote, user has committed but not revealed
+    const hasRevealed = Boolean(completedVote);
+    const hasCommitted = Boolean(pendingReveal) && !hasRevealed;
+    const userVote = hasRevealed ? completedVote?.value : pendingReveal?.value;
 
     return (
         <div className="grid grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-gray-50">
@@ -521,11 +531,17 @@ function QueryRow({ query, onVote, isPast = false }: { query: Query; onVote: () 
                             <span className="text-gray-400">No result</span>
                         )}
                     </div>
-                ) : userVote ? (
-                    // User has already voted - show locked vote
+                ) : hasCommitted ? (
+                    // User has committed but not revealed - show locked vote (BLUE)
                     <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg">
                         <Lock className="w-4 h-4 text-blue-600" />
                         <span className="text-base font-medium text-blue-700">{userVote}</span>
+                    </div>
+                ) : hasRevealed ? (
+                    // User has revealed - show completed vote (GREEN)
+                    <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg">
+                        <Eye className="w-4 h-4 text-green-600" />
+                        <span className="text-base font-medium text-green-700">{userVote}</span>
                     </div>
                 ) : (
                     <select
@@ -553,6 +569,18 @@ function QueryRow({ query, onVote, isPast = false }: { query: Query; onVote: () 
                             <span className="text-base text-gray-600">
                                 {query.status === 'Resolved' ? 'Resolved' : 'Expired'}
                             </span>
+                        </>
+                    ) : hasCommitted ? (
+                        <>
+                            <span className={`w-2 h-2 rounded-full ${phase === 'reveal' ? 'bg-yellow-500 animate-pulse' : 'bg-blue-500'}`} />
+                            <span className="text-base text-blue-600">
+                                {phase === 'reveal' ? 'Ready to reveal' : 'Committed'}
+                            </span>
+                        </>
+                    ) : hasRevealed ? (
+                        <>
+                            <span className="w-2 h-2 rounded-full bg-green-500" />
+                            <span className="text-base text-green-600">Vote revealed</span>
                         </>
                     ) : (
                         <>

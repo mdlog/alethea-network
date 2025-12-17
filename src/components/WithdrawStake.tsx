@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useLinera } from '../contexts/LineraContext';
-import { useToken } from '../contexts/TokenContext';
 import { ArrowDownCircle, Loader2, AlertCircle, CheckCircle, Info } from 'lucide-react';
 
 interface WithdrawStakeProps {
@@ -17,7 +16,6 @@ export default function WithdrawStake({
     onCancel
 }: WithdrawStakeProps) {
     const { chainId, status, executeMutation } = useLinera();
-    const { refreshBalance } = useToken();
     const [amount, setAmount] = useState('');
     const [withdrawing, setWithdrawing] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -49,18 +47,12 @@ export default function WithdrawStake({
         try {
             console.log('💸 Withdrawing stake:', amount);
 
-            // Use cross-chain messaging via WASM
-            const REGISTRY_CHAIN_ID = import.meta.env.VITE_CHAIN_ID || '208873b668818fc962d8470c68698dc5dff2321720a9bb0d74576d45f4f73c91';
-            const mutation = `mutation { sendWithdrawStakeMessage(targetChain: "${REGISTRY_CHAIN_ID}", amount: "${amount}") }`;
-            console.log('📤 Sending cross-chain withdraw message:', mutation);
+            const mutation = `mutation { withdrawStake(amount: "${amount}") }`;
             await executeMutation(mutation);
 
             console.log('✅ Stake withdrawn successfully!');
             setSuccess(true);
             setAmount('');
-
-            // Refresh header balance
-            await refreshBalance();
 
             if (onSuccess) {
                 setTimeout(() => onSuccess(), 1500);

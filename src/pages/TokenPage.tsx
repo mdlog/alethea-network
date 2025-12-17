@@ -1,6 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useLinera } from '../contexts/LineraContext';
-import { useGlobalRefresh } from '../contexts/TokenContext';
 import {
     Coins, RefreshCw, Loader2, Send, ArrowDownCircle,
     TrendingUp, Flame, Info, ExternalLink
@@ -80,13 +79,6 @@ export default function TokenPage() {
             loadData();
         }
     }, [status, owner]);
-
-    // Listen for global refresh events (triggered after stake/register/transfer)
-    const handleGlobalRefresh = useCallback(() => {
-        console.log('🔄 TokenPage: Global refresh triggered');
-        loadData();
-    }, []);
-    useGlobalRefresh(handleGlobalRefresh);
 
     const formatAmount = (amount: string): string => {
         const cleanAmount = amount.endsWith('.') ? amount.slice(0, -1) : amount;

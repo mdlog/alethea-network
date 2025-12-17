@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useLinera } from '../contexts/LineraContext';
-import { useToken } from '../contexts/TokenContext';
 import { Loader2, Coins, Info, Wallet, AlertTriangle } from 'lucide-react';
 
 const TOKEN_APP_ID = import.meta.env.VITE_TOKEN_APP_ID || '';
-// Use relative URL for Vite proxy, or explicit URL if set
+// Use relative URL for Vite proxy (same as TokenBalance.tsx)
 const SERVICE_URL = import.meta.env.VITE_SERVICE_URL || '';
 const TOKEN_CHAIN_ID = import.meta.env.VITE_TOKEN_CHAIN_ID || import.meta.env.VITE_CHAIN_ID;
 const REGISTRY_CHAIN_ID = import.meta.env.VITE_CHAIN_ID || '208873b668818fc962d8470c68698dc5dff2321720a9bb0d74576d45f4f73c91';
@@ -16,17 +15,6 @@ interface StakeInterfaceProps {
     onCancel?: () => void;
 }
 
-// Helper to format stake (handles 10^18 issue from contract)
-const formatStake = (value: string | number): number => {
-    const num = typeof value === 'string' ? parseFloat(value) : value;
-    if (isNaN(num)) return 0;
-    // If value is very large (> 1e15), it's likely in attos, divide by 10^18
-    if (num > 1e15) {
-        return num / 1e18;
-    }
-    return num;
-};
-
 export default function StakeInterface({
     currentStake = '0',
     isRegistration = false,
@@ -34,7 +22,6 @@ export default function StakeInterface({
     onCancel
 }: StakeInterfaceProps) {
     const { chainId, owner, status, application, executeMutation, executeTokenMutation } = useLinera();
-    const { refreshBalance } = useToken();
     const ready = status === 'Ready' && !!application;
 
     const [amount, setAmount] = useState(isRegistration ? '100' : '100');
@@ -148,8 +135,9 @@ export default function StakeInterface({
 
             if (isRegistration) {
                 // Use cross-chain messaging via WASM
+                // Amount format requires trailing dot: "100." not "100"
                 const nameArg = name ? `, name: "${name}"` : '';
-                const mutation = `mutation { sendRegisterVoterMessage(targetChain: "${REGISTRY_CHAIN_ID}", stake: "${amount}"${nameArg}) }`;
+                const mutation = `mutation { sendRegisterVoterMessage(targetChain: "${REGISTRY_CHAIN_ID}", stake: "${amount}."${nameArg}) }`;
                 console.log('📝 Sending cross-chain register message via WASM:', mutation);
 
                 const regResult = await executeMutation(mutation);
@@ -157,12 +145,15 @@ export default function StakeInterface({
                 console.log('📦 Result:', regResult);
             } else {
                 // For updating stake, use cross-chain message via WASM
-                const mutation = `mutation { sendUpdateStakeMessage(targetChain: "${REGISTRY_CHAIN_ID}", additionalStake: "${amount}") }`;
+                // Amount format requires trailing dot: "100." not "100"
+                const mutation = `mutation { sendUpdateStakeMessage(targetChain: "${REGISTRY_CHAIN_ID}", additionalStake: "${amount}.") }`;
                 console.log('💰 Sending cross-chain stake update via WASM:', mutation);
 
                 const stakeResult = await executeMutation(mutation);
                 console.log('✅ Cross-chain stake update sent!');
                 console.log('📦 Result:', stakeResult);
+
+                console.log('✅ Stake update sent!');
             }
 
             console.log('═══════════════════════════════════════════════════════════');
@@ -172,9 +163,6 @@ export default function StakeInterface({
             setSuccess(true);
             setAmount('100');
             setName('');
-
-            // Refresh header balance
-            await refreshBalance();
 
             if (onSuccess) {
                 setTimeout(() => onSuccess(), 1500);
@@ -226,7 +214,7 @@ export default function StakeInterface({
                         <div>
                             <p className="text-sm text-blue-600 font-medium">Current Stake</p>
                             <p className="text-2xl font-bold text-blue-900">
-                                {formatStake(currentStake).toFixed(0)} ALTH
+                                {parseFloat(currentStake).toFixed(0)} ALTH
                             </p>
                         </div>
                         <Coins className="w-10 h-10 text-blue-400" />

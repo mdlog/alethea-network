@@ -1,6 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useLinera } from '../contexts/LineraContext';
-import { useGlobalRefresh } from '../contexts/TokenContext';
 import { Coins, RefreshCw, Loader2 } from 'lucide-react';
 
 const TOKEN_APP_ID = import.meta.env.VITE_TOKEN_APP_ID || '';
@@ -69,15 +68,7 @@ export default function TokenBalance({ showRefresh = true, compact = false }: To
         }
     }, [status, owner]);
 
-    // Listen for global refresh events (triggered after stake/register/transfer)
-    const handleGlobalRefresh = useCallback(() => {
-        console.log('🔄 TokenBalance (Header): Global refresh triggered');
-        // Add small delay to ensure blockchain state is updated
-        setTimeout(() => {
-            loadBalance();
-        }, 500);
-    }, [owner]);
-    useGlobalRefresh(handleGlobalRefresh);
+
 
     const formatBalance = (bal: string): string => {
         const cleanBal = bal.endsWith('.') ? bal.slice(0, -1) : bal;

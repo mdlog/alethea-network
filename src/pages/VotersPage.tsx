@@ -1,8 +1,20 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useLinera } from '../contexts/LineraContext';
-import { useGlobalRefresh } from '../contexts/TokenContext';
 import { Users, Plus, Loader2 } from 'lucide-react';
 import RegisterModal from '../components/RegisterModal';
+
+// Format stake - handle 10^18 multiplication from Amount::from_tokens()
+function formatStake(stake: string | number | undefined): string {
+    if (!stake) return '0';
+    const stakeStr = String(stake).replace('.', '');
+    const stakeNum = parseFloat(stakeStr);
+    if (isNaN(stakeNum)) return '0';
+    // If value is very large (> 1e15), it's likely in raw format (multiplied by 10^18)
+    if (stakeNum > 1e15) {
+        return (stakeNum / 1e18).toLocaleString(undefined, { maximumFractionDigits: 2 });
+    }
+    return stakeNum.toLocaleString(undefined, { maximumFractionDigits: 2 });
+}
 
 interface Voter {
     address: string;
@@ -61,13 +73,6 @@ export default function VotersPage() {
         // Load voters saat component mount (tidak perlu tunggu WASM ready)
         loadVoters();
     }, []);
-
-    // Listen for global refresh events (triggered after stake/register/transfer)
-    const handleGlobalRefresh = useCallback(() => {
-        console.log('🔄 VotersPage: Global refresh triggered');
-        loadVoters();
-    }, []);
-    useGlobalRefresh(handleGlobalRefresh);
 
     const isUserRegistered = voters.some(
         v => v.address?.toLowerCase() === chainId?.toLowerCase()
@@ -184,20 +189,4 @@ export default function VotersPage() {
             )}
         </div>
     );
-}
-
-// Helper function untuk format stake dari Linera Amount
-function formatStake(stake: string | undefined): string {
-    if (!stake) return '0';
-    // Linera Amount format: "100." atau "1000.5" atau "0."
-    const cleanStake = stake.endsWith('.') ? stake.slice(0, -1) : stake;
-    const num = parseFloat(cleanStake);
-    if (isNaN(num)) return '0';
-
-    // Check if value is in 10^18 format (very large number)
-    // If stake > 1e15, assume it's in attos and divide by 10^18
-    if (num > 1e15) {
-        return (num / 1e18).toFixed(0);
-    }
-    return num.toFixed(0);
 }

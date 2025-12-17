@@ -19,8 +19,8 @@ const SERVICE_URL = import.meta.env.VITE_SERVICE_URL || '';
 const FAUCET_AMOUNT = 1000; // Amount per claim
 const COOLDOWN_HOURS = 24; // Hours between claims
 
-// Admin/Treasury address that holds tokens for faucet
-const FAUCET_ADMIN = '0x403bc4052a40835697d74411322cec087a55a7fb81a791ed7a590e7cfd5f612a';
+// Admin/Treasury address that holds tokens for faucet (new chain owner)
+const FAUCET_ADMIN = '0x4760645c5883e2685d830929d7e89d836a9153ae9cbe6c46696994340e5c2544';
 
 interface TokenFaucetProps {
     onSuccess?: () => void;

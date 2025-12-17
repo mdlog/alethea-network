@@ -156,7 +156,19 @@ export default function VoteModal({ query, onClose, onSuccess }: VoteModalProps)
     }, [query.id, chainId]);
 
     const handleCommit = async () => {
-        if (!selectedOutcome || !chainId || !application) return;
+        console.log('🎯 handleCommit called!');
+        console.log('   selectedOutcome:', selectedOutcome);
+        console.log('   chainId:', chainId);
+        console.log('   application:', application ? 'exists' : 'null');
+
+        if (!selectedOutcome || !chainId || !application) {
+            console.log('❌ Early return - missing:', {
+                selectedOutcome: !selectedOutcome,
+                chainId: !chainId,
+                application: !application
+            });
+            return;
+        }
 
         setIsSubmitting(true);
         setError(null);
@@ -167,22 +179,28 @@ export default function VoteModal({ query, onClose, onSuccess }: VoteModalProps)
             const commitHash = await computeCommitHash(selectedOutcome, salt);
 
             console.log('═══════════════════════════════════════════════════════════');
-            console.log('📤 [WASM] Committing vote via CROSS-CHAIN MESSAGE');
+            console.log('📤 [WASM] Committing vote');
             console.log('═══════════════════════════════════════════════════════════');
             console.log('📍 User Chain ID:', chainId);
-            console.log('📍 Target App Chain:', appChainId);
+            console.log('📍 App Chain:', appChainId);
             console.log('🗳️ Query ID:', query.id);
             console.log('🔒 Commit Hash:', commitHash);
             console.log('🧂 Salt (save this!):', salt);
             console.log('═══════════════════════════════════════════════════════════');
 
-            const mutation = `mutation { 
-                sendCommitVoteMessage(
-                    targetChain: "${appChainId}",
-                    queryId: ${query.id},
-                    commitHash: "${commitHash}"
-                ) 
-            }`;
+            // Use direct commitVote if on same chain, otherwise use cross-chain message
+            const isSameChain = chainId === appChainId;
+            const mutation = isSameChain
+                ? `mutation { commitVote(queryId: ${query.id}, commitHash: "${commitHash}") }`
+                : `mutation { 
+                    sendCommitVoteMessage(
+                        targetChain: "${appChainId}",
+                        queryId: ${query.id},
+                        commitHash: "${commitHash}"
+                    ) 
+                }`;
+
+            console.log('📤 Using', isSameChain ? 'DIRECT commitVote' : 'CROSS-CHAIN sendCommitVoteMessage');
 
             const result = await executeMutation(mutation);
             console.log('✅ Commit result:', result);
@@ -191,9 +209,10 @@ export default function VoteModal({ query, onClose, onSuccess }: VoteModalProps)
             if (typeof result === 'string' && result.toLowerCase().includes('error')) {
                 throw new Error(result);
             }
-            if (result?.sendCommitVoteMessage && typeof result.sendCommitVoteMessage === 'string'
-                && result.sendCommitVoteMessage.toLowerCase().includes('error')) {
-                throw new Error(result.sendCommitVoteMessage);
+            const resultKey = chainId === appChainId ? 'commitVote' : 'sendCommitVoteMessage';
+            if (result?.[resultKey] && typeof result[resultKey] === 'string'
+                && result[resultKey].toLowerCase().includes('error')) {
+                throw new Error(result[resultKey]);
             }
 
             // Save pending reveal to localStorage (per user)
@@ -230,24 +249,30 @@ export default function VoteModal({ query, onClose, onSuccess }: VoteModalProps)
             const appChainId = import.meta.env.VITE_CHAIN_ID;
 
             console.log('═══════════════════════════════════════════════════════════');
-            console.log('📤 [WASM] Revealing vote via CROSS-CHAIN MESSAGE');
+            console.log('📤 [WASM] Revealing vote');
             console.log('═══════════════════════════════════════════════════════════');
             console.log('📍 User Chain ID:', chainId);
-            console.log('📍 Target App Chain:', appChainId);
+            console.log('📍 App Chain:', appChainId);
             console.log('🗳️ Query ID:', query.id);
             console.log('📝 Value:', pendingReveal.value);
             console.log('🧂 Salt:', pendingReveal.salt);
             console.log('═══════════════════════════════════════════════════════════');
 
-            const mutation = `mutation { 
-                sendRevealVoteMessage(
-                    targetChain: "${appChainId}",
-                    queryId: ${query.id},
-                    value: "${pendingReveal.value}",
-                    salt: "${pendingReveal.salt}",
-                    confidence: ${pendingReveal.confidence}
-                ) 
-            }`;
+            // Use direct revealVote if on same chain, otherwise use cross-chain message
+            const isSameChain = chainId === appChainId;
+            const mutation = isSameChain
+                ? `mutation { revealVote(queryId: ${query.id}, value: "${pendingReveal.value}", salt: "${pendingReveal.salt}", confidence: ${pendingReveal.confidence}) }`
+                : `mutation { 
+                    sendRevealVoteMessage(
+                        targetChain: "${appChainId}",
+                        queryId: ${query.id},
+                        value: "${pendingReveal.value}",
+                        salt: "${pendingReveal.salt}",
+                        confidence: ${pendingReveal.confidence}
+                    ) 
+                }`;
+
+            console.log('📤 Using', isSameChain ? 'DIRECT revealVote' : 'CROSS-CHAIN sendRevealVoteMessage');
 
             const result = await executeMutation(mutation);
             console.log('✅ Reveal result:', result);
@@ -256,9 +281,10 @@ export default function VoteModal({ query, onClose, onSuccess }: VoteModalProps)
             if (typeof result === 'string' && result.toLowerCase().includes('error')) {
                 throw new Error(result);
             }
-            if (result?.sendRevealVoteMessage && typeof result.sendRevealVoteMessage === 'string'
-                && result.sendRevealVoteMessage.toLowerCase().includes('error')) {
-                throw new Error(result.sendRevealVoteMessage);
+            const revealResultKey = chainId === appChainId ? 'revealVote' : 'sendRevealVoteMessage';
+            if (result?.[revealResultKey] && typeof result[revealResultKey] === 'string'
+                && result[revealResultKey].toLowerCase().includes('error')) {
+                throw new Error(result[revealResultKey]);
             }
 
             // Save as completed vote (per user)

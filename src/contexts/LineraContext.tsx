@@ -380,22 +380,41 @@ export const LineraProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     };
 
     // Execute mutation via WASM application.query()
+    // Note: In Linera, GraphQL mutations are also sent via query() method
     const executeMutation = async (mutation: string): Promise<any> => {
         const app = applicationRef.current || state.application;
         if (!app) {
             throw new Error('Application not connected');
         }
 
-        console.log('🔄 [executeMutation] Mutation:', mutation.substring(0, 100) + '...');
-        const response = await app.query(JSON.stringify({ query: mutation }));
-        const result = typeof response === 'string' ? JSON.parse(response) : response;
+        console.log('═══════════════════════════════════════════════════════════');
+        console.log('🔄 [executeMutation] WASM Mutation Request');
+        console.log('═══════════════════════════════════════════════════════════');
+        console.log('📍 Browser Chain:', state.chainId);
+        console.log('📝 Full Mutation:', mutation);
+        console.log('📦 Payload:', JSON.stringify({ query: mutation }));
 
-        if (result.errors?.length > 0) {
-            throw new Error(result.errors[0].message);
+        try {
+            const response = await app.query(JSON.stringify({ query: mutation }));
+            console.log('📥 Raw WASM Response:', response);
+            console.log('📥 Response Type:', typeof response);
+
+            const result = typeof response === 'string' ? JSON.parse(response) : response;
+            console.log('📊 Parsed Result:', JSON.stringify(result, null, 2));
+
+            if (result.errors?.length > 0) {
+                console.error('❌ WASM Mutation Error:', result.errors);
+                throw new Error(result.errors[0].message);
+            }
+
+            console.log('✅ [executeMutation] Success - Data:', result.data);
+            console.log('═══════════════════════════════════════════════════════════');
+            return result.data;
+        } catch (err) {
+            console.error('❌ [executeMutation] Exception:', err);
+            console.log('═══════════════════════════════════════════════════════════');
+            throw err;
         }
-
-        console.log('✅ [executeMutation] Success');
-        return result.data;
     };
 
     // Execute query langsung ke Application Chain via HTTP

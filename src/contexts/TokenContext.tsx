@@ -1,26 +1,9 @@
-import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { useLinera } from './LineraContext';
 
 const TOKEN_APP_ID = import.meta.env.VITE_TOKEN_APP_ID || '';
-// Use relative URL for Vite proxy, or explicit URL if set
-const SERVICE_URL = import.meta.env.VITE_SERVICE_URL || '';
+const SERVICE_URL = import.meta.env.VITE_SERVICE_URL || 'http://localhost:8080';
 const TOKEN_CHAIN_ID = import.meta.env.VITE_TOKEN_CHAIN_ID || import.meta.env.VITE_CHAIN_ID;
-
-// Global event for triggering refresh across all components
-export const BALANCE_UPDATED_EVENT = 'alethea:balance-updated';
-
-export const triggerGlobalRefresh = () => {
-    window.dispatchEvent(new CustomEvent(BALANCE_UPDATED_EVENT));
-};
-
-// Hook for components to listen to global refresh events
-export const useGlobalRefresh = (callback: () => void) => {
-    useEffect(() => {
-        const handler = () => callback();
-        window.addEventListener(BALANCE_UPDATED_EVENT, handler);
-        return () => window.removeEventListener(BALANCE_UPDATED_EVENT, handler);
-    }, [callback]);
-};
 
 interface TokenInfo {
     name: string;
@@ -139,19 +122,6 @@ export const TokenProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         }
     }, [owner, chainId]);
 
-    // Refresh current user's balance and trigger global refresh
-    const refreshBalance = useCallback(async () => {
-        if (owner) {
-            console.log('🔄 Refreshing balance for:', owner);
-            // Wait a bit for blockchain state to update
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            await loadBalance(owner);
-            // Trigger global refresh event for all components
-            console.log('📢 Dispatching global refresh event');
-            triggerGlobalRefresh();
-        }
-    }, [owner, loadBalance]);
-
     const transfer = useCallback(async (to: string, amount: string): Promise<boolean> => {
         if (!TOKEN_APP_ID || !owner || !chainId) return false;
 
@@ -195,6 +165,13 @@ export const TokenProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             return false;
         }
     }, [owner, chainId]);
+
+    // Refresh balance for current owner
+    const refreshBalance = useCallback(async () => {
+        if (owner) {
+            await loadBalance(owner);
+        }
+    }, [owner, loadBalance]);
 
     return (
         <TokenContext.Provider value={{

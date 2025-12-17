@@ -1,6 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useLinera } from '../contexts/LineraContext';
-import { useGlobalRefresh } from '../contexts/TokenContext';
 import { User, Coins, Award, TrendingUp, Loader2, RefreshCw, Gift, ArrowDownCircle, Shield, AlertTriangle } from 'lucide-react';
 import StakeInterface from '../components/StakeInterface';
 import ClaimRewards from '../components/ClaimRewards';
@@ -8,24 +7,12 @@ import WithdrawStake from '../components/WithdrawStake';
 import TokenBalance from '../components/TokenBalance';
 import SlashingInfo from '../components/SlashingInfo';
 
-// Helper function to format stake from Linera Amount
-function formatStake(stake: string | undefined): number {
-    if (!stake) return 0;
-    const cleanStake = stake.endsWith('.') ? stake.slice(0, -1) : stake;
-    const num = parseFloat(cleanStake);
-    if (isNaN(num)) return 0;
-    // If stake > 1e15, assume it's in attos and divide by 10^18
-    if (num > 1e15) {
-        return num / 1e18;
-    }
-    return num;
-}
-
 interface VoterProfile {
     address: string;
     stake: string;
     lockedStake: string;
     availableStake: string;
+    pendingRewards: string;
     reputation: number;
     reputationTier: string;
     reputationWeight: number;
@@ -50,8 +37,8 @@ export default function ProfilePage() {
     const [showWithdrawModal, setShowWithdrawModal] = useState(false);
     const [activeTab, setActiveTab] = useState<'overview' | 'stake' | 'rewards' | 'slashing'>('overview');
 
-    // Simulated pending rewards (in real implementation, this would come from contract)
-    const pendingRewards = profile ? (profile.correctVotes * 10).toString() : '0';
+    // Get pending rewards from profile (real value from contract)
+    const pendingRewards = profile?.pendingRewards || '0';
 
     const loadProfile = async () => {
         if (!application || !chainId) {
@@ -71,6 +58,7 @@ export default function ProfilePage() {
                         stake
                         lockedStake
                         availableStake
+                        pendingRewards
                         reputation
                         reputationTier
                         reputationWeight
@@ -115,19 +103,12 @@ export default function ProfilePage() {
         }
     }, [status, application, chainId]);
 
-    // Listen for global refresh events (triggered after stake/register/transfer)
-    const handleGlobalRefresh = useCallback(() => {
-        console.log('🔄 ProfilePage: Global refresh triggered');
-        loadProfile();
-    }, []);
-    useGlobalRefresh(handleGlobalRefresh);
-
     const accuracy = profile && profile.totalVotes > 0
         ? ((profile.correctVotes / profile.totalVotes) * 100).toFixed(1)
         : '0';
 
     const availableStake = profile
-        ? Math.max(0, formatStake(profile.stake) - formatStake(profile.lockedStake))
+        ? Math.max(0, parseFloat(profile.stake || '0') - parseFloat(profile.lockedStake || '0'))
         : 0;
 
     if (status !== 'Ready') {
@@ -270,7 +251,7 @@ export default function ProfilePage() {
                                         <span className="text-sm text-gray-500">Total Stake</span>
                                     </div>
                                     <p className="text-2xl font-bold text-gray-900">
-                                        {formatStake(profile.stake).toFixed(0)}
+                                        {parseFloat(profile.stake || '0').toFixed(0)}
                                     </p>
                                 </div>
 
@@ -353,7 +334,7 @@ export default function ProfilePage() {
                                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                                         <p className="text-sm text-blue-600 mb-1">Total Stake</p>
                                         <p className="text-2xl font-bold text-blue-700">
-                                            {formatStake(profile.stake).toFixed(0)} tokens
+                                            {parseFloat(profile.stake || '0').toFixed(0)} tokens
                                         </p>
                                     </div>
 

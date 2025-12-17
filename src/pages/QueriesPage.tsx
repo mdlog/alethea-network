@@ -1,7 +1,49 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useLinera } from '../contexts/LineraContext';
-import { Plus, Clock, CheckCircle, AlertCircle, Loader2, Vote, Lock, Eye } from 'lucide-react';
+import { Plus, Clock, CheckCircle, AlertCircle, Loader2, Vote, Lock, Eye, CheckSquare } from 'lucide-react';
 import VoteModal from '../components/VoteModal';
+
+// Storage keys for vote tracking
+const REGISTRY_APP_ID = import.meta.env.VITE_REGISTRY_APP_ID || '';
+const PENDING_REVEALS_KEY = `alethea_v2_pending_${REGISTRY_APP_ID.substring(0, 16)}`;
+const COMPLETED_VOTES_KEY = `alethea_v2_completed_${REGISTRY_APP_ID.substring(0, 16)}`;
+
+interface PendingReveal {
+    queryId: string;
+    value: string;
+    salt: string;
+    confidence: number;
+    committedAt: number;
+}
+
+interface CompletedVote {
+    queryId: string;
+    value: string;
+    confidence: number;
+    revealedAt: number;
+}
+
+// Get pending reveals from localStorage
+function getPendingReveals(userChainId: string): Record<string, PendingReveal> {
+    try {
+        const key = `${PENDING_REVEALS_KEY}_${userChainId.substring(0, 16)}`;
+        const stored = localStorage.getItem(key);
+        return stored ? JSON.parse(stored) : {};
+    } catch {
+        return {};
+    }
+}
+
+// Get completed votes from localStorage
+function getCompletedVotes(userChainId: string): Record<string, CompletedVote> {
+    try {
+        const key = `${COMPLETED_VOTES_KEY}_${userChainId.substring(0, 16)}`;
+        const stored = localStorage.getItem(key);
+        return stored ? JSON.parse(stored) : {};
+    } catch {
+        return {};
+    }
+}
 
 interface Query {
     id: string;
@@ -107,6 +149,35 @@ export default function QueriesPage() {
         return () => clearInterval(interval);
     }, []);
 
+    // Auto-resolve queries every 30 seconds
+    useEffect(() => {
+        const autoResolve = async () => {
+            try {
+                // Check if there are any queries that need resolving (reveal phase ended)
+                const hasEndedQueries = queries.some(q => {
+                    const revealEnd = parseInt(q.revealEnd);
+                    const now = Date.now() * 1000;
+                    return q.status === 'Active' && now >= revealEnd;
+                });
+
+                if (hasEndedQueries && executeAppChainMutation) {
+                    console.log('🔄 Auto-resolving queries...');
+                    await executeAppChainMutation(`mutation { executeAutoResolveQueries }`);
+                    console.log('✅ Auto-resolve completed');
+                    // Reload queries to get updated status
+                    loadQueries();
+                }
+            } catch (err) {
+                console.log('Auto-resolve check:', err instanceof Error ? err.message : 'No queries to resolve');
+            }
+        };
+
+        // Run immediately on mount and then every 30 seconds
+        autoResolve();
+        const interval = setInterval(autoResolve, 30000);
+        return () => clearInterval(interval);
+    }, [queries, executeAppChainMutation]);
+
     useEffect(() => {
         loadQueries();
     }, []);
@@ -132,7 +203,7 @@ export default function QueriesPage() {
                     targetChain: "${appChainId}",
                     description: "${newQuery.description}",
                     outcomes: [${outcomesStr}],
-                    strategy: "Majority",
+                    strategy: "WeightedByStake",
                     rewardAmount: "100",
                     minVotes: 1,
                     durationSecs: ${newQuery.duration}
@@ -354,13 +425,14 @@ export default function QueriesPage() {
     );
 }
 
-function QueryCard({ query, onVote, onResolve, canVote, isPast, isResolving }: {
+function QueryCard({ query, onVote, onResolve, canVote, isPast, isResolving, userChainId }: {
     query: Query;
     onVote?: () => void;
     onResolve?: () => void;
     canVote?: boolean;
     isPast?: boolean;
     isResolving?: boolean;
+    userChainId?: string;
 }) {
     const commitEnd = parseInt(query.commitEnd);
     const revealEnd = parseInt(query.revealEnd);
@@ -374,6 +446,25 @@ function QueryCard({ query, onVote, onResolve, canVote, isPast, isResolving }: {
     const phaseEndTime = phase === 'commit' ? commitEnd : revealEnd;
     const timeRemaining = phaseEndTime - now;
     const timeRemainingMs = timeRemaining / 1000; // Convert to milliseconds
+
+    // Check user's vote status
+    const userVoteStatus = useMemo(() => {
+        if (!userChainId) return null;
+
+        const completed = getCompletedVotes(userChainId);
+        if (completed[query.id]) {
+            return { type: 'revealed' as const, vote: completed[query.id] };
+        }
+
+        const pending = getPendingReveals(userChainId);
+        if (pending[query.id]) {
+            return { type: 'committed' as const, vote: pending[query.id] };
+        }
+
+        return null;
+    }, [userChainId, query.id]);
+
+    const hasVoted = userVoteStatus !== null;
 
     return (
         <div className="bg-white rounded-xl p-6 border border-gray-200">
