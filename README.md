@@ -8,22 +8,22 @@ Decentralized Oracle Dashboard built with Vite + React + Linera WASM Client.
 - **Wallet Management**: Create and manage Linera wallets with mnemonic backup
 - **ALTH Token**: Native token with cross-chain transfer support
 - **Voter Registration**: Register as oracle voter with real token staking
+- **Stake Management**: Add/withdraw stake with locked stake tracking
 - **Cross-Chain Messaging**: Token transfers and voter registration via authenticated WASM calls
 - **Commit-Reveal Voting**: Secure two-phase voting system
 - **Query Management**: Create and vote on oracle queries
 - **Token Faucet**: Auto-transfer testnet tokens for testing
 - **Real-time Stats**: Live statistics from blockchain
 
-## Deployed Contracts (Testnet Conway)
+## Deployed Contracts (Testnet Conway - Dec 17, 2025)
 
-| Contract | App ID |
-|----------|--------|
-| ALTH Token | `bc9272e95177834f00d617d2996e1979fb77c5e77eede964c3239019f6454a0d` |
-| Oracle Registry v2 | `e821a9aa94d38eb40cd9da7914aa06607c7d3a27f11fa065aa71dbbfc35ea62d` |
-| Chain ID | `208873b668818fc962d8470c68698dc5dff2321720a9bb0d74576d45f4f73c91` |
-| Admin/Treasury | `0x403bc4052a40835697d74411322cec087a55a7fb81a791ed7a590e7cfd5f612a` |
+| Contract | Value |
+|----------|-------|
+| Chain ID | `36dd869563b74586a953019006de56c838fae5731af5cd6fb0d660eca634a6e2` |
+| ALTH Token | `0d024bdc17d9f4a3fb65793b40d3e6da9722d5b56af2d14ac6773079e870a2e0` |
+| Oracle Registry v2 | `a537c7c3b018751544bfc6bfb7beefc40200ac068a78efe3c9bf661a9ec18362` |
 
-> **Note**: Registry App ID updated on Dec 15, 2025 with voter selection temporarily disabled for testing.
+> **Note**: Registry deployed with fixed stake locking mechanism (Dec 17, 2025). Cross-chain voting fully functional.
 
 ## Prerequisites
 
@@ -49,13 +49,13 @@ Edit `.env.local`:
 ```env
 # Testnet Configuration
 VITE_FAUCET_URL=https://faucet.testnet-conway.linera.net
-VITE_CHAIN_ID=208873b668818fc962d8470c68698dc5dff2321720a9bb0d74576d45f4f73c91
-VITE_REGISTRY_APP_ID=e821a9aa94d38eb40cd9da7914aa06607c7d3a27f11fa065aa71dbbfc35ea62d
-VITE_SERVICE_URL=http://localhost:8080
+VITE_CHAIN_ID=36dd869563b74586a953019006de56c838fae5731af5cd6fb0d660eca634a6e2
+VITE_REGISTRY_APP_ID=a537c7c3b018751544bfc6bfb7beefc40200ac068a78efe3c9bf661a9ec18362
+VITE_SERVICE_URL=
 
 # Token Configuration
-VITE_TOKEN_APP_ID=bc9272e95177834f00d617d2996e1979fb77c5e77eede964c3239019f6454a0d
-VITE_TOKEN_CHAIN_ID=208873b668818fc962d8470c68698dc5dff2321720a9bb0d74576d45f4f73c91
+VITE_TOKEN_APP_ID=0d024bdc17d9f4a3fb65793b40d3e6da9722d5b56af2d14ac6773079e870a2e0
+VITE_TOKEN_CHAIN_ID=36dd869563b74586a953019006de56c838fae5731af5cd6fb0d660eca634a6e2
 ```
 
 ## Architecture
@@ -78,30 +78,44 @@ VITE_TOKEN_CHAIN_ID=208873b668818fc962d8470c68698dc5dff2321720a9bb0d74576d45f4f7
 | `/profile` | User profile, stake management, rewards |
 | `/docs` | API documentation |
 
-## Voting System
+## Stake & Voting System
+
+### Stake Locking Mechanism
+When a voter commits to a query, 10% of their available stake is locked:
+
+```
+stake_to_lock = available_stake / 10
+available_stake = total_stake - locked_stake
+```
+
+**Impact of Stake Size:**
+| Aspect | Impact |
+|--------|--------|
+| Voting Power | `stake × reputation` = higher influence in weighted voting |
+| Rewards | Proportional to stake - larger stake = larger rewards |
+| Slashing Risk | 5% of stake slashed if vote is incorrect |
+| Participation | More stake = can vote on more queries simultaneously |
 
 ### Commit-Reveal Voting
 The oracle uses a two-phase commit-reveal voting system to prevent vote copying:
 
 1. **Commit Phase**: Voters submit a hash of their vote (`keccak256(outcome + salt)`)
 2. **Reveal Phase**: Voters reveal their actual vote and salt for verification
-
-### Voter Selection
-- ~~Voters are selected based on stake × reputation power~~
-- **TEMPORARY**: All registered voters can participate in any query (selection disabled for testing)
+3. **Resolution**: Consensus calculated, rewards distributed, stake unlocked
 
 ### Cross-Chain Voting Flow
 1. User calls `sendCommitVoteMessage` via WASM from their chain
 2. Message is sent to registry chain with sender authentication
-3. Registry validates voter and records commit
+3. Registry validates voter, locks 10% of available stake, records commit
 4. After commit phase ends, user calls `sendRevealVoteMessage`
 5. Registry verifies hash matches and records vote
+6. After resolution, locked stake is released
 
 ## Key Components
 
 - **LineraContext**: WASM client, wallet management, and application connections
 - **TokenBalance**: Display user's ALTH balance
-- **StakeInterface**: Register voter with cross-chain token staking
+- **StakeInterface**: Register voter with cross-chain token staking, add/withdraw stake
 - **RegisterModal**: Quick voter registration from Voters page (with token transfer)
 - **VoteModal**: Commit-reveal voting interface
 - **TokenFaucet**: Auto-transfer testnet tokens from admin
@@ -138,8 +152,6 @@ The dashboard connects to two applications via WASM:
 For read-only queries, HTTP endpoints are used:
 - `executeAppChainQuery`: Query registry data via HTTP
 - `executeAppChainMutation`: Mutations via HTTP (for admin operations on registry chain)
-
-Headers include `Bypass-Tunnel-Reminder: true` for localtunnel compatibility.
 
 ## Development
 
@@ -211,7 +223,7 @@ mutation {
     strategy: "Majority",
     minVotes: 2,
     rewardAmount: "100",
-    durationSecs: 300
+    durationSecs: 3600
   )
 }
 ```
@@ -219,11 +231,14 @@ mutation {
 ### Query Voters
 ```graphql
 query {
-  voters(limit: 100, offset: 0, activeOnly: true) {
+  voters {
     address
     stake
+    lockedStake
+    availableStake
     reputation
     reputationTier
+    totalVotes
     name
     isActive
   }
@@ -233,15 +248,14 @@ query {
 ### Query Details
 ```graphql
 query {
-  query(id: 1) {
+  queries {
     id
     description
     status
-    commitEnd
-    revealEnd
-    selectedVoters
-    voteCount
+    phase
     commitCount
+    voteCount
+    selectedVoters
   }
 }
 ```
@@ -285,18 +299,22 @@ query {
 - Cross-chain messages need time to propagate
 - Check browser console for errors
 - Verify your chain is registered as a voter
+- Check if you have sufficient available stake (not locked)
 
-### "Client not configured to propose on chain"
-- This error occurs when using HTTP to mutate on a chain you don't own
-- Use WASM client which has your private key for authentication
+### "Insufficient available stake"
+- Your stake is locked in active queries
+- Wait for queries to resolve to unlock stake
+- Or add more stake via Profile page
 
 ### Token balance not updating
 - Wait for cross-chain message processing
 - Refresh the page or click refresh button
 - Check if transaction was successful in console
 
-## Recent Changes (Dec 15, 2025)
+## Recent Changes (Dec 17, 2025)
 
-- **Voter Selection Disabled**: All registered voters can now vote on any query (temporary for testing)
-- **RegisterModal Updated**: Now includes token transfer to treasury (same as Profile page)
-- **New Registry Deployed**: App ID `e821a9aa94d38eb40cd9da7914aa06607c7d3a27f11fa065aa71dbbfc35ea62d`
+- **Fixed Stake Locking**: `calculate_stake_to_lock` now uses `Amount::saturating_div(10)` directly
+- **Fixed Available Stake**: `get_available_stake` uses `stake.saturating_sub(locked_stake)` 
+- **Cross-Chain Voting Working**: Commits and votes now properly recorded
+- **New Registry Deployed**: App ID `a537c7c3b018751544bfc6bfb7beefc40200ac068a78efe3c9bf661a9ec18362`
+- **Added GraphQL Fields**: `phase`, `commitCount`, `availableStake` for better debugging

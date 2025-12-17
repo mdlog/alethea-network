@@ -67,28 +67,87 @@ function OverviewSection() {
                 </p>
             </div>
 
+            {/* Current Deployment */}
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+                <h2 className="text-lg font-semibold text-blue-900 mb-3">Current Deployment (Testnet Conway)</h2>
+                <div className="grid grid-cols-1 gap-2 text-sm font-mono">
+                    <div className="flex flex-col">
+                        <span className="text-blue-600">Chain ID:</span>
+                        <span className="text-blue-800 break-all">36dd869563b74586a953019006de56c838fae5731af5cd6fb0d660eca634a6e2</span>
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-blue-600">Registry App ID:</span>
+                        <span className="text-blue-800 break-all">a537c7c3b018751544bfc6bfb7beefc40200ac068a78efe3c9bf661a9ec18362</span>
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-blue-600">Token App ID:</span>
+                        <span className="text-blue-800 break-all">0d024bdc17d9f4a3fb65793b40d3e6da9722d5b56af2d14ac6773079e870a2e0</span>
+                    </div>
+                </div>
+            </div>
+
             {/* Key Features */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FeatureCard
                     icon={<Shield className="w-6 h-6 text-blue-600" />}
-                    title="Decentralized Voting"
-                    description="Community-driven consensus through stake-weighted voting with commit-reveal scheme"
+                    title="Stake-Weighted Voting"
+                    description="Voting power = stake × reputation. 10% of available stake locked per vote as collateral."
                 />
                 <FeatureCard
                     icon={<Zap className="w-6 h-6 text-yellow-600" />}
-                    title="Cross-Chain Callbacks"
-                    description="Automatic resolution callbacks to requesting applications via Linera messaging"
+                    title="Cross-Chain Messaging"
+                    description="Voters on any chain can participate via authenticated cross-chain messages to registry."
                 />
                 <FeatureCard
                     icon={<Users className="w-6 h-6 text-green-600" />}
                     title="Reputation System"
-                    description="Voters earn reputation for correct votes, increasing their voting weight"
+                    description="Voters earn reputation for correct votes. Higher reputation = higher voting weight and rewards."
                 />
                 <FeatureCard
                     icon={<Clock className="w-6 h-6 text-purple-600" />}
-                    title="Time-Based Phases"
-                    description="Structured commit and reveal phases ensure fair and tamper-proof voting"
+                    title="Commit-Reveal Voting"
+                    description="Two-phase voting prevents vote copying. Commit hash first, reveal vote after phase ends."
                 />
+            </div>
+
+            {/* Stake Locking Mechanism */}
+            <div className="bg-white rounded-xl border border-gray-200 p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">Stake Locking Mechanism</h2>
+                <p className="text-gray-600 mb-4">
+                    When voting, 10% of available stake is locked as collateral until query resolution.
+                </p>
+                <div className="bg-slate-900 rounded-lg p-4 text-sm font-mono text-gray-300 mb-4">
+                    <pre>{`stake_to_lock = available_stake / 10
+available_stake = total_stake - locked_stake`}</pre>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                        <thead>
+                            <tr className="border-b border-gray-200">
+                                <th className="text-left py-2 px-3 font-semibold text-gray-900">Aspect</th>
+                                <th className="text-left py-2 px-3 font-semibold text-gray-900">Impact</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr className="border-b border-gray-100">
+                                <td className="py-2 px-3 text-gray-700">Voting Power</td>
+                                <td className="py-2 px-3 text-gray-600">stake × reputation = influence in weighted voting</td>
+                            </tr>
+                            <tr className="border-b border-gray-100">
+                                <td className="py-2 px-3 text-gray-700">Rewards</td>
+                                <td className="py-2 px-3 text-gray-600">Proportional to stake - larger stake = larger rewards</td>
+                            </tr>
+                            <tr className="border-b border-gray-100">
+                                <td className="py-2 px-3 text-gray-700">Slashing Risk</td>
+                                <td className="py-2 px-3 text-gray-600">5% of stake slashed if vote is incorrect</td>
+                            </tr>
+                            <tr>
+                                <td className="py-2 px-3 text-gray-700">Participation</td>
+                                <td className="py-2 px-3 text-gray-600">More stake = can vote on more queries simultaneously</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             {/* Architecture Overview */}
@@ -99,18 +158,18 @@ function OverviewSection() {
 │                    Alethea Network                          │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
-│  ┌─────────────┐    Cross-App Call    ┌─────────────────┐  │
-│  │   Market    │ ──────────────────▶  │ Oracle Registry │  │
-│  │  Contract   │                      │    Contract     │  │
-│  │  (Chain A)  │ ◀──────────────────  │    (Chain B)    │  │
-│  └─────────────┘    Callback Message  └─────────────────┘  │
-│                                              │              │
-│                                              │ Voters       │
-│                                              ▼              │
-│                                       ┌─────────────┐      │
-│                                       │   Voters    │      │
-│                                       │  (Staked)   │      │
-│                                       └─────────────┘      │
+│  ┌─────────────┐    Cross-Chain Msg   ┌─────────────────┐  │
+│  │   Voter     │ ──────────────────▶  │ Oracle Registry │  │
+│  │   Chain     │  CommitVote/Reveal   │    (Main)       │  │
+│  │  (User's)   │ ◀──────────────────  │                 │  │
+│  └─────────────┘    Stake Unlocked    └─────────────────┘  │
+│        │                                      │             │
+│        │ WASM Client                          │ Resolution  │
+│        ▼                                      ▼             │
+│  ┌─────────────┐                      ┌─────────────────┐  │
+│  │   Browser   │                      │  Market/DApp    │  │
+│  │  Dashboard  │                      │   (Callback)    │  │
+│  └─────────────┘                      └─────────────────┘  │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘`}</pre>
                 </div>
@@ -315,24 +374,24 @@ function OracleFlowSection() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <PhaseCard
                         phase="Commit"
-                        duration="24 hours"
+                        duration="~50% of duration"
                         color="blue"
-                        description="Voters submit hashed votes. The actual vote is hidden to prevent copying."
-                        actions={["Submit commitment hash", "Hash = keccak256(outcome + salt)", "Vote is hidden"]}
+                        description="Voters submit hashed votes. 10% of available stake is locked as collateral."
+                        actions={["Submit commitment hash", "Hash = keccak256(outcome + salt)", "Stake locked (10%)", "commitCount increases"]}
                     />
                     <PhaseCard
                         phase="Reveal"
-                        duration="24 hours"
+                        duration="~50% of duration"
                         color="yellow"
                         description="Voters reveal their actual votes with the salt used in commit phase."
-                        actions={["Reveal outcome + salt", "Contract verifies hash", "Vote is recorded"]}
+                        actions={["Reveal outcome + salt", "Contract verifies hash", "voteCount increases", "Vote is recorded"]}
                     />
                     <PhaseCard
                         phase="Resolution"
                         duration="Instant"
                         color="green"
-                        description="Consensus is calculated and rewards are distributed to correct voters."
-                        actions={["Calculate consensus", "Distribute rewards", "Send callbacks"]}
+                        description="Consensus calculated, rewards distributed, stake unlocked."
+                        actions={["Calculate consensus", "Distribute rewards", "Unlock stake", "Send callbacks"]}
                     />
                 </div>
             </div>
@@ -363,46 +422,43 @@ function OracleFlowSection() {
             {/* Reputation System */}
             <div className="bg-white rounded-xl border border-gray-200 p-6">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">Reputation System</h2>
+                <p className="text-gray-600 mb-4">
+                    Reputation is calculated based on voting accuracy. Weight multiplier = 0.5 + (reputation/100) × 1.5
+                </p>
 
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="border-b border-gray-200">
                                 <th className="text-left py-3 px-4 font-semibold text-gray-900">Tier</th>
-                                <th className="text-left py-3 px-4 font-semibold text-gray-900">Reputation Range</th>
-                                <th className="text-left py-3 px-4 font-semibold text-gray-900">Weight Multiplier</th>
+                                <th className="text-left py-3 px-4 font-semibold text-gray-900">Reputation</th>
+                                <th className="text-left py-3 px-4 font-semibold text-gray-900">Weight</th>
                                 <th className="text-left py-3 px-4 font-semibold text-gray-900">Benefits</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr className="border-b border-gray-100">
                                 <td className="py-3 px-4"><span className="px-2 py-1 bg-gray-100 rounded text-gray-700">Novice</span></td>
-                                <td className="py-3 px-4">0 - 49</td>
-                                <td className="py-3 px-4">1.0x</td>
+                                <td className="py-3 px-4">0 - 40</td>
+                                <td className="py-3 px-4">0.5x - 1.1x</td>
                                 <td className="py-3 px-4 text-gray-600">Basic voting rights</td>
                             </tr>
                             <tr className="border-b border-gray-100">
-                                <td className="py-3 px-4"><span className="px-2 py-1 bg-blue-100 rounded text-blue-700">Apprentice</span></td>
-                                <td className="py-3 px-4">50 - 99</td>
-                                <td className="py-3 px-4">1.25x</td>
+                                <td className="py-3 px-4"><span className="px-2 py-1 bg-blue-100 rounded text-blue-700">Intermediate</span></td>
+                                <td className="py-3 px-4">41 - 70</td>
+                                <td className="py-3 px-4">1.1x - 1.55x</td>
                                 <td className="py-3 px-4 text-gray-600">Increased voting weight</td>
                             </tr>
                             <tr className="border-b border-gray-100">
                                 <td className="py-3 px-4"><span className="px-2 py-1 bg-green-100 rounded text-green-700">Expert</span></td>
-                                <td className="py-3 px-4">100 - 199</td>
-                                <td className="py-3 px-4">1.5x</td>
-                                <td className="py-3 px-4 text-gray-600">Priority selection for queries</td>
-                            </tr>
-                            <tr className="border-b border-gray-100">
-                                <td className="py-3 px-4"><span className="px-2 py-1 bg-purple-100 rounded text-purple-700">Master</span></td>
-                                <td className="py-3 px-4">200 - 499</td>
-                                <td className="py-3 px-4">2.0x</td>
+                                <td className="py-3 px-4">71 - 90</td>
+                                <td className="py-3 px-4">1.55x - 1.85x</td>
                                 <td className="py-3 px-4 text-gray-600">Higher reward share</td>
                             </tr>
                             <tr>
-                                <td className="py-3 px-4"><span className="px-2 py-1 bg-yellow-100 rounded text-yellow-700">Oracle</span></td>
-                                <td className="py-3 px-4">500+</td>
-                                <td className="py-3 px-4">2.5x</td>
+                                <td className="py-3 px-4"><span className="px-2 py-1 bg-purple-100 rounded text-purple-700">Master</span></td>
+                                <td className="py-3 px-4">91 - 100</td>
+                                <td className="py-3 px-4">1.85x - 2.0x</td>
                                 <td className="py-3 px-4 text-gray-600">Maximum benefits</td>
                             </tr>
                         </tbody>
@@ -430,15 +486,15 @@ function IntegrationSection() {
                 <ul className="space-y-2 text-blue-800">
                     <li className="flex items-center gap-2">
                         <CheckCircle className="w-4 h-4 text-blue-600" />
-                        Linera SDK installed and configured
+                        Linera SDK 0.15.6 with Rust 1.86.0
                     </li>
                     <li className="flex items-center gap-2">
                         <CheckCircle className="w-4 h-4 text-blue-600" />
-                        Oracle Registry v2 Application ID
+                        Registry App ID: a537c7c3b018751544bfc6bfb7beefc40200ac068a78efe3c9bf661a9ec18362
                     </li>
                     <li className="flex items-center gap-2">
                         <CheckCircle className="w-4 h-4 text-blue-600" />
-                        Oracle Registry Chain ID
+                        Chain ID: 36dd869563b74586a953019006de56c838fae5731af5cd6fb0d660eca634a6e2
                     </li>
                 </ul>
             </div>
@@ -449,7 +505,7 @@ function IntegrationSection() {
                 <p className="text-gray-600 mb-4">Add the oracle-registry-v2 crate to your Cargo.toml:</p>
                 <CodeBlock code={`[dependencies]
 oracle-registry-v2 = { path = "../oracle-registry-v2" }
-linera-sdk = { version = "0.12" }`} />
+linera-sdk = { version = "0.15.6", default-features = false }`} />
             </div>
 
             {/* Step 2: Store Registry Info */}
@@ -578,13 +634,14 @@ function ApiSection() {
             {/* Endpoint */}
             <div className="bg-white rounded-xl border border-gray-200 p-6">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">GraphQL Endpoint</h2>
-                <CodeBlock code={`POST /chains/{chain_id}/applications/{app_id}
-Content-Type: application/json
+                <CodeBlock code={`# Registry endpoint
+POST http://localhost:8080/chains/36dd869.../applications/a537c7c...
 
-{
-  "query": "{ ... }",
-  "variables": { ... }
-}`} />
+# Token endpoint  
+POST http://localhost:8080/chains/36dd869.../applications/0d024bd...
+
+Content-Type: application/json
+{ "query": "{ ... }" }`} />
             </div>
 
             {/* Queries */}
@@ -608,15 +665,16 @@ Content-Type: application/json
 
                     <ApiEndpoint
                         name="voters"
-                        description="List registered voters"
+                        description="List registered voters with stake info"
                         query={`query {
-  voters(limit: 50, offset: 0, activeOnly: true) {
+  voters {
     address
     stake
+    lockedStake
+    availableStake
     reputation
     reputationTier
     totalVotes
-    correctVotes
     isActive
   }
 }`}
@@ -624,17 +682,17 @@ Content-Type: application/json
 
                     <ApiEndpoint
                         name="queries"
-                        description="List oracle queries"
+                        description="List oracle queries with voting status"
                         query={`query {
   queries {
     id
     description
     outcomes
     status
-    deadline
-    commitEnd
-    revealEnd
+    phase
+    commitCount
     voteCount
+    deadline
     result
   }
 }`}
@@ -648,10 +706,10 @@ Content-Type: application/json
     address
     stake
     lockedStake
+    availableStake
     reputation
     reputationTier
     totalVotes
-    correctVotes
   }
 }`}
                     />
@@ -664,36 +722,54 @@ Content-Type: application/json
 
                 <div className="space-y-6">
                     <ApiEndpoint
-                        name="registerVoter"
-                        description="Register as a voter (requires WASM)"
+                        name="createQuery"
+                        description="Create new oracle query (admin)"
+                        query={`mutation {
+  createQuery(
+    description: "Will BTC reach $150k?",
+    outcomes: ["Yes", "No"],
+    strategy: "Majority",
+    minVotes: 1,
+    rewardAmount: "100",
+    durationSecs: 3600
+  )
+}`}
+                    />
+
+                    <ApiEndpoint
+                        name="sendCommitVoteMessage"
+                        description="Submit vote commitment (via WASM)"
+                        query={`mutation {
+  sendCommitVoteMessage(
+    targetChain: "36dd869...",
+    queryId: 1,
+    commitHash: "abc123..."
+  )
+}`}
+                    />
+
+                    <ApiEndpoint
+                        name="sendRevealVoteMessage"
+                        description="Reveal committed vote (via WASM)"
+                        query={`mutation {
+  sendRevealVoteMessage(
+    targetChain: "36dd869...",
+    queryId: 1,
+    value: "Yes",
+    salt: "random_salt",
+    confidence: 80
+  )
+}`}
+                    />
+
+                    <ApiEndpoint
+                        name="sendRegisterVoterMessage"
+                        description="Register as voter (via WASM)"
                         query={`mutation {
   sendRegisterVoterMessage(
-    targetChain: "chain_id",
+    targetChain: "36dd869...",
     stake: "100",
     name: "MyVoter"
-  )
-}`}
-                    />
-
-                    <ApiEndpoint
-                        name="commitVote"
-                        description="Submit vote commitment"
-                        query={`mutation {
-  commitVote(
-    queryId: 1,
-    commitment: "0x..."
-  )
-}`}
-                    />
-
-                    <ApiEndpoint
-                        name="revealVote"
-                        description="Reveal committed vote"
-                        query={`mutation {
-  revealVote(
-    queryId: 1,
-    outcome: "Yes",
-    salt: "random_salt"
   )
 }`}
                     />
