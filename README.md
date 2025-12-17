@@ -149,14 +149,14 @@ Queries are automatically resolved when reveal phase ends:
 
 ### Endpoint
 
-Base URL: `https://alethea.network/api`
+Base URL: `https://alethea.network`
 
 ```
 # Registry endpoint (Oracle queries, voting, voters)
-POST https://alethea.network/api/chains/36dd869563b74586a953019006de56c838fae5731af5cd6fb0d660eca634a6e2/applications/053e39a7bb6c3fe0c034da47a7a3591cc03d110c5e964c34f693c7fed2123730
+POST https://alethea.network/chains/36dd869563b74586a953019006de56c838fae5731af5cd6fb0d660eca634a6e2/applications/053e39a7bb6c3fe0c034da47a7a3591cc03d110c5e964c34f693c7fed2123730
 
 # Token endpoint (ALTH token balance, transfers)
-POST https://alethea.network/api/chains/36dd869563b74586a953019006de56c838fae5731af5cd6fb0d660eca634a6e2/applications/0d024bdc17d9f4a3fb65793b40d3e6da9722d5b56af2d14ac6773079e870a2e0
+POST https://alethea.network/chains/36dd869563b74586a953019006de56c838fae5731af5cd6fb0d660eca634a6e2/applications/0d024bdc17d9f4a3fb65793b40d3e6da9722d5b56af2d14ac6773079e870a2e0
 
 Content-Type: application/json
 { "query": "{ ... }" }
