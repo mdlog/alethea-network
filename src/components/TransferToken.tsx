@@ -9,7 +9,7 @@ const SERVICE_URL = import.meta.env.VITE_SERVICE_URL || '';
 const TOKEN_CHAIN_ID = import.meta.env.VITE_TOKEN_CHAIN_ID || import.meta.env.VITE_CHAIN_ID;
 
 interface TransferTokenProps {
-    balance: string;
+    balance: number;
     onSuccess?: () => void;
     onClose?: () => void;
 }
@@ -23,7 +23,7 @@ export default function TransferToken({ balance, onSuccess, onClose }: TransferT
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
 
-    const availableBalance = parseFloat(balance) || 0;
+    const availableBalance = balance;
 
     const handleTransfer = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -50,20 +50,46 @@ export default function TransferToken({ balance, onSuccess, onClose }: TransferT
         setSuccess(false);
 
         try {
-            console.log('📤 Transferring tokens via WASM:', amount, 'to', recipient);
+            console.log('📤 Transferring tokens using WASM (signed transaction)');
 
             // Format amount with trailing dot for Linera Amount parsing
             const formattedAmount = amount.includes('.') ? amount : `${amount}.`;
 
-            // Use cross-chain transfer message via WASM (authenticated)
-            const mutation = `mutation { sendTransferMessage(tokenChain: "${TOKEN_CHAIN_ID}", amount: "${formattedAmount}", targetOwner: "${recipient}") }`;
-            console.log('🪙 Token mutation:', mutation);
+            // Use owner (public key) as the source - lowercase for Linera standard
+            const sourceOwner = (owner.startsWith('0x') ? owner : `0x${owner}`).toLowerCase();
+            const targetOwner = recipient.trim().toLowerCase();
+            // If recipient doesn't have 0x prefix and looks like a public key, add it
+            const formattedTargetOwner = targetOwner.startsWith('0x') ? targetOwner : `0x${targetOwner}`;
 
-            const result = await executeTokenMutation(mutation);
-            console.log('✅ Transfer successful!', result);
+            console.log('🎯 From owner:', sourceOwner);
+            console.log('🎯 To owner:', formattedTargetOwner);
+            console.log('🎯 Target chain:', chainId);
+            console.log('🎯 Amount:', formattedAmount);
+
+            // Use Linera standard fungible token transfer format via WASM
+            const transferMutation = `mutation { 
+                transfer(
+                    owner: "${sourceOwner}",
+                    amount: "${formattedAmount}",
+                    targetAccount: {
+                        chainId: "${chainId}",
+                        owner: "${formattedTargetOwner}"
+                    }
+                )
+            }`;
+
+            console.log('🔐 Transfer mutation (via WASM):', transferMutation);
+
+            const result = await executeTokenMutation(transferMutation);
+            console.log('✅ Transfer result:', result);
+
             setSuccess(true);
             setAmount('');
             setRecipient('');
+
+            // Wait for operation to process
+            console.log('⏳ Waiting for transfer to complete...');
+            await new Promise(resolve => setTimeout(resolve, 3000));
 
             // Refresh header balance
             await refreshBalance();
@@ -114,13 +140,16 @@ export default function TransferToken({ balance, onSuccess, onClose }: TransferT
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                         Recipient Address
+                        <span className="text-xs text-gray-500 block mt-1">
+                            Enter chain ID (64 hex chars) or account address
+                        </span>
                     </label>
                     <input
                         type="text"
                         value={recipient}
                         onChange={(e) => setRecipient(e.target.value)}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
-                        placeholder="Enter chain ID or address"
+                        placeholder="e.g., 268431a074359c264d23d7a84a875a0ace3a0b9a3b764d2e0f26c59c84abc85f"
                         disabled={transferring}
                     />
                 </div>
@@ -201,6 +230,13 @@ export default function TransferToken({ balance, onSuccess, onClose }: TransferT
                     )}
                 </button>
             </form>
+
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-xs text-blue-700">
+                    <strong>How it works:</strong> Transfers use secure cross-chain messaging.
+                    Tokens are sent directly to the recipient's chain using authenticated messages.
+                </p>
+            </div>
         </div>
     );
 }

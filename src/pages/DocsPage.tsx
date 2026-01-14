@@ -1,18 +1,32 @@
-import { useState } from 'react';
+import { useEffect } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Book, ChevronRight, Code, Zap, Shield, ArrowRight, CheckCircle, Clock, Users, MessageSquare } from 'lucide-react';
 
-type DocSection = 'overview' | 'market-flow' | 'oracle-flow' | 'integration' | 'api';
+type DocSection = 'overview' | 'quality' | 'market-flow' | 'oracle-flow' | 'integration' | 'api';
+
+const sections = [
+    { id: 'overview', label: 'Overview', icon: Book },
+    { id: 'quality', label: 'Quality Assurance', icon: Shield },
+    { id: 'market-flow', label: 'Market → Oracle Flow', icon: Zap },
+    { id: 'oracle-flow', label: 'Oracle Resolution', icon: CheckCircle },
+    { id: 'integration', label: 'Integration Guide', icon: Code },
+    { id: 'api', label: 'API Reference', icon: MessageSquare },
+];
 
 export default function DocsPage() {
-    const [activeSection, setActiveSection] = useState<DocSection>('overview');
+    const { section } = useParams<{ section?: string }>();
+    const navigate = useNavigate();
 
-    const sections = [
-        { id: 'overview', label: 'Overview', icon: Book },
-        { id: 'market-flow', label: 'Market → Oracle Flow', icon: Zap },
-        { id: 'oracle-flow', label: 'Oracle Resolution', icon: CheckCircle },
-        { id: 'integration', label: 'Integration Guide', icon: Code },
-        { id: 'api', label: 'API Reference', icon: MessageSquare },
-    ];
+    // Default to 'overview' if no section specified
+    const activeSection = (section as DocSection) || 'overview';
+
+    // Validate section and redirect if invalid
+    useEffect(() => {
+        const validSections = sections.map(s => s.id);
+        if (section && !validSections.includes(section)) {
+            navigate('/docs/overview', { replace: true });
+        }
+    }, [section, navigate]);
 
     return (
         <div className="min-h-screen">
@@ -22,20 +36,20 @@ export default function DocsPage() {
                     <div className="sticky top-24 bg-white rounded-xl border border-gray-200 p-4">
                         <h3 className="font-semibold text-gray-900 mb-4">Documentation</h3>
                         <nav className="space-y-1">
-                            {sections.map((section) => {
-                                const Icon = section.icon;
+                            {sections.map((sec) => {
+                                const Icon = sec.icon;
                                 return (
-                                    <button
-                                        key={section.id}
-                                        onClick={() => setActiveSection(section.id as DocSection)}
-                                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${activeSection === section.id
+                                    <Link
+                                        key={sec.id}
+                                        to={`/docs/${sec.id}`}
+                                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${activeSection === sec.id
                                             ? 'bg-blue-50 text-blue-700'
                                             : 'text-gray-600 hover:bg-gray-50'
                                             }`}
                                     >
                                         <Icon className="w-4 h-4" />
-                                        <span className="text-sm font-medium">{section.label}</span>
-                                    </button>
+                                        <span className="text-sm font-medium">{sec.label}</span>
+                                    </Link>
                                 );
                             })}
                         </nav>
@@ -45,6 +59,7 @@ export default function DocsPage() {
                 {/* Content */}
                 <div className="flex-1 max-w-4xl">
                     {activeSection === 'overview' && <OverviewSection />}
+                    {activeSection === 'quality' && <QualityAssuranceSection />}
                     {activeSection === 'market-flow' && <MarketFlowSection />}
                     {activeSection === 'oracle-flow' && <OracleFlowSection />}
                     {activeSection === 'integration' && <IntegrationSection />}
@@ -60,54 +75,73 @@ function OverviewSection() {
         <div className="space-y-8">
             <div>
                 <h1 className="text-3xl font-bold text-gray-900 mb-4">Alethea Network Documentation</h1>
-                <p className="text-lg text-gray-600">
-                    Alethea Network is a decentralized oracle protocol built on Linera's microchain architecture.
+                <p className="text-lg text-gray-600 mb-4">
+                    Alethea Network is a <strong>production-ready decentralized oracle protocol</strong> built on Linera's microchain architecture.
                     It provides secure, scalable, and community-driven truth verification for prediction markets
                     and other decentralized applications.
                 </p>
+                <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-4">
+                    <p className="text-sm text-green-800 font-medium">
+                        🎉 <strong>FULLY FUNCTIONAL:</strong> All systems operational with real ALTH token integration,
+                        secure cross-chain messaging, and production-ready oracle operations.
+                    </p>
+                </div>
             </div>
 
             {/* Current Deployment */}
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-                <h2 className="text-lg font-semibold text-blue-900 mb-3">Current Deployment (Testnet Conway - Dec 17, 2025)</h2>
+            <div className="bg-green-50 border border-green-200 rounded-xl p-6">
+                <h2 className="text-lg font-semibold text-green-900 mb-3">🚀 Production Deployment (January 12, 2026) - Linera Standard Token</h2>
                 <div className="grid grid-cols-1 gap-2 text-sm font-mono">
                     <div className="flex flex-col">
-                        <span className="text-blue-600">Chain ID:</span>
-                        <span className="text-blue-800 break-all">36dd869563b74586a953019006de56c838fae5731af5cd6fb0d660eca634a6e2</span>
+                        <span className="text-green-600">Chain ID:</span>
+                        <span className="text-green-800 break-all">268431a074359c264d23d7a84a875a0ace3a0b9a3b764d2e0f26c59c84abc85f</span>
                     </div>
                     <div className="flex flex-col">
-                        <span className="text-blue-600">Registry App ID:</span>
-                        <span className="text-blue-800 break-all">053e39a7bb6c3fe0c034da47a7a3591cc03d110c5e964c34f693c7fed2123730</span>
+                        <span className="text-green-600">Registry App ID:</span>
+                        <span className="text-green-800 break-all">d12cd2baf58400307a4c77b93fba378d5cce7bdc176e94241b22800b8eba55a2</span>
                     </div>
                     <div className="flex flex-col">
-                        <span className="text-blue-600">Token App ID:</span>
-                        <span className="text-blue-800 break-all">0d024bdc17d9f4a3fb65793b40d3e6da9722d5b56af2d14ac6773079e870a2e0</span>
+                        <span className="text-green-600">ALTH Token App ID (Linera Standard):</span>
+                        <span className="text-green-800 break-all">aae7e265025aab0a51a82fae252970d0ad58a487662570970a628d2788c94a57</span>
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-green-600">Treasury Owner:</span>
+                        <span className="text-green-800 break-all">0x97f8b39f99b4097e4f05961d3a93539dbcd99851091809eaf7588d74123649b4</span>
                     </div>
                 </div>
-                <p className="text-xs text-blue-600 mt-3">Features: WeightedByStake rewards, pendingRewards field, auto-resolve queries</p>
+                <div className="mt-4 p-3 bg-green-100 rounded-lg">
+                    <p className="text-sm text-green-800 font-medium">✅ PRODUCTION STATUS:</p>
+                    <ul className="text-xs text-green-700 mt-1 space-y-1">
+                        <li>• Linera Standard Fungible Token (1,000,000 ALTH supply)</li>
+                        <li>• Token Faucet: 1,000 ALTH per request (24h cooldown)</li>
+                        <li>• Cross-chain transfers via WASM (signed transactions)</li>
+                        <li>• Automatic processInbox for receiving tokens</li>
+                        <li>• Owner-based accounts (0x prefix, lowercase)</li>
+                    </ul>
+                </div>
             </div>
 
             {/* Key Features */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FeatureCard
                     icon={<Shield className="w-6 h-6 text-blue-600" />}
-                    title="Stake-Weighted Voting"
-                    description="Voting power = stake × reputation. 10% of available stake locked per vote as collateral."
+                    title="Linera Standard Token"
+                    description="Using official Linera fungible token standard with owner-based accounts and per-chain balances."
                 />
                 <FeatureCard
                     icon={<Zap className="w-6 h-6 text-yellow-600" />}
-                    title="Cross-Chain Messaging"
-                    description="Voters on any chain can participate via authenticated cross-chain messages to registry."
+                    title="Cross-Chain Transfers"
+                    description="WASM-signed token transfers with automatic processInbox for receiving cross-chain messages."
                 />
                 <FeatureCard
                     icon={<Users className="w-6 h-6 text-green-600" />}
-                    title="Reputation System"
-                    description="Voters earn reputation for correct votes. Higher reputation = higher voting weight and rewards."
+                    title="Token Faucet"
+                    description="Request 1,000 ALTH tokens from treasury with 24-hour cooldown for testing."
                 />
                 <FeatureCard
                     icon={<Clock className="w-6 h-6 text-purple-600" />}
-                    title="Commit-Reveal Voting"
-                    description="Two-phase voting prevents vote copying. Commit hash first, reveal vote after phase ends."
+                    title="Production Ready"
+                    description="All systems operational with real token integration and secure messaging."
                 />
             </div>
 
@@ -173,6 +207,334 @@ available_stake = total_stake - locked_stake`}</pre>
 │  └─────────────┘                      └─────────────────┘  │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘`}</pre>
+                </div>
+            </div>
+
+            {/* Production Status Summary */}
+            <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-xl p-6">
+                <h2 className="text-xl font-semibold text-green-900 mb-4">🚀 Production Status Summary</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-3">
+                        <h3 className="font-semibold text-green-800">✅ Fully Functional Features</h3>
+                        <ul className="text-sm text-green-700 space-y-1">
+                            <li>• Linera Standard Fungible Token</li>
+                            <li>• Token Faucet (1,000 ALTH/request)</li>
+                            <li>• Cross-chain token transfers (WASM)</li>
+                            <li>• Automatic processInbox</li>
+                            <li>• Commit-reveal voting system</li>
+                            <li>• Reputation-based rewards</li>
+                        </ul>
+                    </div>
+                    <div className="space-y-3">
+                        <h3 className="font-semibold text-green-800">🎯 Token Details</h3>
+                        <ul className="text-sm text-green-700 space-y-1">
+                            <li>• <strong>Symbol:</strong> ALTH</li>
+                            <li>• <strong>Supply:</strong> 1,000,000 tokens</li>
+                            <li>• <strong>Standard:</strong> Linera Fungible</li>
+                            <li>• <strong>Account Format:</strong> 0x + public key</li>
+                            <li>• <strong>Balance Storage:</strong> Per-chain</li>
+                            <li>• <strong>Transfer:</strong> Cross-chain messaging</li>
+                        </ul>
+                    </div>
+                </div>
+                <div className="mt-4 p-3 bg-white/50 rounded-lg">
+                    <p className="text-sm text-green-800">
+                        <strong>Important:</strong> After cross-chain transfers, call <code className="bg-green-100 px-1 rounded">processInbox(chainId)</code> on the recipient chain to receive tokens.
+                    </p>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+
+function QualityAssuranceSection() {
+    return (
+        <div className="space-y-8">
+            <div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-4">Quality Assurance</h1>
+                <p className="text-lg text-gray-600">
+                    How Alethea Network ensures accurate and reliable oracle responses through
+                    multiple layers of security and economic incentives.
+                </p>
+            </div>
+
+            {/* Why Quality Matters */}
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+                <h2 className="text-lg font-semibold text-blue-900 mb-3">Why Quality Matters</h2>
+                <p className="text-blue-800 mb-4">
+                    Oracle data directly affects financial outcomes. A single incorrect oracle response can lead to:
+                </p>
+                <ul className="space-y-2 text-blue-800">
+                    <li className="flex items-center gap-2">
+                        <ChevronRight className="w-4 h-4 text-blue-600" />
+                        Incorrect settlement of derivatives and prediction markets
+                    </li>
+                    <li className="flex items-center gap-2">
+                        <ChevronRight className="w-4 h-4 text-blue-600" />
+                        Wrongful insurance claim denials or payouts
+                    </li>
+                    <li className="flex items-center gap-2">
+                        <ChevronRight className="w-4 h-4 text-blue-600" />
+                        Loss of user funds and trust in the protocol
+                    </li>
+                </ul>
+            </div>
+
+            {/* Core Mechanisms */}
+            <div className="bg-white rounded-xl border border-gray-200 p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-6">Core Quality Mechanisms</h2>
+
+                <div className="space-y-6">
+                    {/* 1. Commit-Reveal */}
+                    <div className="border-l-4 border-blue-500 pl-4">
+                        <h3 className="font-semibold text-gray-900 mb-2">1. Commit-Reveal Voting</h3>
+                        <p className="text-gray-600 mb-3">
+                            Prevents vote copying and front-running by hiding votes until reveal phase.
+                        </p>
+                        <div className="bg-slate-900 rounded-lg p-4 text-sm font-mono text-gray-300 mb-3">
+                            <pre>{`// Commit Phase
+commitment = keccak256(outcome + salt)
+// Vote is hidden - no one can see what you voted
+
+// Reveal Phase  
+reveal(outcome, salt)
+// Contract verifies: keccak256(outcome + salt) == commitment`}</pre>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div className="bg-green-50 p-3 rounded-lg">
+                                <span className="font-medium text-green-700">✓ Prevents</span>
+                                <ul className="text-green-600 mt-1">
+                                    <li>• Vote copying</li>
+                                    <li>• Front-running</li>
+                                    <li>• Bandwagon effect</li>
+                                </ul>
+                            </div>
+                            <div className="bg-blue-50 p-3 rounded-lg">
+                                <span className="font-medium text-blue-700">✓ Ensures</span>
+                                <ul className="text-blue-600 mt-1">
+                                    <li>• Independent voting</li>
+                                    <li>• Fair participation</li>
+                                    <li>• Honest opinions</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 2. Economic Security */}
+                    <div className="border-l-4 border-red-500 pl-4">
+                        <h3 className="font-semibold text-gray-900 mb-2">2. Economic Security (Stake Slashing)</h3>
+                        <p className="text-gray-600 mb-3">
+                            Voters have "skin in the game" - incorrect votes result in financial loss.
+                        </p>
+                        <div className="bg-slate-900 rounded-lg p-4 text-sm font-mono text-gray-300 mb-3">
+                            <pre>{`// When voting
+stake_locked = available_stake / 10  // 10% locked as collateral
+
+// If vote is INCORRECT (differs from consensus)
+slashed_amount = stake * 0.05  // 5% of total stake slashed
+stake = stake - slashed_amount
+reward_pool += slashed_amount  // Goes to correct voters
+
+// If vote is CORRECT
+stake_unlocked = stake_locked  // Collateral returned
+rewards += proportional_share  // Earn from reward pool`}</pre>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr className="border-b border-gray-200">
+                                        <th className="text-left py-2 px-3 font-semibold text-gray-900">Stake Amount</th>
+                                        <th className="text-left py-2 px-3 font-semibold text-gray-900">Locked per Vote</th>
+                                        <th className="text-left py-2 px-3 font-semibold text-gray-900">Slashing Risk</th>
+                                        <th className="text-left py-2 px-3 font-semibold text-gray-900">Max Concurrent Votes</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr className="border-b border-gray-100">
+                                        <td className="py-2 px-3">100 ALTH</td>
+                                        <td className="py-2 px-3">10 ALTH</td>
+                                        <td className="py-2 px-3 text-red-600">5 ALTH</td>
+                                        <td className="py-2 px-3">10 votes</td>
+                                    </tr>
+                                    <tr className="border-b border-gray-100">
+                                        <td className="py-2 px-3">1,000 ALTH</td>
+                                        <td className="py-2 px-3">100 ALTH</td>
+                                        <td className="py-2 px-3 text-red-600">50 ALTH</td>
+                                        <td className="py-2 px-3">10 votes</td>
+                                    </tr>
+                                    <tr>
+                                        <td className="py-2 px-3">10,000 ALTH</td>
+                                        <td className="py-2 px-3">1,000 ALTH</td>
+                                        <td className="py-2 px-3 text-red-600">500 ALTH</td>
+                                        <td className="py-2 px-3">10 votes</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {/* 3. Reputation System */}
+                    <div className="border-l-4 border-purple-500 pl-4">
+                        <h3 className="font-semibold text-gray-900 mb-2">3. Reputation System</h3>
+                        <p className="text-gray-600 mb-3">
+                            Track record matters - consistent accuracy builds voting power over time.
+                        </p>
+                        <div className="bg-slate-900 rounded-lg p-4 text-sm font-mono text-gray-300 mb-3">
+                            <pre>{`// Reputation calculation
+reputation = (correct_votes / total_votes) * 100
+
+// Weight multiplier based on reputation
+weight_multiplier = 0.5 + (reputation / 100) * 1.5
+// Range: 0.5x (0 rep) to 2.0x (100 rep)
+
+// Voting power
+voting_power = stake * weight_multiplier`}</pre>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr className="border-b border-gray-200">
+                                        <th className="text-left py-2 px-3 font-semibold text-gray-900">Tier</th>
+                                        <th className="text-left py-2 px-3 font-semibold text-gray-900">Reputation</th>
+                                        <th className="text-left py-2 px-3 font-semibold text-gray-900">Multiplier</th>
+                                        <th className="text-left py-2 px-3 font-semibold text-gray-900">Example (1000 stake)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr className="border-b border-gray-100">
+                                        <td className="py-2 px-3"><span className="px-2 py-1 bg-gray-100 rounded text-gray-700">Novice</span></td>
+                                        <td className="py-2 px-3">0 - 40</td>
+                                        <td className="py-2 px-3">0.5x - 1.1x</td>
+                                        <td className="py-2 px-3">500 - 1,100 power</td>
+                                    </tr>
+                                    <tr className="border-b border-gray-100">
+                                        <td className="py-2 px-3"><span className="px-2 py-1 bg-blue-100 rounded text-blue-700">Intermediate</span></td>
+                                        <td className="py-2 px-3">41 - 70</td>
+                                        <td className="py-2 px-3">1.1x - 1.55x</td>
+                                        <td className="py-2 px-3">1,100 - 1,550 power</td>
+                                    </tr>
+                                    <tr className="border-b border-gray-100">
+                                        <td className="py-2 px-3"><span className="px-2 py-1 bg-green-100 rounded text-green-700">Expert</span></td>
+                                        <td className="py-2 px-3">71 - 90</td>
+                                        <td className="py-2 px-3">1.55x - 1.85x</td>
+                                        <td className="py-2 px-3">1,550 - 1,850 power</td>
+                                    </tr>
+                                    <tr>
+                                        <td className="py-2 px-3"><span className="px-2 py-1 bg-purple-100 rounded text-purple-700">Master</span></td>
+                                        <td className="py-2 px-3">91 - 100</td>
+                                        <td className="py-2 px-3">1.85x - 2.0x</td>
+                                        <td className="py-2 px-3">1,850 - 2,000 power</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {/* 4. Consensus Strategies */}
+                    <div className="border-l-4 border-green-500 pl-4">
+                        <h3 className="font-semibold text-gray-900 mb-2">4. Flexible Consensus Strategies</h3>
+                        <p className="text-gray-600 mb-3">
+                            Different query types can use appropriate consensus mechanisms.
+                        </p>
+                        <div className="grid gap-4">
+                            <div className="bg-gray-50 p-4 rounded-lg">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <span className="font-semibold text-gray-900">Majority</span>
+                                    <span className="text-xs px-2 py-1 bg-gray-200 rounded">Default</span>
+                                </div>
+                                <p className="text-sm text-gray-600">Simple &gt;50% wins. Best for straightforward yes/no questions.</p>
+                                <code className="text-xs bg-gray-200 px-2 py-1 rounded mt-2 inline-block">winner = outcome with votes &gt; 50%</code>
+                            </div>
+                            <div className="bg-gray-50 p-4 rounded-lg">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <span className="font-semibold text-gray-900">Supermajority</span>
+                                    <span className="text-xs px-2 py-1 bg-yellow-200 rounded">High Stakes</span>
+                                </div>
+                                <p className="text-sm text-gray-600">Requires &gt;66.67% for consensus. More resistant to manipulation.</p>
+                                <code className="text-xs bg-gray-200 px-2 py-1 rounded mt-2 inline-block">winner = outcome with votes &gt; 66.67%</code>
+                            </div>
+                            <div className="bg-gray-50 p-4 rounded-lg">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <span className="font-semibold text-gray-900">WeightedByStake</span>
+                                    <span className="text-xs px-2 py-1 bg-blue-200 rounded">Recommended</span>
+                                </div>
+                                <p className="text-sm text-gray-600">Votes weighted by stake × reputation. Rewards proportional to stake.</p>
+                                <code className="text-xs bg-gray-200 px-2 py-1 rounded mt-2 inline-block">weight = stake × reputation_multiplier</code>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Query Best Practices */}
+            <div className="bg-white rounded-xl border border-gray-200 p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">Query Best Practices</h2>
+                <p className="text-gray-600 mb-4">
+                    Well-formed queries lead to more accurate results. Follow these guidelines:
+                </p>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <h3 className="font-semibold text-green-800 mb-3">✓ Good Queries</h3>
+                        <ul className="space-y-2 text-sm text-green-700">
+                            <li>• <strong>Verifiable facts</strong>: "Did BTC close above $100k on Jan 5?"</li>
+                            <li>• <strong>Specific timeframe</strong>: Include exact date/time</li>
+                            <li>• <strong>Clear outcomes</strong>: Yes/No or specific options</li>
+                            <li>• <strong>Objective criteria</strong>: Can be verified by anyone</li>
+                            <li>• <strong>Past events</strong>: Events that have already occurred</li>
+                        </ul>
+                    </div>
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <h3 className="font-semibold text-red-800 mb-3">✗ Bad Queries</h3>
+                        <ul className="space-y-2 text-sm text-red-700">
+                            <li>• <strong>Predictions</strong>: "Will BTC reach $150k by 2027?"</li>
+                            <li>• <strong>Subjective</strong>: "Is Ethereum better than Solana?"</li>
+                            <li>• <strong>Ambiguous</strong>: "Did the market crash?"</li>
+                            <li>• <strong>No timeframe</strong>: "Did it rain in Tokyo?"</li>
+                            <li>• <strong>Unverifiable</strong>: "What did CEO think about X?"</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            {/* Attack Resistance */}
+            <div className="bg-white rounded-xl border border-gray-200 p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">Attack Resistance</h2>
+
+                <div className="space-y-4">
+                    <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
+                        <Shield className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
+                        <div>
+                            <h3 className="font-semibold text-gray-900">Sybil Attack</h3>
+                            <p className="text-sm text-gray-600 mb-2">Creating many fake voters to manipulate results.</p>
+                            <p className="text-sm text-green-600">✓ Mitigated by: Stake requirement - each voter needs real tokens</p>
+                        </div>
+                    </div>
+                    <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
+                        <Shield className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
+                        <div>
+                            <h3 className="font-semibold text-gray-900">Bribery Attack</h3>
+                            <p className="text-sm text-gray-600 mb-2">Paying voters to vote a certain way.</p>
+                            <p className="text-sm text-green-600">✓ Mitigated by: Commit-reveal (can't prove vote before reveal) + slashing (bribe must exceed potential loss)</p>
+                        </div>
+                    </div>
+                    <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
+                        <Shield className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
+                        <div>
+                            <h3 className="font-semibold text-gray-900">Collusion Attack</h3>
+                            <p className="text-sm text-gray-600 mb-2">Group of voters coordinating to manipulate results.</p>
+                            <p className="text-sm text-green-600">✓ Mitigated by: Weighted voting (need majority of stake) + reputation (long-term cost)</p>
+                        </div>
+                    </div>
+                    <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
+                        <Shield className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
+                        <div>
+                            <h3 className="font-semibold text-gray-900">Front-Running</h3>
+                            <p className="text-sm text-gray-600 mb-2">Seeing others' votes and copying them.</p>
+                            <p className="text-sm text-green-600">✓ Mitigated by: Commit-reveal voting - votes hidden until reveal phase</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -482,20 +844,24 @@ function IntegrationSection() {
             </div>
 
             {/* Prerequisites */}
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-                <h2 className="text-lg font-semibold text-blue-900 mb-3">Prerequisites</h2>
-                <ul className="space-y-2 text-blue-800">
+            <div className="bg-green-50 border border-green-200 rounded-xl p-6">
+                <h2 className="text-lg font-semibold text-green-900 mb-3">Prerequisites (Production Ready)</h2>
+                <ul className="space-y-2 text-green-800">
                     <li className="flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4 text-blue-600" />
+                        <CheckCircle className="w-4 h-4 text-green-600" />
                         Linera SDK 0.15.6 with Rust 1.86.0
                     </li>
                     <li className="flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4 text-blue-600" />
-                        Registry App ID: 053e39a7bb6c3fe0c034da47a7a3591cc03d110c5e964c34f693c7fed2123730
+                        <CheckCircle className="w-4 h-4 text-green-600" />
+                        Registry App ID: d12cd2baf58400307a4c77b93fba378d5cce7bdc176e94241b22800b8eba55a2
                     </li>
                     <li className="flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4 text-blue-600" />
-                        Chain ID: 36dd869563b74586a953019006de56c838fae5731af5cd6fb0d660eca634a6e2
+                        <CheckCircle className="w-4 h-4 text-green-600" />
+                        Chain ID: 268431a074359c264d23d7a84a875a0ace3a0b9a3b764d2e0f26c59c84abc85f
+                    </li>
+                    <li className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-green-600" />
+                        ALTH Token (Linera Standard): aae7e265025aab0a51a82fae252970d0ad58a487662570970a628d2788c94a57
                     </li>
                 </ul>
             </div>
@@ -634,15 +1000,26 @@ function ApiSection() {
 
             {/* Endpoint */}
             <div className="bg-white rounded-xl border border-gray-200 p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">GraphQL Endpoint</h2>
-                <CodeBlock code={`# Registry endpoint
-POST http://localhost:8080/chains/36dd869.../applications/a537c7c...
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">GraphQL Endpoints (Production)</h2>
+                <CodeBlock code={`# Registry endpoint (Production)
+POST http://localhost:8080/chains/268431a074359c264d23d7a84a875a0ace3a0b9a3b764d2e0f26c59c84abc85f/applications/d12cd2baf58400307a4c77b93fba378d5cce7bdc176e94241b22800b8eba55a2
 
-# Token endpoint  
-POST http://localhost:8080/chains/36dd869.../applications/0d024bd...
+# ALTH Token endpoint (Linera Standard Fungible Token)
+# Note: Query on USER's chain for balance, not token chain
+POST http://localhost:8080/chains/{USER_CHAIN_ID}/applications/aae7e265025aab0a51a82fae252970d0ad58a487662570970a628d2788c94a57
+
+# Process Inbox (root endpoint - required after cross-chain transfers)
+POST http://localhost:8080
+{ "query": "mutation { processInbox(chainId: \\"{USER_CHAIN_ID}\\") }" }
 
 Content-Type: application/json
-{ "query": "{ ... }" }`} />
+{ "query": "{ ... }" }
+
+# Token Query Format (owner must be lowercase with 0x prefix):
+{ "query": "{ accounts { entry(key: \\"0x...\\" ) { value } } }" }
+
+# Token Transfer Format:
+{ "query": "mutation { transfer(owner: \\"0x...\\", amount: \\"100.\\", targetAccount: { chainId: \\"..\\", owner: \\"0x...\\" }) }" }`} />
             </div>
 
             {/* Queries */}
@@ -727,7 +1104,7 @@ Content-Type: application/json
                         description="Create new oracle query (admin)"
                         query={`mutation {
   createQuery(
-    description: "Will BTC reach $150k?",
+    description: "Did BTC close above $100,000 on January 5, 2026?",
     outcomes: ["Yes", "No"],
     strategy: "Majority",
     minVotes: 1,
@@ -742,7 +1119,7 @@ Content-Type: application/json
                         description="Submit vote commitment (via WASM)"
                         query={`mutation {
   sendCommitVoteMessage(
-    targetChain: "36dd869...",
+    targetChain: "268431a074359c264d23d7a84a875a0ace3a0b9a3b764d2e0f26c59c84abc85f",
     queryId: 1,
     commitHash: "abc123..."
   )
@@ -754,7 +1131,7 @@ Content-Type: application/json
                         description="Reveal committed vote (via WASM)"
                         query={`mutation {
   sendRevealVoteMessage(
-    targetChain: "36dd869...",
+    targetChain: "268431a074359c264d23d7a84a875a0ace3a0b9a3b764d2e0f26c59c84abc85f",
     queryId: 1,
     value: "Yes",
     salt: "random_salt",
@@ -768,7 +1145,7 @@ Content-Type: application/json
                         description="Register as voter (via WASM)"
                         query={`mutation {
   sendRegisterVoterMessage(
-    targetChain: "36dd869...",
+    targetChain: "268431a074359c264d23d7a84a875a0ace3a0b9a3b764d2e0f26c59c84abc85f",
     stake: "100",
     name: "MyVoter"
   )

@@ -203,10 +203,19 @@ export const LineraProvider: React.FC<{ children: ReactNode }> = ({ children }) 
             const walletData = await loadWalletData();
             if (!walletData) throw new Error('No wallet data found');
 
-            console.log('🔗 Reconnecting wallet...');
-            const signer = PrivateKey.fromMnemonic(walletData.mnemonic);
+            console.log('═══════════════════════════════════════════════════════════');
+            console.log('🔗 [connectExistingWallet] Starting...');
+            console.log('═══════════════════════════════════════════════════════════');
+            console.log('  Stored chainId:', walletData.chainId);
+            console.log('  Stored owner:', walletData.owner);
+            console.log('  FAUCET_URL:', FAUCET_URL);
+            console.log('  REGISTRY_APP_ID:', REGISTRY_APP_ID);
+            console.log('  TOKEN_APP_ID:', TOKEN_APP_ID);
 
-            // Set UI ready with stored data first
+            const signer = PrivateKey.fromMnemonic(walletData.mnemonic);
+            console.log('  Signer address:', signer.address().toString());
+
+            // Set UI ready with stored data first (so user sees something)
             setState(prev => ({
                 ...prev,
                 chainId: walletData.chainId,
@@ -216,54 +225,166 @@ export const LineraProvider: React.FC<{ children: ReactNode }> = ({ children }) 
                 walletExists: true,
             }));
 
-            // Connect blockchain in background
-            try {
-                const faucet = new Faucet(FAUCET_URL);
-                const wallet = await faucet.createWallet();
-                const newChainId = await faucet.claimChain(wallet, signer.address());
+            // Connect blockchain in background with retry
+            const connectBlockchain = async (retryCount = 0): Promise<void> => {
+                const maxRetries = 3;
+                try {
+                    console.log(`🔄 [connectBlockchain] Attempt ${retryCount + 1}/${maxRetries}...`);
 
-                await saveWalletData({ ...walletData, chainId: newChainId });
+                    // Step 1: Create faucet connection
+                    console.log('  Step 1: Creating faucet connection...');
+                    console.log('    FAUCET_URL:', FAUCET_URL);
 
-                const client = await new Client(wallet, signer, false);
-                clientRef.current = client;
-
-                let application: Application | undefined;
-                let tokenApplication: Application | undefined;
-
-                if (REGISTRY_APP_ID) {
+                    // Test faucet connectivity first
                     try {
-                        application = await client.frontend().application(REGISTRY_APP_ID);
-                        applicationRef.current = application;
-                        console.log('📱 Registry Application connected:', REGISTRY_APP_ID);
-                    } catch (err) {
-                        console.warn('⚠️ Could not connect to registry application:', err);
+                        console.log('    Testing faucet HTTP connectivity...');
+                        const testResponse = await fetch(FAUCET_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ query: '{ version }' })
+                        });
+                        console.log('    Faucet HTTP status:', testResponse.status);
+                        if (testResponse.ok) {
+                            const testData = await testResponse.json();
+                            console.log('    Faucet response:', JSON.stringify(testData));
+                        }
+                    } catch (httpErr) {
+                        console.warn('    ⚠️ Faucet HTTP test failed:', httpErr);
                     }
-                }
 
-                if (TOKEN_APP_ID) {
-                    try {
-                        tokenApplication = await client.frontend().application(TOKEN_APP_ID);
-                        tokenApplicationRef.current = tokenApplication;
-                        console.log('🪙 Token Application connected:', TOKEN_APP_ID);
-                    } catch (err) {
-                        console.warn('⚠️ Could not connect to token application:', err);
+                    const faucet = new Faucet(FAUCET_URL);
+                    console.log('  ✅ Faucet object created');
+
+                    // Step 2: Create wallet (in-memory structure)
+                    console.log('  Step 2: Creating wallet...');
+                    const startWallet = performance.now();
+                    const wallet = await faucet.createWallet();
+                    console.log(`  ✅ Wallet created (${(performance.now() - startWallet).toFixed(0)}ms)`);
+
+                    // Step 3: Claim a new chain (NOTE: This creates a NEW chain each time!)
+                    // This is a known limitation - ideally we'd reuse the existing chain
+                    console.log('  Step 3: Claiming chain from faucet...');
+                    console.log('    Signer address:', signer.address().toString());
+                    const startClaim = performance.now();
+                    const newChainId = await faucet.claimChain(wallet, signer.address());
+                    console.log(`  ✅ Chain claimed (${(performance.now() - startClaim).toFixed(0)}ms):`, newChainId);
+                    console.log('  ⚠️ Note: This is a NEW chain, not the stored one');
+
+                    // Save the new chain ID
+                    await saveWalletData({ ...walletData, chainId: newChainId });
+
+                    // Step 4: Create client
+                    console.log('  Step 4: Creating Linera client...');
+                    const startClient = performance.now();
+                    const client = await new Client(wallet, signer, false);
+                    clientRef.current = client;
+                    console.log(`  ✅ Client created (${(performance.now() - startClient).toFixed(0)}ms)`);
+
+                    let application: Application | undefined;
+                    let tokenApplication: Application | undefined;
+
+                    // Step 5: Connect to Registry Application
+                    // Note: @linera/client 0.15.6 doesn't have requestApplication()
+                    // We directly use frontend().application() instead
+                    if (REGISTRY_APP_ID) {
+                        try {
+                            console.log('  Step 5a: Connecting to registry application...');
+                            console.log('    REGISTRY_APP_ID:', REGISTRY_APP_ID);
+                            const startFrontendReg = performance.now();
+                            application = await client.frontend().application(REGISTRY_APP_ID);
+                            applicationRef.current = application;
+                            console.log(`    ✅ Registry Application connected! (${(performance.now() - startFrontendReg).toFixed(0)}ms)`);
+                        } catch (err) {
+                            console.error('    ❌ Could not connect to registry application:', err);
+                            console.error('    Error type:', err?.constructor?.name);
+                            console.error('    Error message:', err instanceof Error ? err.message : String(err));
+                            if (err instanceof Error && err.stack) {
+                                console.error('    Stack:', err.stack);
+                            }
+                        }
+                    } else {
+                        console.log('  Step 5a: Skipped - no REGISTRY_APP_ID');
                     }
-                }
 
-                setState(prev => ({
-                    ...prev,
-                    client,
-                    wallet,
-                    chainId: newChainId,
-                    application,
-                    tokenApplication,
-                }));
-                console.log('✅ Blockchain connected');
-            } catch (blockchainErr) {
-                console.warn('⚠️ Blockchain connection failed:', blockchainErr);
-            }
+                    // Step 6: Connect to Token Application
+                    if (TOKEN_APP_ID) {
+                        try {
+                            console.log('  Step 5b: Connecting to token application...');
+                            console.log('    TOKEN_APP_ID:', TOKEN_APP_ID);
+                            const startFrontendToken = performance.now();
+                            tokenApplication = await client.frontend().application(TOKEN_APP_ID);
+                            tokenApplicationRef.current = tokenApplication;
+                            console.log(`    ✅ Token Application connected! (${(performance.now() - startFrontendToken).toFixed(0)}ms)`);
+                        } catch (err) {
+                            console.error('    ❌ Could not connect to token application:', err);
+                            console.error('    Error type:', err?.constructor?.name);
+                            console.error('    Error message:', err instanceof Error ? err.message : String(err));
+                            if (err instanceof Error && err.stack) {
+                                console.error('    Stack:', err.stack);
+                            }
+                        }
+                    } else {
+                        console.log('  Step 5b: Skipped - no TOKEN_APP_ID');
+                    }
+
+                    // Update state with connected applications
+                    setState(prev => ({
+                        ...prev,
+                        client,
+                        wallet,
+                        chainId: newChainId,
+                        application,
+                        tokenApplication,
+                    }));
+
+                    console.log('═══════════════════════════════════════════════════════════');
+                    console.log('✅ [connectBlockchain] SUCCESS!');
+                    console.log('  application:', !!application);
+                    console.log('  tokenApplication:', !!tokenApplication);
+                    console.log('═══════════════════════════════════════════════════════════');
+                } catch (blockchainErr) {
+                    console.error('═══════════════════════════════════════════════════════════');
+                    console.error(`❌ [connectBlockchain] Attempt ${retryCount + 1}/${maxRetries} FAILED`);
+                    console.error('═══════════════════════════════════════════════════════════');
+                    console.error('  Error:', blockchainErr);
+                    console.error('  Error type:', blockchainErr?.constructor?.name);
+                    console.error('  Error message:', blockchainErr instanceof Error ? blockchainErr.message : String(blockchainErr));
+                    if (blockchainErr instanceof Error && blockchainErr.stack) {
+                        console.error('  Stack trace:', blockchainErr.stack);
+                    }
+
+                    // Check for specific error types
+                    const errMsg = blockchainErr instanceof Error ? blockchainErr.message : String(blockchainErr);
+                    if (errMsg.includes('network') || errMsg.includes('fetch')) {
+                        console.error('  🔍 Diagnosis: Network connectivity issue');
+                    } else if (errMsg.includes('SSL') || errMsg.includes('certificate')) {
+                        console.error('  🔍 Diagnosis: SSL/Certificate issue');
+                    } else if (errMsg.includes('CORS')) {
+                        console.error('  🔍 Diagnosis: CORS policy blocking request');
+                    } else if (errMsg.includes('timeout')) {
+                        console.error('  🔍 Diagnosis: Request timeout');
+                    }
+
+                    if (retryCount < maxRetries - 1) {
+                        const delay = 2000 * (retryCount + 1);
+                        console.log(`  Retrying in ${delay}ms...`);
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        return connectBlockchain(retryCount + 1);
+                    }
+                    console.error('❌ All blockchain connection attempts failed!');
+                    console.error('  WASM features will not work.');
+                    console.error('  Possible causes:');
+                    console.error('    1. Linera testnet validators are down');
+                    console.error('    2. Network/firewall blocking WebSocket connections');
+                    console.error('    3. Browser blocking mixed content or invalid certificates');
+                }
+            };
+
+            // Start background connection (don't await - let UI be responsive)
+            console.log('🚀 Starting background blockchain connection...');
+            connectBlockchain();
         } catch (err) {
-            console.error('❌ Failed to load wallet:', err);
+            console.error('❌ [connectExistingWallet] Failed:', err);
             await clearWalletData();
             setState(prev => ({
                 ...prev,
@@ -312,6 +433,8 @@ export const LineraProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
                 if (REGISTRY_APP_ID) {
                     try {
+                        // Connect to registry application directly (no requestApplication in this SDK version)
+                        console.log('📥 Connecting to registry application...');
                         application = await client.frontend().application(REGISTRY_APP_ID);
                         applicationRef.current = application;
                         console.log('📱 Registry Application connected');
@@ -322,11 +445,16 @@ export const LineraProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
                 if (TOKEN_APP_ID) {
                     try {
+                        // Connect to token application directly (no requestApplication in this SDK version)
+                        console.log('📥 Connecting to token application...');
+                        console.log('  TOKEN_APP_ID:', TOKEN_APP_ID);
                         tokenApplication = await client.frontend().application(TOKEN_APP_ID);
                         tokenApplicationRef.current = tokenApplication;
                         console.log('🪙 Token Application connected');
+                        console.log('  tokenApplicationRef.current set:', !!tokenApplicationRef.current);
                     } catch (err) {
                         console.warn('⚠️ Could not connect to token application:', err);
+                        console.warn('  This may cause token transfers to fail');
                     }
                 }
 
@@ -520,20 +648,36 @@ export const LineraProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     // This allows authenticated token transfers using the user's private key
     const executeTokenMutation = async (mutation: string): Promise<any> => {
         const app = tokenApplicationRef.current || state.tokenApplication;
+
+        console.log('🪙 [executeTokenMutation] Starting...');
+        console.log('  tokenApplicationRef.current:', !!tokenApplicationRef.current);
+        console.log('  state.tokenApplication:', !!state.tokenApplication);
+        console.log('  clientRef.current:', !!clientRef.current);
+
         if (!app) {
+            console.error('❌ Token application not connected');
+            console.log('  Hint: Check browser console for WASM connection errors');
             throw new Error('Token application not connected');
         }
 
         console.log('🪙 [executeTokenMutation] Mutation:', mutation.substring(0, 100) + '...');
-        const response = await app.query(JSON.stringify({ query: mutation }));
-        const result = typeof response === 'string' ? JSON.parse(response) : response;
 
-        if (result.errors?.length > 0) {
-            throw new Error(result.errors[0].message);
+        try {
+            const response = await app.query(JSON.stringify({ query: mutation }));
+            console.log('📥 Raw response:', response);
+            const result = typeof response === 'string' ? JSON.parse(response) : response;
+
+            if (result.errors?.length > 0) {
+                console.error('❌ GraphQL errors:', result.errors);
+                throw new Error(result.errors[0].message);
+            }
+
+            console.log('✅ [executeTokenMutation] Success');
+            return result.data;
+        } catch (err) {
+            console.error('❌ [executeTokenMutation] Exception:', err);
+            throw err;
         }
-
-        console.log('✅ [executeTokenMutation] Success');
-        return result.data;
     };
 
     return (

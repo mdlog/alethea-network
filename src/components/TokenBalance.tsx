@@ -5,7 +5,6 @@ import { Coins, RefreshCw, Loader2 } from 'lucide-react';
 const TOKEN_APP_ID = import.meta.env.VITE_TOKEN_APP_ID || '';
 // Use relative URL for Vite proxy, or explicit URL if set
 const SERVICE_URL = import.meta.env.VITE_SERVICE_URL || '';
-const TOKEN_CHAIN_ID = import.meta.env.VITE_TOKEN_CHAIN_ID || import.meta.env.VITE_CHAIN_ID;
 
 interface TokenBalanceProps {
     showRefresh?: boolean;
@@ -16,26 +15,32 @@ export default function TokenBalance({ showRefresh = true, compact = false }: To
     const { chainId, owner, status } = useLinera();
     const [balance, setBalance] = useState<string>('0');
     const [loading, setLoading] = useState(false);
-    const [tokenSymbol, setTokenSymbol] = useState('ALETH');
+    const [tokenSymbol, setTokenSymbol] = useState('ALTH');
 
     const loadBalance = async () => {
-        if (!TOKEN_APP_ID || !owner) return;
+        if (!TOKEN_APP_ID || !owner || !chainId) return;
 
         setLoading(true);
         try {
-            const graphqlUrl = `${SERVICE_URL}/chains/${TOKEN_CHAIN_ID}/applications/${TOKEN_APP_ID}`;
+            // Linera standard: query on USER's chain, not token chain
+            const graphqlUrl = `${SERVICE_URL}/chains/${chainId}/applications/${TOKEN_APP_ID}`;
 
-            // Load balance and token info - use owner address (0x...), not chainId
+            // Use 0x prefix and lowercase for owner (Linera stores keys in lowercase)
+            const queryOwner = (owner.startsWith('0x') ? owner : `0x${owner}`).toLowerCase();
+            console.log('🔍 Loading balance for owner:', queryOwner, 'on chain:', chainId);
+
             const response = await fetch(graphqlUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Bypass-Tunnel-Reminder': 'true' },
                 body: JSON.stringify({
                     query: `
                         query {
-                            balance(owner: "${owner}")
-                            tokenInfo {
-                                symbol
+                            accounts {
+                                entry(key: "${queryOwner}") {
+                                    value
+                                }
                             }
+                            tickerSymbol
                         }
                     `
                 }),
@@ -43,10 +48,13 @@ export default function TokenBalance({ showRefresh = true, compact = false }: To
 
             if (response.ok) {
                 const result = await response.json();
+                console.log('📊 Balance response:', result);
                 if (result.data) {
-                    setBalance(result.data.balance || '0');
-                    if (result.data.tokenInfo?.symbol) {
-                        setTokenSymbol(result.data.tokenInfo.symbol);
+                    // Balance from accounts.entry.value (Linera standard format)
+                    const balanceValue = result.data.accounts?.entry?.value || '0';
+                    setBalance(balanceValue);
+                    if (result.data.tickerSymbol) {
+                        setTokenSymbol(result.data.tickerSymbol);
                     }
                 }
             }

@@ -160,6 +160,22 @@ impl Contract for OracleRegistryV2Contract {
                 self.claim_rewards().await
             }
             
+            Operation::ClaimRewardsFor { voter_address } => {
+                self.claim_rewards_for(voter_address).await
+            }
+            
+            Operation::WithdrawStakeFor { voter_address, amount } => {
+                self.withdraw_stake_for(voter_address, amount).await
+            }
+            
+            Operation::ClaimWithdrawableTokens { voter_address } => {
+                self.claim_withdrawable_tokens(voter_address).await
+            }
+            
+            Operation::SetTokenConfig { token_app_id, token_chain_id } => {
+                self.set_token_config(token_app_id, token_chain_id).await
+            }
+            
             Operation::UpdateParameters { params } => {
                 // Convert params to state::ProtocolParameters
                 // They are the same struct, just different namespace
@@ -2568,12 +2584,13 @@ impl OracleRegistryV2Contract {
             return OperationResponse::error(format!("Failed to lock stake: {}", e));
         }
         
-        // Create commit
+        // Create commit with stake_locked stored for exact unlock later
         let commit = VoteCommit {
             voter: voter_chain,
             commit_hash: commit_hash.clone(),
             committed_at: current_time,
             revealed: false,
+            stake_locked: stake_to_lock,  // Store exact amount locked
         };
         
         let commit_phase_end = query.commit_phase_end;
@@ -2796,12 +2813,13 @@ impl OracleRegistryV2Contract {
             return OperationResponse::error(format!("Failed to lock stake: {}", e));
         }
         
-        // Create commit
+        // Create commit with stake_locked stored for exact unlock later
         let commit = VoteCommit {
             voter: voter_chain,
             commit_hash: commit_hash.clone(),
             committed_at: current_time,
             revealed: false,
+            stake_locked: stake_to_lock,  // Store exact amount locked
         };
         
         // Store commit and get commit_phase_end before moving query
@@ -3046,17 +3064,17 @@ impl OracleRegistryV2Contract {
         self.state.queries.insert(&query_id, query.clone())
             .map_err(|e| format!("Failed to update query: {}", e))?;
         
-        // Unlock stake for all voters who participated
-        for (voter, _vote) in &query.votes {
-            if let Some(voter_info) = self.state.get_voter(voter).await {
-                let params = self.state.get_parameters().await;
-                let locked_amount = self.calculate_stake_to_lock(&voter_info, &query, &params);
-                
-                // Unlock the stake
-                if let Err(e) = self.state.unlock_stake(voter, locked_amount).await {
-                    eprintln!("Warning: Failed to unlock stake for voter {} on expired query {}: {}", 
-                             voter, query_id, e);
-                }
+        // Unlock stake for all voters who committed (using stored stake_locked amount)
+        // This ensures we unlock exactly what was locked, regardless of current stake
+        for (voter, commit) in &query.commits {
+            let locked_amount = commit.stake_locked;
+            
+            if let Err(e) = self.state.unlock_stake(voter, locked_amount).await {
+                eprintln!("Warning: Failed to unlock stake {} for voter {} on expired query {}: {}", 
+                         locked_amount, voter, query_id, e);
+            } else {
+                eprintln!("Info: Unlocked {} stake for voter {} on expired query {}", 
+                         locked_amount, voter, query_id);
             }
         }
         
@@ -3299,17 +3317,15 @@ impl OracleRegistryV2Contract {
         query.resolved_at = Some(self.runtime.system_time());
         self.state.queries.insert(&query_id, query.clone()).expect("Failed to update query");
         
-        // Unlock stake for all voters who participated
-        for (voter, _vote) in &query.votes {
-            // Calculate how much was locked for this vote
-            if let Some(voter_info) = self.state.get_voter(voter).await {
-                let params = self.state.get_parameters().await;
-                let locked_amount = self.calculate_stake_to_lock(&voter_info, &query, &params);
-                
-                if let Err(e) = self.state.unlock_stake(voter, locked_amount).await {
-                    // Log error but continue - don't fail the entire resolution
-                    eprintln!("Warning: Failed to unlock stake for voter {}: {}", voter, e);
-                }
+        // Unlock stake for all voters who committed (using stored stake_locked amount)
+        // This ensures we unlock exactly what was locked, regardless of current stake
+        for (voter, commit) in &query.commits {
+            let locked_amount = commit.stake_locked;
+            
+            if let Err(e) = self.state.unlock_stake(voter, locked_amount).await {
+                eprintln!("Warning: Failed to unlock stake {} for voter {}: {}", locked_amount, voter, e);
+            } else {
+                eprintln!("Info: Unlocked {} stake for voter {} on query {}", locked_amount, voter, query_id);
             }
         }
         
@@ -3390,7 +3406,8 @@ impl OracleRegistryV2Contract {
                 // Add to pending rewards
                 let current_pending = self.state.get_pending_rewards(voter).await;
                 let current_value: u128 = current_pending.into();
-                let new_pending = Amount::from_tokens(current_value + reward_value);
+                // Both current_value and reward_value are in attos
+                let new_pending = Amount::from_attos(current_value + reward_value);
                 
                 if let Err(e) = self.state.pending_rewards.insert(voter, new_pending) {
                     eprintln!("Warning: Failed to add pending rewards for voter {}: {}", voter, e);
@@ -3404,13 +3421,15 @@ impl OracleRegistryV2Contract {
             // Update protocol treasury with collected fees
             let current_treasury = *self.state.protocol_treasury.get();
             let treasury_value: u128 = current_treasury.into();
-            self.state.protocol_treasury.set(Amount::from_tokens(treasury_value + fee_value));
+            // Both values are in attos
+            self.state.protocol_treasury.set(Amount::from_attos(treasury_value + fee_value));
             
             // Update reward pool (add query reward, subtract distributed rewards)
             let current_pool = *self.state.reward_pool.get();
             let pool_value: u128 = current_pool.into();
             let reward_value: u128 = reward_amount.into();
-            let new_pool = Amount::from_tokens(pool_value + reward_value - total_distributed);
+            // All values are in attos
+            let new_pool = Amount::from_attos(pool_value + reward_value - total_distributed);
             self.state.reward_pool.set(new_pool);
         }
         
@@ -3659,9 +3678,10 @@ impl OracleRegistryV2Contract {
         let voter_chain = self.runtime.chain_id();
         
         // Validate voter is registered
-        if let Err(e) = self.validate_voter_registered(&voter_chain).await {
-            return OperationResponse::error(e);
-        }
+        let mut voter_info = match self.validate_voter_registered(&voter_chain).await {
+            Ok(info) => info,
+            Err(e) => return OperationResponse::error(e),
+        };
         
         // Get pending rewards
         let pending_rewards = self.state.get_pending_rewards(&voter_chain).await;
@@ -3671,9 +3691,17 @@ impl OracleRegistryV2Contract {
             return OperationResponse::error("No pending rewards to claim");
         }
         
-        // Transfer rewards to voter
-        // Note: In production, implement proper token transfer
-        // For now, we'll just clear the pending rewards
+        // Add rewards to voter's stake
+        voter_info.stake = voter_info.stake.saturating_add(pending_rewards);
+        
+        // Update voter info with new stake
+        if let Err(e) = self.state.voters.insert(&voter_chain, voter_info) {
+            return OperationResponse::error(format!("Failed to update voter stake: {}", e));
+        }
+        
+        // Update total stake in the system
+        let current_total_stake = *self.state.total_stake.get();
+        self.state.total_stake.set(current_total_stake.saturating_add(pending_rewards));
         
         // Clear pending rewards
         if let Err(e) = self.state.pending_rewards.remove(&voter_chain) {
@@ -3684,7 +3712,8 @@ impl OracleRegistryV2Contract {
         let total_distributed = *self.state.total_rewards_distributed.get();
         let total_value: u128 = total_distributed.into();
         let rewards_value: u128 = pending_rewards.into();
-        let new_total = Amount::from_tokens(total_value + rewards_value);
+        // Both values are in attos
+        let new_total = Amount::from_attos(total_value + rewards_value);
         self.state.total_rewards_distributed.set(new_total);
         
         // Emit RewardsClaimed event for cross-chain subscribers
@@ -3694,7 +3723,7 @@ impl OracleRegistryV2Contract {
         });
         
         OperationResponse::success_with_data(
-            format!("Successfully claimed {} rewards", pending_rewards),
+            format!("Successfully claimed {} rewards - added to stake", pending_rewards),
             ResponseData {
                 voter_address: Some(voter_chain.to_string()),
                 query_id: None,
@@ -3702,6 +3731,277 @@ impl OracleRegistryV2Contract {
                 rewards_claimed: Some(pending_rewards.to_string()),
             }
         )
+    }
+    
+    /// Claim pending rewards for a specific voter (by address)
+    /// This allows claiming rewards when the caller chain is different from voter chain
+    async fn claim_rewards_for(&mut self, voter_address: String) -> oracle_registry_v2::OperationResponse {
+        use oracle_registry_v2::{OperationResponse, ResponseData};
+        
+        // Parse voter address to ChainId
+        let voter_chain: ChainId = match voter_address.parse() {
+            Ok(chain) => chain,
+            Err(_) => return OperationResponse::error(format!("Invalid voter address: {}", voter_address)),
+        };
+        
+        // Validate voter is registered
+        let mut voter_info = match self.state.get_voter(&voter_chain).await {
+            Some(info) => {
+                if !info.is_active {
+                    return OperationResponse::error("Voter is not active");
+                }
+                info
+            }
+            None => return OperationResponse::error("Voter not registered"),
+        };
+        
+        // Get pending rewards
+        let pending_rewards = self.state.get_pending_rewards(&voter_chain).await;
+        
+        // Check if there are any rewards to claim
+        if pending_rewards == Amount::ZERO {
+            return OperationResponse::error("No pending rewards to claim");
+        }
+        
+        // Add rewards to voter's stake
+        voter_info.stake = voter_info.stake.saturating_add(pending_rewards);
+        
+        // Update voter info with new stake
+        if let Err(e) = self.state.voters.insert(&voter_chain, voter_info) {
+            return OperationResponse::error(format!("Failed to update voter stake: {}", e));
+        }
+        
+        // Update total stake in the system
+        let current_total_stake = *self.state.total_stake.get();
+        self.state.total_stake.set(current_total_stake.saturating_add(pending_rewards));
+        
+        // Clear pending rewards
+        if let Err(e) = self.state.pending_rewards.remove(&voter_chain) {
+            return OperationResponse::error(format!("Failed to clear pending rewards: {}", e));
+        }
+        
+        // Update total rewards distributed
+        let total_distributed = *self.state.total_rewards_distributed.get();
+        let total_value: u128 = total_distributed.into();
+        let rewards_value: u128 = pending_rewards.into();
+        let new_total = Amount::from_attos(total_value + rewards_value);
+        self.state.total_rewards_distributed.set(new_total);
+        
+        // Emit RewardsClaimed event
+        self.emit_oracle_event(OracleEvent::RewardsClaimed {
+            voter_chain,
+            amount: pending_rewards,
+        });
+        
+        OperationResponse::success_with_data(
+            format!("Successfully claimed {} rewards for {} - added to stake", pending_rewards, voter_address),
+            ResponseData {
+                voter_address: Some(voter_chain.to_string()),
+                query_id: None,
+                vote_count: None,
+                rewards_claimed: Some(pending_rewards.to_string()),
+            }
+        )
+    }
+    
+    /// Withdraw stake for a specific voter (by address)
+    /// This allows withdrawing stake when the caller chain is different from voter chain
+    async fn withdraw_stake_for(&mut self, voter_address: String, amount: Amount) -> oracle_registry_v2::OperationResponse {
+        use oracle_registry_v2::{OperationResponse, ResponseData};
+        
+        // Parse voter address to ChainId
+        let voter_chain: ChainId = match voter_address.parse() {
+            Ok(chain) => chain,
+            Err(_) => return OperationResponse::error(format!("Invalid voter address: {}", voter_address)),
+        };
+        
+        // Validate withdrawal amount is positive
+        if amount == Amount::ZERO {
+            return OperationResponse::error("Withdrawal amount must be greater than zero");
+        }
+        
+        // Validate voter is registered
+        let mut voter_info = match self.state.get_voter(&voter_chain).await {
+            Some(info) => {
+                if !info.is_active {
+                    return OperationResponse::error("Voter is not active");
+                }
+                info
+            }
+            None => return OperationResponse::error("Voter not registered"),
+        };
+        
+        // Validate sufficient stake for withdrawal
+        let params = self.state.get_parameters().await;
+        let available_stake = voter_info.stake.saturating_sub(voter_info.locked_stake);
+        
+        if amount > available_stake {
+            return OperationResponse::error(format!(
+                "Insufficient available stake. Available: {}, Requested: {}",
+                available_stake, amount
+            ));
+        }
+        
+        // Check minimum stake requirement after withdrawal
+        let remaining_stake = voter_info.stake.saturating_sub(amount);
+        if remaining_stake > Amount::ZERO && remaining_stake < params.min_stake {
+            return OperationResponse::error(format!(
+                "Remaining stake {} would be below minimum {}. Withdraw all or leave at least minimum.",
+                remaining_stake, params.min_stake
+            ));
+        }
+        
+        // Update stake and add to withdrawable balance
+        voter_info.stake = remaining_stake;
+        voter_info.withdrawable_balance = voter_info.withdrawable_balance.saturating_add(amount);
+        
+        if let Err(e) = self.state.voters.insert(&voter_chain, voter_info.clone()) {
+            return OperationResponse::error(format!("Failed to update voter: {}", e));
+        }
+        
+        // Update total stake
+        let current_stake = *self.state.total_stake.get();
+        let new_total = current_stake.saturating_sub(amount);
+        self.state.total_stake.set(new_total);
+        
+        eprintln!(
+            "📤 Stake withdrawn for {}: {} tokens. New stake: {}, Withdrawable: {}",
+            voter_address, amount, voter_info.stake, voter_info.withdrawable_balance
+        );
+        
+        // Emit StakeUpdated event
+        self.emit_oracle_event(OracleEvent::StakeUpdated {
+            voter_chain,
+            new_stake: voter_info.stake,
+            change: amount,
+            is_increase: false,
+        });
+        
+        OperationResponse::success_with_data(
+            format!("Stake withdrawn: {} tokens. New stake: {}. Withdrawable balance: {} (claim from token contract)", 
+                amount, voter_info.stake, voter_info.withdrawable_balance),
+            ResponseData {
+                voter_address: Some(voter_chain.to_string()),
+                query_id: None,
+                vote_count: None,
+                rewards_claimed: None,
+            }
+        )
+    }
+    
+    /// Claim withdrawable tokens for a specific voter
+    /// This clears the withdrawable_balance and sends real tokens to the user via token contract
+    async fn claim_withdrawable_tokens(&mut self, voter_address: String) -> oracle_registry_v2::OperationResponse {
+        use oracle_registry_v2::{OperationResponse, ResponseData};
+        
+        // Parse voter address to ChainId
+        let voter_chain: ChainId = match voter_address.parse() {
+            Ok(chain) => chain,
+            Err(_) => return OperationResponse::error(format!("Invalid voter address: {}", voter_address)),
+        };
+        
+        // Validate voter is registered
+        let mut voter_info = match self.state.get_voter(&voter_chain).await {
+            Some(info) => info,
+            None => return OperationResponse::error("Voter not registered"),
+        };
+        
+        // Check if there's anything to claim
+        if voter_info.withdrawable_balance == Amount::ZERO {
+            return OperationResponse::error("No withdrawable balance to claim");
+        }
+        
+        let claimed_amount = voter_info.withdrawable_balance;
+        
+        // Get token configuration
+        let params = self.state.get_parameters().await;
+        let token_chain_id = match params.token_chain_id {
+            Some(chain_id) => chain_id,
+            None => {
+                eprintln!("⚠️ Token chain not configured, clearing balance without token transfer");
+                // Clear withdrawable balance even without token config
+                voter_info.withdrawable_balance = Amount::ZERO;
+                if let Err(e) = self.state.voters.insert(&voter_chain, voter_info) {
+                    return OperationResponse::error(format!("Failed to update voter: {}", e));
+                }
+                return OperationResponse::success_with_data(
+                    format!("Claimed {} tokens (token contract not configured)", claimed_amount),
+                    ResponseData {
+                        voter_address: Some(voter_chain.to_string()),
+                        query_id: None,
+                        vote_count: None,
+                        rewards_claimed: Some(claimed_amount.to_string()),
+                    }
+                );
+            }
+        };
+        
+        // Clear withdrawable balance BEFORE sending message
+        voter_info.withdrawable_balance = Amount::ZERO;
+        
+        if let Err(e) = self.state.voters.insert(&voter_chain, voter_info) {
+            return OperationResponse::error(format!("Failed to update voter: {}", e));
+        }
+        
+        // Send cross-chain message to token contract to credit user's balance
+        let withdraw_message = alethea_token::Message::WithdrawToAccount {
+            target_chain: voter_chain,
+            target: linera_sdk::linera_base_types::AccountOwner::Chain(voter_chain),
+            amount: claimed_amount,
+        };
+        
+        self.runtime
+            .prepare_message(withdraw_message)
+            .with_authentication()
+            .send_to(token_chain_id);
+        
+        eprintln!(
+            "💰 Withdrawable tokens claimed for {}: {} tokens -> sent to token contract on chain {}",
+            voter_address, claimed_amount, token_chain_id
+        );
+        
+        OperationResponse::success_with_data(
+            format!("Successfully claimed {} tokens. Tokens transferred to your wallet.", claimed_amount),
+            ResponseData {
+                voter_address: Some(voter_chain.to_string()),
+                query_id: None,
+                vote_count: None,
+                rewards_claimed: Some(claimed_amount.to_string()),
+            }
+        )
+    }
+    
+    /// Set token configuration (admin only)
+    /// This configures the ALTH token contract for real token integration
+    async fn set_token_config(
+        &mut self,
+        token_app_id: linera_sdk::linera_base_types::ApplicationId,
+        token_chain_id: ChainId,
+    ) -> oracle_registry_v2::OperationResponse {
+        use oracle_registry_v2::OperationResponse;
+        
+        let caller_chain = self.runtime.chain_id();
+        
+        // Verify caller is admin
+        if !self.state.is_admin(&caller_chain).await {
+            return OperationResponse::error("Unauthorized: only admin can set token config");
+        }
+        
+        // Update parameters with token config
+        let mut params = self.state.get_parameters().await;
+        params.token_app_id = Some(token_app_id);
+        params.token_chain_id = Some(token_chain_id);
+        self.state.parameters.set(params);
+        
+        eprintln!(
+            "🔧 Token config set: app_id={}, chain_id={}",
+            token_app_id, token_chain_id
+        );
+        
+        OperationResponse::success(format!(
+            "Token config set: app_id={}, chain_id={}",
+            token_app_id, token_chain_id
+        ))
     }
     
     /// Update protocol parameters (admin only)

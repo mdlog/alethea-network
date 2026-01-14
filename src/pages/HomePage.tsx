@@ -3,6 +3,8 @@ import { useLinera } from '../contexts/LineraContext';
 import { Users, Activity, Award, TrendingUp, Loader2, Clock, Eye, ChevronRight, Bell, Lock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import VoteModal from '../components/VoteModal';
+import QueryDetailModal from '../components/QueryDetailModal';
+import HeroSlider from '../components/HeroSlider';
 
 interface Stats {
     totalVoters: number;
@@ -65,8 +67,11 @@ export default function HomePage() {
     const [queries, setQueries] = useState<Query[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedQuery, setSelectedQuery] = useState<Query | null>(null);
+    const [detailQueryId, setDetailQueryId] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<'active' | 'upcoming' | 'past'>('active');
+    const [pastPage, setPastPage] = useState(1);
     const [, setTick] = useState(0);
+    const ITEMS_PER_PAGE = 10;
 
     // Timer update
     useEffect(() => {
@@ -144,10 +149,17 @@ export default function HomePage() {
         (q.status === 'Active' && now >= parseInt(q.revealEnd))
     );
 
+    // Pagination for past queries
+    const totalPastPages = Math.ceil(pastQueries.length / ITEMS_PER_PAGE);
+    const paginatedPastQueries = pastQueries.slice(
+        (pastPage - 1) * ITEMS_PER_PAGE,
+        pastPage * ITEMS_PER_PAGE
+    );
+
     // Get queries for current tab
     const displayQueries = activeTab === 'active' ? activeQueries :
         activeTab === 'upcoming' ? upcomingQueries :
-            pastQueries;
+            paginatedPastQueries;
 
     // Calculate global phase timing (use first active query or defaults)
     const firstActive = activeQueries[0];
@@ -160,83 +172,8 @@ export default function HomePage() {
 
     return (
         <div className="space-y-8">
-            {/* Hero Section */}
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
-                {/* Background Pattern */}
-                <div className="absolute inset-0 opacity-20">
-                    <div className="absolute top-0 left-0 w-72 h-72 bg-blue-500 rounded-full filter blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
-                    <div className="absolute bottom-0 right-0 w-96 h-96 bg-indigo-500 rounded-full filter blur-3xl translate-x-1/3 translate-y-1/3"></div>
-                    <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-cyan-400 rounded-full filter blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
-                </div>
-
-                {/* Grid Pattern Overlay */}
-                <div className="absolute inset-0 opacity-10" style={{
-                    backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
-                    backgroundSize: '50px 50px'
-                }}></div>
-
-                <div className="relative px-8 py-12 md:py-16">
-                    <div className="flex flex-col md:flex-row items-center justify-between gap-8">
-                        {/* Left Content */}
-                        <div className="flex-1 text-center md:text-left">
-                            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20 mb-6">
-                                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-                                <span className="text-sm text-blue-200 font-medium">Live on Linera Testnet</span>
-                            </div>
-
-                            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 leading-tight">
-                                Alethea <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">Network</span>
-                            </h1>
-
-                            <p className="text-xl md:text-2xl text-blue-200 mb-8 max-w-xl">
-                                Decentralized Oracle Protocol powered by Linera's microchain architecture.
-                                Secure, scalable, and community-driven truth verification.
-                            </p>
-
-                            <div className="flex flex-wrap gap-4 justify-center md:justify-start">
-                                {walletExists && chainId ? (
-                                    <div className="flex items-center gap-3 px-5 py-3 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20">
-                                        <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-                                        <div>
-                                            <p className="text-xs text-blue-300">Connected</p>
-                                            <p className="font-mono text-sm text-white">{chainId.slice(0, 8)}...{chainId.slice(-6)}</p>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <Link to="/voters" className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold rounded-xl hover:from-cyan-400 hover:to-blue-400 transition-all shadow-lg shadow-cyan-500/25">
-                                        Get Started
-                                    </Link>
-                                )}
-                                <Link to="/queries" className="px-6 py-3 bg-white/10 backdrop-blur-sm text-white font-semibold rounded-xl border border-white/20 hover:bg-white/20 transition-all">
-                                    Explore Queries
-                                </Link>
-                            </div>
-                        </div>
-
-                        {/* Right Stats */}
-                        <div className="grid grid-cols-2 gap-4 w-full md:w-auto">
-                            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-5 border border-white/10 text-center">
-                                <p className="text-4xl font-bold text-white">{stats?.totalVoters || 0}</p>
-                                <p className="text-base text-blue-300">Active Voters</p>
-                            </div>
-                            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-5 border border-white/10 text-center">
-                                <p className="text-4xl font-bold text-white">{activeQueries.length}</p>
-                                <p className="text-base text-blue-300">Live Queries</p>
-                            </div>
-                            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-5 border border-white/10 text-center">
-                                <p className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">
-                                    {formatStake(stats?.totalStake || '0')}
-                                </p>
-                                <p className="text-base text-blue-300">Total Staked</p>
-                            </div>
-                            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-5 border border-white/10 text-center">
-                                <p className="text-4xl font-bold text-white">{stats?.totalQueriesResolved || 0}</p>
-                                <p className="text-base text-blue-300">Resolved</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            {/* Hero Slider */}
+            <HeroSlider />
 
             {/* Stats Grid */}
             {loading ? (
@@ -312,62 +249,44 @@ export default function HomePage() {
                                 </Link>
                             </div>
 
-                            {/* Phase Progress Bar - only show for active tab */}
-                            {activeTab === 'active' && activeQueries.length > 0 && (
-                                <div className="flex items-center gap-4">
-                                    {globalPhase === 'commit' ? (
-                                        <>
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500 text-white">
-                                                    <Clock className="w-4 h-4" />
-                                                    <span className="text-sm font-medium">
-                                                        Commit Phase: {formatTimeRemaining(commitTimeRemaining)} remaining
-                                                    </span>
-                                                </div>
+                            {/* Phase Summary Bar - only show for active tab */}
+                            {activeTab === 'active' && activeQueries.length > 0 && (() => {
+                                const commitCount = activeQueries.filter(q => getCurrentPhase(parseInt(q.commitEnd), parseInt(q.revealEnd)) === 'commit').length;
+                                const revealCount = activeQueries.filter(q => getCurrentPhase(parseInt(q.commitEnd), parseInt(q.revealEnd)) === 'reveal').length;
+                                const endedCount = activeQueries.filter(q => getCurrentPhase(parseInt(q.commitEnd), parseInt(q.revealEnd)) === 'ended').length;
+
+                                return (
+                                    <div className="flex items-center gap-3">
+                                        {commitCount > 0 && (
+                                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-100 text-blue-700">
+                                                <Lock className="w-3.5 h-3.5" />
+                                                <span className="text-sm font-medium">{commitCount} in Commit</span>
                                             </div>
-                                            <div className="flex items-center gap-2 text-gray-600">
-                                                <Eye className="w-4 h-4" />
-                                                <span className="text-sm">
-                                                    Reveal starts in: <strong>{formatTimeRemaining(commitTimeRemaining)}</strong>
-                                                </span>
+                                        )}
+                                        {revealCount > 0 && (
+                                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-yellow-100 text-yellow-700">
+                                                <Eye className="w-3.5 h-3.5" />
+                                                <span className="text-sm font-medium">{revealCount} in Reveal</span>
                                             </div>
-                                        </>
-                                    ) : globalPhase === 'reveal' ? (
-                                        <>
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-500 text-white">
-                                                    <Eye className="w-4 h-4" />
-                                                    <span className="text-sm font-medium">
-                                                        Reveal Phase: {formatTimeRemaining(revealTimeRemaining)} remaining
-                                                    </span>
-                                                </div>
+                                        )}
+                                        {endedCount > 0 && (
+                                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 text-gray-600">
+                                                <Clock className="w-3.5 h-3.5" />
+                                                <span className="text-sm font-medium">{endedCount} Ended</span>
                                             </div>
-                                            <div className="flex items-center gap-2 text-gray-600">
-                                                <Clock className="w-4 h-4" />
-                                                <span className="text-sm">
-                                                    Voting ends in: <strong>{formatTimeRemaining(revealTimeRemaining)}</strong>
-                                                </span>
-                                            </div>
-                                        </>
-                                    ) : (
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-400 text-white">
-                                                <Clock className="w-4 h-4" />
-                                                <span className="text-sm font-medium">
-                                                    Voting Ended
-                                                </span>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
+                                        )}
+                                    </div>
+                                );
+                            })()}
                         </div>
 
                         {/* Table Header */}
-                        <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50 text-base font-medium text-gray-500 border-b border-gray-100">
-                            <div className="col-span-6">Vote</div>
-                            <div className="col-span-3">{activeTab === 'past' ? 'Result' : 'Your vote'}</div>
-                            <div className="col-span-3">{activeTab === 'past' ? 'Status' : 'Vote status'}</div>
+                        <div className={`grid gap-4 px-6 py-3 bg-gray-50 text-sm font-medium text-gray-500 border-b border-gray-100 ${activeTab === 'past' ? 'grid-cols-12' : 'grid-cols-12'}`}>
+                            <div className={activeTab === 'past' ? 'col-span-3' : 'col-span-4'}>Vote</div>
+                            <div className="col-span-2">{activeTab === 'past' ? 'Your Vote' : 'Phase'}</div>
+                            <div className="col-span-2">{activeTab === 'past' ? 'Result' : 'Time Left'}</div>
+                            <div className="col-span-2">{activeTab === 'past' ? 'Outcome' : 'Your vote'}</div>
+                            <div className={activeTab === 'past' ? 'col-span-3' : 'col-span-2'}>Status</div>
                         </div>
 
                         {/* Query List */}
@@ -392,9 +311,49 @@ export default function HomePage() {
                                         key={query.id}
                                         query={query}
                                         onVote={() => setSelectedQuery(query)}
+                                        onShowDetail={() => setDetailQueryId(query.id)}
                                         isPast={activeTab === 'past'}
                                     />
                                 ))}
+                            </div>
+                        )}
+
+                        {/* Pagination for Past tab */}
+                        {activeTab === 'past' && totalPastPages > 1 && (
+                            <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100">
+                                <p className="text-sm text-gray-500">
+                                    Showing {(pastPage - 1) * ITEMS_PER_PAGE + 1} - {Math.min(pastPage * ITEMS_PER_PAGE, pastQueries.length)} of {pastQueries.length}
+                                </p>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => setPastPage(p => Math.max(1, p - 1))}
+                                        disabled={pastPage === 1}
+                                        className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        Previous
+                                    </button>
+                                    <div className="flex items-center gap-1">
+                                        {Array.from({ length: totalPastPages }, (_, i) => i + 1).map(page => (
+                                            <button
+                                                key={page}
+                                                onClick={() => setPastPage(page)}
+                                                className={`w-8 h-8 text-sm font-medium rounded-lg ${page === pastPage
+                                                    ? 'bg-blue-600 text-white'
+                                                    : 'hover:bg-gray-100 text-gray-600'
+                                                    }`}
+                                            >
+                                                {page}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <button
+                                        onClick={() => setPastPage(p => Math.min(totalPastPages, p + 1))}
+                                        disabled={pastPage === totalPastPages}
+                                        className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        Next
+                                    </button>
+                                </div>
                             </div>
                         )}
                     </div>
@@ -445,6 +404,14 @@ export default function HomePage() {
                     }}
                 />
             )}
+
+            {/* Query Detail Modal */}
+            {detailQueryId && (
+                <QueryDetailModal
+                    queryId={detailQueryId}
+                    onClose={() => setDetailQueryId(null)}
+                />
+            )}
         </div>
     );
 }
@@ -454,7 +421,7 @@ const REGISTRY_APP_ID = import.meta.env.VITE_REGISTRY_APP_ID || '';
 const PENDING_REVEALS_KEY = `alethea_v2_pending_${REGISTRY_APP_ID.substring(0, 16)}`;
 const COMPLETED_VOTES_KEY = `alethea_v2_completed_${REGISTRY_APP_ID.substring(0, 16)}`;
 
-function QueryRow({ query, onVote, isPast = false }: { query: Query; onVote: () => void; isPast?: boolean }) {
+function QueryRow({ query, onVote, onShowDetail, isPast = false }: { query: Query; onVote: () => void; onShowDetail: () => void; isPast?: boolean }) {
     const { chainId } = useLinera();
     const commitEnd = parseInt(query.commitEnd);
     const revealEnd = parseInt(query.revealEnd);
@@ -496,62 +463,133 @@ function QueryRow({ query, onVote, isPast = false }: { query: Query; onVote: () 
     const hasCommitted = Boolean(pendingReveal) && !hasRevealed;
     const userVote = hasRevealed ? completedVote?.value : pendingReveal?.value;
 
+    // Calculate time remaining for current phase
+    const now = Date.now() * 1000;
+    const commitTimeLeft = Math.max(0, (commitEnd - now) / 1000);
+    const revealTimeLeft = Math.max(0, (revealEnd - now) / 1000);
+    const currentTimeLeft = phase === 'commit' ? commitTimeLeft : phase === 'reveal' ? revealTimeLeft : 0;
+
     return (
         <div className="grid grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-gray-50">
-            {/* Vote Info */}
-            <div className="col-span-6">
-                <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isPast
+            {/* Vote Info - Clickable to show detail */}
+            <div
+                className={`${isPast ? 'col-span-3' : 'col-span-4'} cursor-pointer`}
+                onClick={onShowDetail}
+            >
+                <div className="flex items-center gap-2">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${isPast
                         ? query.status === 'Resolved' ? 'bg-green-100' : 'bg-gray-100'
-                        : 'bg-blue-100'
+                        : phase === 'commit' ? 'bg-blue-100' : phase === 'reveal' ? 'bg-yellow-100' : 'bg-gray-100'
                         }`}>
-                        <Activity className={`w-5 h-5 ${isPast
+                        <span className={`text-xs font-bold ${isPast
                             ? query.status === 'Resolved' ? 'text-green-600' : 'text-gray-600'
-                            : 'text-blue-600'
-                            }`} />
+                            : phase === 'commit' ? 'text-blue-600' : phase === 'reveal' ? 'text-yellow-600' : 'text-gray-600'
+                            }`}>#{query.id}</span>
                     </div>
-                    <div>
-                        <p className="text-base font-medium text-gray-900 line-clamp-1">{query.description}</p>
-                        <p className="text-sm text-gray-500">
-                            Alethea | {createdDate.toLocaleDateString()} {createdDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-900 hover:text-blue-600">{query.description}</p>
+                        <p className="text-xs text-gray-500">
+                            {phase === 'commit'
+                                ? `Commit ends: ${new Date(commitEnd / 1000).toLocaleString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} UTC`
+                                : phase === 'reveal'
+                                    ? `Reveal ends: ${new Date(revealEnd / 1000).toLocaleString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} UTC`
+                                    : `Ended: ${new Date(revealEnd / 1000).toLocaleString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} UTC`
+                            }
                         </p>
                     </div>
                 </div>
             </div>
 
-            {/* Your Vote / Result */}
-            <div className="col-span-3">
+            {/* Column 2: Phase (Active) / Your Vote (Past) */}
+            <div className="col-span-2">
                 {isPast ? (
-                    <div className="text-base">
-                        {query.result ? (
-                            <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full font-medium">
-                                {query.result}
+                    // Past: Show user's vote
+                    userVote ? (
+                        <span className={`px-2 py-1 rounded text-sm font-medium ${userVote === query.result
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-red-100 text-red-700'
+                            }`}>
+                            {userVote}
+                        </span>
+                    ) : (
+                        <span className="text-sm text-gray-400">Not voted</span>
+                    )
+                ) : phase === 'commit' ? (
+                    <div className="flex items-center gap-1.5">
+                        <Lock className="w-4 h-4 text-blue-600" />
+                        <span className="text-sm font-medium text-blue-600">Commit</span>
+                    </div>
+                ) : phase === 'reveal' ? (
+                    <div className="flex items-center gap-1.5">
+                        <Eye className="w-4 h-4 text-yellow-600" />
+                        <span className="text-sm font-medium text-yellow-600">Reveal</span>
+                    </div>
+                ) : (
+                    <div className="flex items-center gap-1.5">
+                        <Clock className="w-4 h-4 text-gray-400" />
+                        <span className="text-sm font-medium text-gray-400">Ended</span>
+                    </div>
+                )}
+            </div>
+
+            {/* Column 3: Time Left (Active) / Result (Past) */}
+            <div className="col-span-2">
+                {isPast ? (
+                    // Past: Show query result
+                    query.result ? (
+                        <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm font-medium">
+                            {query.result}
+                        </span>
+                    ) : (
+                        <span className="text-sm text-gray-400">No result</span>
+                    )
+                ) : phase === 'ended' ? (
+                    <span className="text-sm text-gray-400">0s</span>
+                ) : (
+                    <span className={`text-sm font-mono font-medium ${phase === 'commit' ? 'text-blue-600' : 'text-yellow-600'}`}>
+                        {formatTimeRemaining(currentTimeLeft)}
+                    </span>
+                )}
+            </div>
+
+            {/* Column 4: Your vote (Active) / Outcome (Past) */}
+            <div className="col-span-2">
+                {isPast ? (
+                    // Past: Show if user was correct or wrong
+                    userVote ? (
+                        userVote === query.result ? (
+                            <span className="flex items-center gap-1 text-sm text-green-600">
+                                <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                                Correct ✓
                             </span>
                         ) : (
-                            <span className="text-gray-400">No result</span>
-                        )}
-                    </div>
+                            <span className="flex items-center gap-1 text-sm text-red-600">
+                                <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                                Wrong ✗
+                            </span>
+                        )
+                    ) : (
+                        <span className="text-sm text-gray-400">-</span>
+                    )
                 ) : hasCommitted ? (
-                    // User has committed but not revealed - show locked vote (BLUE)
-                    <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center gap-1.5 px-2 py-1 bg-blue-50 border border-blue-200 rounded">
                         <Lock className="w-4 h-4 text-blue-600" />
-                        <span className="text-base font-medium text-blue-700">{userVote}</span>
+                        <span className="text-sm font-medium text-blue-700">{userVote}</span>
                     </div>
                 ) : hasRevealed ? (
-                    // User has revealed - show completed vote (GREEN)
-                    <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-center gap-1.5 px-2 py-1 bg-green-50 border border-green-200 rounded">
                         <Eye className="w-4 h-4 text-green-600" />
-                        <span className="text-base font-medium text-green-700">{userVote}</span>
+                        <span className="text-sm font-medium text-green-700">{userVote}</span>
                     </div>
                 ) : (
                     <select
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         defaultValue=""
                         onChange={(e) => {
                             if (e.target.value) onVote();
                         }}
                     >
-                        <option value="">Choose answer</option>
+                        <option value="">Choose</option>
                         {query.outcomes.map((outcome) => (
                             <option key={outcome} value={outcome}>{outcome}</option>
                         ))}
@@ -560,38 +598,37 @@ function QueryRow({ query, onVote, isPast = false }: { query: Query; onVote: () 
             </div>
 
             {/* Vote Status */}
-            <div className="col-span-3 flex items-center justify-between">
-                <div className="flex items-center gap-2">
+            <div className={`${isPast ? 'col-span-3' : 'col-span-2'} flex items-center justify-between`}>
+                <div className="flex items-center gap-1.5">
                     {isPast ? (
                         <>
-                            <span className={`w-2 h-2 rounded-full ${query.status === 'Resolved' ? 'bg-green-500' : 'bg-gray-400'
-                                }`} />
-                            <span className="text-base text-gray-600">
+                            <span className={`w-2 h-2 rounded-full ${query.status === 'Resolved' ? 'bg-green-500' : 'bg-gray-400'}`} />
+                            <span className="text-sm text-gray-600">
                                 {query.status === 'Resolved' ? 'Resolved' : 'Expired'}
+                                {userVote && query.result && (
+                                    <span className={`ml-1 ${userVote === query.result ? 'text-green-600' : 'text-red-600'}`}>
+                                        ({userVote === query.result ? '+reward' : '-slashed'})
+                                    </span>
+                                )}
                             </span>
                         </>
                     ) : hasCommitted ? (
                         <>
                             <span className={`w-2 h-2 rounded-full ${phase === 'reveal' ? 'bg-yellow-500 animate-pulse' : 'bg-blue-500'}`} />
-                            <span className="text-base text-blue-600">
-                                {phase === 'reveal' ? 'Ready to reveal' : 'Committed'}
+                            <span className="text-sm text-blue-600">
+                                {phase === 'reveal' ? 'Reveal now' : 'Committed'}
                             </span>
                         </>
                     ) : hasRevealed ? (
                         <>
                             <span className="w-2 h-2 rounded-full bg-green-500" />
-                            <span className="text-base text-green-600">Vote revealed</span>
+                            <span className="text-sm text-green-600">Revealed</span>
                         </>
                     ) : (
                         <>
-                            <span className={`w-2 h-2 rounded-full ${phase === 'commit' ? 'bg-red-500' :
-                                phase === 'reveal' ? 'bg-yellow-500' :
-                                    'bg-gray-400'
-                                }`} />
-                            <span className="text-base text-gray-600">
-                                {phase === 'commit' ? 'Requires signature' :
-                                    phase === 'reveal' ? 'Reveal pending' :
-                                        'Ended'}
+                            <span className={`w-2 h-2 rounded-full ${phase === 'commit' ? 'bg-orange-500' : phase === 'reveal' ? 'bg-yellow-500' : 'bg-gray-400'}`} />
+                            <span className="text-sm text-gray-600">
+                                {phase === 'commit' ? 'Not voted' : phase === 'reveal' ? 'Missed' : 'Ended'}
                             </span>
                         </>
                     )}
@@ -599,9 +636,9 @@ function QueryRow({ query, onVote, isPast = false }: { query: Query; onVote: () 
                 {!isPast && (
                     <button
                         onClick={onVote}
-                        className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100"
+                        className="w-7 h-7 rounded-full border-2 border-red-400 flex items-center justify-center hover:bg-red-50 hover:border-red-500 transition-colors"
                     >
-                        <ChevronRight className="w-4 h-4 text-gray-400" />
+                        <ChevronRight className="w-4 h-4 text-red-500" />
                     </button>
                 )}
             </div>

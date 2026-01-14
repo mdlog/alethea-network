@@ -25,6 +25,16 @@ export default defineConfig(({ mode }) => {
                     target: 'http://localhost:8080',
                     changeOrigin: true,
                 },
+                '/graphql': {
+                    target: 'http://localhost:8080',
+                    changeOrigin: true,
+                    rewrite: (path) => path.replace(/^\/graphql/, ''),
+                },
+                '/inbox': {
+                    target: 'http://localhost:8080',
+                    changeOrigin: true,
+                    rewrite: (path) => path.replace(/^\/inbox/, ''),
+                },
             },
         },
         plugins: [
@@ -33,9 +43,8 @@ export default defineConfig(({ mode }) => {
             topLevelAwait(),
         ],
         define: {
-            'import.meta.env.VITE_FAUCET_URL': JSON.stringify(env.VITE_FAUCET_URL || 'https://faucet.testnet-conway.linera.net'),
-            'import.meta.env.VITE_CHAIN_ID': JSON.stringify(env.VITE_CHAIN_ID || '208873b668818fc962d8470c68698dc5dff2321720a9bb0d74576d45f4f73c91'),
-            'import.meta.env.VITE_REGISTRY_APP_ID': JSON.stringify(env.VITE_REGISTRY_APP_ID || 'b38f15957b0be6bffd6c46a7b8261b82e23ae5b40f7b4c437f8bdea28d283398'),
+            // Environment variables are automatically loaded from .env.local
+            // No need to define them here - Vite handles VITE_* prefixed vars automatically
         },
         resolve: {
             alias: {

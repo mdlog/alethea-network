@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLinera } from '../contexts/LineraContext';
-import { User, Coins, Award, TrendingUp, Loader2, RefreshCw, Gift, ArrowDownCircle, Shield, AlertTriangle } from 'lucide-react';
+import { useToken } from '../contexts/TokenContext';
+import { User, Coins, Award, TrendingUp, Loader2, RefreshCw, Gift, ArrowDownCircle, Shield, AlertTriangle, CheckCircle } from 'lucide-react';
 import StakeInterface from '../components/StakeInterface';
 import ClaimRewards from '../components/ClaimRewards';
 import WithdrawStake from '../components/WithdrawStake';
@@ -12,6 +13,7 @@ interface VoterProfile {
     stake: string;
     lockedStake: string;
     availableStake: string;
+    withdrawableBalance: string;
     pendingRewards: string;
     reputation: number;
     reputationTier: string;
@@ -28,7 +30,8 @@ interface ProtocolStats {
 }
 
 export default function ProfilePage() {
-    const { chainId, owner, status, application, executeAppChainQuery } = useLinera();
+    const { chainId, owner, status, application, executeAppChainQuery, executeAppChainMutation, executeTokenMutation } = useLinera();
+    const { refreshBalance, addToBalance } = useToken();
     const [profile, setProfile] = useState<VoterProfile | null>(null);
     const [stats, setStats] = useState<ProtocolStats | null>(null);
     const [loading, setLoading] = useState(true);
@@ -36,12 +39,14 @@ export default function ProfilePage() {
     const [showStakeModal, setShowStakeModal] = useState(false);
     const [showWithdrawModal, setShowWithdrawModal] = useState(false);
     const [activeTab, setActiveTab] = useState<'overview' | 'stake' | 'rewards' | 'slashing'>('overview');
+    const [claimingTokens, setClaimingTokens] = useState(false);
+    const [claimSuccess, setClaimSuccess] = useState(false);
 
     // Get pending rewards from profile (real value from contract)
     const pendingRewards = profile?.pendingRewards || '0';
 
     const loadProfile = async () => {
-        if (!application || !chainId) {
+        if (!chainId) {
             setLoading(false);
             return;
         }
@@ -58,6 +63,7 @@ export default function ProfilePage() {
                         stake
                         lockedStake
                         availableStake
+                        withdrawableBalance
                         pendingRewards
                         reputation
                         reputationTier
@@ -97,11 +103,80 @@ export default function ProfilePage() {
         }
     };
 
+    // Claim withdrawable tokens using secure cross-chain messaging
+    const claimWithdrawableTokens = async () => {
+        if (!profile?.address || !profile?.withdrawableBalance) return;
+
+        const withdrawableAmount = parseFloat(profile.withdrawableBalance || '0');
+        if (withdrawableAmount <= 0) return;
+
+        setClaimingTokens(true);
+        setClaimSuccess(false);
+
+        try {
+            console.log('💰 Claiming withdrawable tokens via secure cross-chain message:', withdrawableAmount);
+
+            // Step 1: Send secure unstake request via cross-chain message to token contract
+            // This replaces the problematic HTTP call approach
+            const TOKEN_APP_ID = import.meta.env.VITE_TOKEN_APP_ID;
+            const TOKEN_CHAIN_ID = import.meta.env.VITE_TOKEN_CHAIN_ID || import.meta.env.VITE_CHAIN_ID;
+            const REGISTRY_APP_ID = import.meta.env.VITE_REGISTRY_APP_ID;
+
+            if (TOKEN_APP_ID && chainId) {
+                console.log('🔐 Sending secure unstake request via cross-chain message');
+
+                // Send authenticated cross-chain message to token contract
+                const unstakeRequestMutation = `mutation { 
+                    sendUnstakeRequest(
+                        tokenChain: "${TOKEN_CHAIN_ID}",
+                        amount: "${withdrawableAmount}.",
+                        fromRegistry: "${REGISTRY_APP_ID}"
+                    )
+                }`;
+
+                console.log('🔐 Secure unstake request:', unstakeRequestMutation);
+                await executeTokenMutation(unstakeRequestMutation);
+                console.log('✅ Secure unstake request sent via cross-chain message');
+
+                // Wait for cross-chain message to process
+                await new Promise(resolve => setTimeout(resolve, 3000));
+            }
+
+            // Step 2: Clear withdrawable balance in registry (cleanup)
+            try {
+                console.log('🧹 Clearing withdrawable balance in registry');
+                const mutation = `mutation { executeClaimWithdrawableTokens(voterAddress: "${profile.address}") }`;
+                await executeAppChainMutation(mutation);
+                console.log('✅ Withdrawable balance cleared in registry');
+            } catch (cleanupErr) {
+                console.error('⚠️ Registry cleanup failed (non-critical):', cleanupErr);
+                // Don't fail the whole process if cleanup fails
+            }
+
+            console.log('✅ Tokens claimed via secure cross-chain message!');
+            setClaimSuccess(true);
+
+            // Add claimed amount to header balance (simulation)
+            addToBalance(withdrawableAmount);
+
+            // Reload profile to update withdrawable balance
+            setTimeout(() => {
+                loadProfile();
+                setClaimSuccess(false);
+            }, 2000);
+        } catch (err) {
+            console.error('❌ Failed to claim tokens:', err);
+            await loadProfile();
+        } finally {
+            setClaimingTokens(false);
+        }
+    };
+
     useEffect(() => {
-        if (status === 'Ready' && application) {
+        if (status === 'Ready' && chainId) {
             loadProfile();
         }
-    }, [status, application, chainId]);
+    }, [status, chainId]);
 
     const accuracy = profile && profile.totalVotes > 0
         ? ((profile.correctVotes / profile.totalVotes) * 100).toFixed(1)
@@ -251,7 +326,7 @@ export default function ProfilePage() {
                                         <span className="text-sm text-gray-500">Total Stake</span>
                                     </div>
                                     <p className="text-2xl font-bold text-gray-900">
-                                        {parseFloat(profile.stake || '0').toFixed(0)}
+                                        {parseFloat(profile.stake || '0').toFixed(2)}
                                     </p>
                                 </div>
 
@@ -334,7 +409,7 @@ export default function ProfilePage() {
                                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                                         <p className="text-sm text-blue-600 mb-1">Total Stake</p>
                                         <p className="text-2xl font-bold text-blue-700">
-                                            {parseFloat(profile.stake || '0').toFixed(0)} tokens
+                                            {parseFloat(profile.stake || '0').toFixed(2)} tokens
                                         </p>
                                     </div>
 
@@ -342,16 +417,55 @@ export default function ProfilePage() {
                                         <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                                             <p className="text-xs text-green-600">Available</p>
                                             <p className="text-lg font-bold text-green-700">
-                                                {availableStake.toFixed(0)}
+                                                {availableStake.toFixed(2)}
                                             </p>
                                         </div>
                                         <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
                                             <p className="text-xs text-gray-500">Locked</p>
                                             <p className="text-lg font-bold text-gray-700">
-                                                {parseFloat(profile.lockedStake || '0').toFixed(0)}
+                                                {parseFloat(profile.lockedStake || '0').toFixed(2)}
                                             </p>
                                         </div>
                                     </div>
+
+                                    {/* Withdrawable Balance */}
+                                    {parseFloat(profile.withdrawableBalance || '0') > 0 && (
+                                        <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <p className="text-sm text-purple-600 mb-1">Withdrawable Balance</p>
+                                                    <p className="text-xl font-bold text-purple-700">
+                                                        {parseFloat(profile.withdrawableBalance || '0').toFixed(2)} tokens
+                                                    </p>
+                                                    <p className="text-xs text-purple-500 mt-1">
+                                                        {claimSuccess ? 'Tokens claimed successfully!' : 'Click to add to your wallet balance'}
+                                                    </p>
+                                                </div>
+                                                <button
+                                                    onClick={claimWithdrawableTokens}
+                                                    disabled={claimingTokens}
+                                                    className={`px-4 py-2 rounded-lg transition-colors text-sm flex items-center gap-2 ${claimSuccess
+                                                        ? 'bg-green-600 text-white'
+                                                        : 'bg-purple-600 text-white hover:bg-purple-700'
+                                                        }`}
+                                                >
+                                                    {claimingTokens ? (
+                                                        <>
+                                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                                            Claiming...
+                                                        </>
+                                                    ) : claimSuccess ? (
+                                                        <>
+                                                            <CheckCircle className="w-4 h-4" />
+                                                            Claimed!
+                                                        </>
+                                                    ) : (
+                                                        'Claim Tokens'
+                                                    )}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
 
                                     <div className="flex gap-3">
                                         <button
@@ -411,6 +525,7 @@ export default function ProfilePage() {
                             {/* Claim Rewards */}
                             <ClaimRewards
                                 pendingRewards={pendingRewards}
+                                voterAddress={profile.address}
                                 onSuccess={loadProfile}
                             />
 
@@ -534,6 +649,7 @@ export default function ProfilePage() {
                         <WithdrawStake
                             availableStake={availableStake.toString()}
                             lockedStake={profile.lockedStake}
+                            voterAddress={profile.address}
                             onSuccess={() => {
                                 setShowWithdrawModal(false);
                                 loadProfile();

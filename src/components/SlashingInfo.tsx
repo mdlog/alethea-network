@@ -126,14 +126,14 @@ export default function SlashingInfo({
             {/* Protection Tips */}
             {risk.level !== 'Low' && (
                 <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                    <p className="text-xs text-amber-700">
+                    <div className="text-xs text-amber-700">
                         <strong>Tips to reduce risk:</strong>
                         <ul className="list-disc list-inside mt-1 space-y-1">
                             <li>Research queries thoroughly before voting</li>
                             <li>Wait for more information if uncertain</li>
                             <li>Follow consensus patterns from high-reputation voters</li>
                         </ul>
-                    </p>
+                    </div>
                 </div>
             )}
         </div>

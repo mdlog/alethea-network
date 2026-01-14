@@ -21,6 +21,8 @@ interface TokenInfo {
     totalSupply: string;
     totalMinted: string;
     totalBurned: string;
+    treasury?: string;
+    circulating?: string;
 }
 
 export default function TokenPage() {
@@ -33,39 +35,80 @@ export default function TokenPage() {
     const loadData = async () => {
         setLoading(true);
         try {
-            // Load token info
-            if (TOKEN_APP_ID) {
-                const graphqlUrl = `${SERVICE_URL}/chains/${TOKEN_CHAIN_ID}/applications/${TOKEN_APP_ID}`;
+            let tokenData: TokenInfo | null = null;
 
-                const response = await fetch(graphqlUrl, {
+            // Load token info from token chain
+            if (TOKEN_APP_ID) {
+                const tokenInfoUrl = `${SERVICE_URL}/chains/${TOKEN_CHAIN_ID}/applications/${TOKEN_APP_ID}`;
+
+                // Get ticker symbol and treasury balance (initial supply holder)
+                const treasuryOwner = '0x97f8b39f99b4097e4f05961d3a93539dbcd99851091809eaf7588d74123649b4';
+
+                const tokenInfoResponse = await fetch(tokenInfoUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Bypass-Tunnel-Reminder': 'true' },
                     body: JSON.stringify({
-                        query: `
-                            query {
-                                tokenInfo {
-                                    name
-                                    symbol
-                                    decimals
-                                    totalSupply
-                                    totalMinted
-                                    totalBurned
-                                }
-                                ${owner ? `balance(owner: "${owner}")` : ''}
+                        query: `query { 
+                            tickerSymbol 
+                            accounts { 
+                                entry(key: "${treasuryOwner}") { value }
                             }
-                        `
+                        }`
                     }),
                 });
 
-                if (response.ok) {
-                    const result = await response.json();
+                if (tokenInfoResponse.ok) {
+                    const result = await tokenInfoResponse.json();
+                    console.log('📊 Token info response:', result);
                     if (result.data) {
-                        setTokenInfo(result.data.tokenInfo);
-                        if (result.data.balance) {
-                            setBalance(result.data.balance);
+                        const treasuryBal = result.data.accounts?.entry?.value || '0';
+                        // Total supply = 1,000,000,000 (1 billion initial mint)
+                        const totalSupply = 1000000000;
+                        // Remove trailing dot from Linera amount format
+                        const treasuryAmount = parseFloat(treasuryBal.replace(/\.$/, '')) || 0;
+                        const circulating = totalSupply - treasuryAmount;
+
+                        tokenData = {
+                            name: 'Alethea Token',
+                            symbol: result.data.tickerSymbol || 'ALTH',
+                            decimals: 18,
+                            totalSupply: totalSupply.toString(),
+                            totalMinted: totalSupply.toString(),
+                            totalBurned: '0',
+                            treasury: treasuryAmount.toString(),
+                            circulating: circulating.toString(),
+                        };
+                    }
+                }
+
+                // Load user balance from USER's chain (not token chain)
+                if (owner && chainId) {
+                    const userChainUrl = `${SERVICE_URL}/chains/${chainId}/applications/${TOKEN_APP_ID}`;
+                    const queryOwner = (owner.startsWith('0x') ? owner : `0x${owner}`).toLowerCase();
+
+                    console.log('🔍 TokenPage: Loading balance for', queryOwner, 'on chain', chainId);
+
+                    const balanceResponse = await fetch(userChainUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Bypass-Tunnel-Reminder': 'true' },
+                        body: JSON.stringify({
+                            query: `query { accounts { entry(key: "${queryOwner}") { value } } }`
+                        }),
+                    });
+
+                    if (balanceResponse.ok) {
+                        const balanceResult = await balanceResponse.json();
+                        console.log('📊 TokenPage balance response:', balanceResult);
+                        if (balanceResult.data?.accounts?.entry?.value) {
+                            setBalance(balanceResult.data.accounts.entry.value);
                         }
                     }
                 }
+            }
+
+            // Set token info (already has treasury and circulating from token contract)
+            if (tokenData) {
+                setTokenInfo(tokenData);
             }
         } catch (err) {
             console.error('Failed to load token data:', err);
@@ -150,7 +193,7 @@ export default function TokenPage() {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-4">
+                        <div className="grid grid-cols-5 gap-3">
                             <div className="bg-white/10 rounded-lg p-4">
                                 <div className="flex items-center gap-2 mb-1">
                                     <TrendingUp className="w-4 h-4 text-yellow-200" />
@@ -176,6 +219,24 @@ export default function TokenPage() {
                                 </div>
                                 <p className="text-xl font-bold">
                                     {formatAmount(tokenInfo?.totalBurned || '0')}
+                                </p>
+                            </div>
+                            <div className="bg-white/10 rounded-lg p-4">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <ArrowDownCircle className="w-4 h-4 text-yellow-200" />
+                                    <span className="text-xs text-yellow-200">Treasury</span>
+                                </div>
+                                <p className="text-xl font-bold">
+                                    {formatAmount(tokenInfo?.treasury || '0')}
+                                </p>
+                            </div>
+                            <div className="bg-white/10 rounded-lg p-4">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <Send className="w-4 h-4 text-yellow-200" />
+                                    <span className="text-xs text-yellow-200">Circulating</span>
+                                </div>
+                                <p className="text-xl font-bold">
+                                    {formatAmount(tokenInfo?.circulating || '0')}
                                 </p>
                             </div>
                         </div>
@@ -205,7 +266,11 @@ export default function TokenPage() {
                                 <div className="flex gap-3">
                                     <button
                                         onClick={() => setShowTransfer(true)}
-                                        className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                        disabled={balance <= 0}
+                                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-colors ${balance > 0
+                                            ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                            : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                            }`}
                                     >
                                         <Send className="w-4 h-4" />
                                         Send
@@ -227,11 +292,15 @@ export default function TokenPage() {
                                 <div className="space-y-3">
                                     <button
                                         onClick={() => setShowTransfer(true)}
-                                        className="w-full flex items-center gap-3 p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors text-left"
+                                        disabled={balance <= 0}
+                                        className={`w-full flex items-center gap-3 p-4 rounded-lg transition-colors text-left ${balance > 0
+                                            ? 'bg-blue-50 hover:bg-blue-100'
+                                            : 'bg-gray-50 cursor-not-allowed opacity-50'
+                                            }`}
                                     >
-                                        <Send className="w-5 h-5 text-blue-600" />
+                                        <Send className={`w-5 h-5 ${balance > 0 ? 'text-blue-600' : 'text-gray-400'}`} />
                                         <div>
-                                            <p className="font-medium text-gray-900">Transfer Tokens</p>
+                                            <p className={`font-medium ${balance > 0 ? 'text-gray-900' : 'text-gray-500'}`}>Transfer Tokens</p>
                                             <p className="text-sm text-gray-500">Send tokens to another address</p>
                                         </div>
                                     </button>
@@ -260,7 +329,7 @@ export default function TokenPage() {
                         </div>
                     )}
 
-                    {/* Faucet Section */}
+                    {/* Token Minter Section */}
                     {chainId && (
                         <div className="grid grid-cols-1 gap-6">
                             <TokenFaucet onSuccess={loadData} />

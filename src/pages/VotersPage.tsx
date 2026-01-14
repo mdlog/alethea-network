@@ -3,10 +3,11 @@ import { useLinera } from '../contexts/LineraContext';
 import { Users, Plus, Loader2 } from 'lucide-react';
 import RegisterModal from '../components/RegisterModal';
 
-// Format stake - handle 10^18 multiplication from Amount::from_tokens()
+// Format stake - handle trailing dot from Linera Amount format
 function formatStake(stake: string | number | undefined): string {
     if (!stake) return '0';
-    const stakeStr = String(stake).replace('.', '');
+    // Remove trailing dot (e.g., "142.5" stays as "142.5", "100." becomes "100")
+    const stakeStr = String(stake).endsWith('.') ? String(stake).slice(0, -1) : String(stake);
     const stakeNum = parseFloat(stakeStr);
     if (isNaN(stakeNum)) return '0';
     // If value is very large (> 1e15), it's likely in raw format (multiplied by 10^18)

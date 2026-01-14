@@ -320,6 +320,25 @@ pub enum Operation {
     /// Claim pending rewards
     ClaimRewards,
     
+    /// Claim pending rewards for a specific voter (by address)
+    /// This allows claiming rewards when the caller chain is different from voter chain
+    ClaimRewardsFor {
+        voter_address: String,  // Hex string of ChainId
+    },
+    
+    /// Withdraw stake for a specific voter (by address)
+    /// This allows withdrawing stake when the caller chain is different from voter chain
+    WithdrawStakeFor {
+        voter_address: String,  // Hex string of ChainId
+        amount: Amount,
+    },
+    
+    /// Claim withdrawable tokens for a specific voter
+    /// This clears the withdrawable_balance and adds it to the user's token balance
+    ClaimWithdrawableTokens {
+        voter_address: String,  // Hex string of ChainId
+    },
+    
     /// Update protocol parameters (admin only)
     UpdateParameters {
         params: ProtocolParameters,
@@ -418,6 +437,13 @@ pub enum Operation {
         callback_app: linera_sdk::linera_base_types::ApplicationId,
         /// Arbitrary data to include in callback (e.g., market_id)
         callback_data: Vec<u8>,
+    },
+    
+    /// Set token configuration (admin only)
+    /// This configures the ALTH token contract for real token integration
+    SetTokenConfig {
+        token_app_id: linera_sdk::linera_base_types::ApplicationId,
+        token_chain_id: linera_sdk::linera_base_types::ChainId,
     },
 }
 

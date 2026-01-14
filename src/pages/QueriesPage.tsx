@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useLinera } from '../contexts/LineraContext';
 import { Plus, Clock, CheckCircle, AlertCircle, Loader2, Vote, Lock, Eye, CheckSquare } from 'lucide-react';
 import VoteModal from '../components/VoteModal';
@@ -89,6 +89,8 @@ export default function QueriesPage() {
     const [selectedQuery, setSelectedQuery] = useState<Query | null>(null);
     const [, setTick] = useState(0); // For timer updates
     const [resolving, setResolving] = useState<string | null>(null);
+    const [pastPage, setPastPage] = useState(1);
+    const ITEMS_PER_PAGE = 10;
 
     // Resolve query function
     const handleResolve = async (queryId: string) => {
@@ -149,34 +151,60 @@ export default function QueriesPage() {
         return () => clearInterval(interval);
     }, []);
 
-    // Auto-resolve queries every 30 seconds
-    useEffect(() => {
-        const autoResolve = async () => {
-            try {
-                // Check if there are any queries that need resolving (reveal phase ended)
-                const hasEndedQueries = queries.some(q => {
-                    const revealEnd = parseInt(q.revealEnd);
-                    const now = Date.now() * 1000;
-                    return q.status === 'Active' && now >= revealEnd;
-                });
+    // Smart auto-resolve: Only call mutation when there are queries ready to resolve
+    // Checks locally if any active query has ended reveal phase before calling blockchain
+    const queriesRef = useRef<Query[]>([]);
+    const isResolvingRef = useRef<boolean>(false);
 
-                if (hasEndedQueries && executeAppChainMutation) {
-                    console.log('🔄 Auto-resolving queries...');
+    // Keep queries ref updated
+    useEffect(() => {
+        queriesRef.current = queries;
+    }, [queries]);
+
+    useEffect(() => {
+        if (!executeAppChainMutation) return;
+
+        const checkAndResolve = async () => {
+            // Prevent concurrent resolve calls
+            if (isResolvingRef.current) return;
+
+            const now = Date.now() * 1000; // Convert to microseconds
+
+            // Check if any active query has ended reveal phase
+            const queriesToResolve = queriesRef.current.filter(q => {
+                if (q.status !== 'Active') return false;
+                const revealEnd = parseInt(q.revealEnd);
+                return now >= revealEnd && q.voteCount > 0;
+            });
+
+            // Only call mutation if there are queries to resolve
+            if (queriesToResolve.length > 0) {
+                isResolvingRef.current = true;
+                console.log(`[Auto-resolve] Found ${queriesToResolve.length} queries ready to resolve:`, queriesToResolve.map(q => q.id));
+                try {
                     await executeAppChainMutation(`mutation { executeAutoResolveQueries }`);
-                    console.log('✅ Auto-resolve completed');
-                    // Reload queries to get updated status
+                    console.log('[Auto-resolve] Success, reloading queries...');
+                    // Wait a bit for blockchain to process, then reload
+                    await new Promise(resolve => setTimeout(resolve, 2000));
                     loadQueries();
+                } catch (err) {
+                    console.error('[Auto-resolve] Failed:', err);
+                } finally {
+                    isResolvingRef.current = false;
                 }
-            } catch (err) {
-                console.log('Auto-resolve check:', err instanceof Error ? err.message : 'No queries to resolve');
             }
         };
 
-        // Run immediately on mount and then every 30 seconds
-        autoResolve();
-        const interval = setInterval(autoResolve, 30000);
-        return () => clearInterval(interval);
-    }, [queries, executeAppChainMutation]);
+        // Check every 10 seconds (lightweight local check, only calls blockchain when needed)
+        const interval = setInterval(checkAndResolve, 10000);
+
+        // Also check immediately on mount
+        checkAndResolve();
+
+        return () => {
+            clearInterval(interval);
+        };
+    }, [executeAppChainMutation]);
 
     useEffect(() => {
         loadQueries();
@@ -238,6 +266,13 @@ export default function QueriesPage() {
 
     const activeQueries = queries.filter(q => q.status !== 'Resolved' && q.status !== 'Expired');
     const pastQueries = queries.filter(q => q.status === 'Resolved' || q.status === 'Expired');
+
+    // Pagination for past queries
+    const totalPastPages = Math.ceil(pastQueries.length / ITEMS_PER_PAGE);
+    const paginatedPastQueries = pastQueries.slice(
+        (pastPage - 1) * ITEMS_PER_PAGE,
+        pastPage * ITEMS_PER_PAGE
+    );
 
     return (
         <div className="space-y-6">
@@ -319,90 +354,134 @@ export default function QueriesPage() {
                                     <p className="text-gray-500">Resolved queries will appear here</p>
                                 </div>
                             ) : (
-                                pastQueries.map((query) => (
-                                    <QueryCard key={query.id} query={query} isPast />
-                                ))
+                                <>
+                                    {paginatedPastQueries.map((query) => (
+                                        <QueryCard key={query.id} query={query} isPast />
+                                    ))}
+
+                                    {/* Pagination */}
+                                    {totalPastPages > 1 && (
+                                        <div className="flex items-center justify-between bg-white rounded-xl p-4 border border-gray-200">
+                                            <p className="text-sm text-gray-500">
+                                                Showing {(pastPage - 1) * ITEMS_PER_PAGE + 1} - {Math.min(pastPage * ITEMS_PER_PAGE, pastQueries.length)} of {pastQueries.length}
+                                            </p>
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={() => setPastPage(p => Math.max(1, p - 1))}
+                                                    disabled={pastPage === 1}
+                                                    className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                >
+                                                    Previous
+                                                </button>
+                                                <div className="flex items-center gap-1">
+                                                    {Array.from({ length: totalPastPages }, (_, i) => i + 1).map(page => (
+                                                        <button
+                                                            key={page}
+                                                            onClick={() => setPastPage(page)}
+                                                            className={`w-8 h-8 text-sm font-medium rounded-lg ${page === pastPage
+                                                                ? 'bg-blue-600 text-white'
+                                                                : 'hover:bg-gray-100 text-gray-600'
+                                                                }`}
+                                                        >
+                                                            {page}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                                <button
+                                                    onClick={() => setPastPage(p => Math.min(totalPastPages, p + 1))}
+                                                    disabled={pastPage === totalPastPages}
+                                                    className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                >
+                                                    Next
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </>
                             )}
                         </div>
                     )}
 
                     {/* Create Query */}
                     {activeTab === 'create' && (
-                        <div className="bg-white rounded-xl p-6 border border-gray-200">
-                            <h2 className="text-xl font-bold text-gray-900 mb-6">Create New Query</h2>
+                        <div className="space-y-6">
+                            {/* Custom Query Form */}
+                            <div className="bg-white rounded-xl p-6 border border-gray-200">
+                                <h2 className="text-xl font-bold text-gray-900 mb-6">Create Custom Query</h2>
 
-                            <form onSubmit={handleCreateQuery} className="space-y-6">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Question
-                                    </label>
-                                    <textarea
-                                        value={newQuery.description}
-                                        onChange={(e) => setNewQuery({ ...newQuery, description: e.target.value })}
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        rows={3}
-                                        placeholder="e.g., Will ETH reach $5000 by end of Q1 2025?"
-                                        required
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Outcomes
-                                    </label>
-                                    <div className="flex gap-2">
-                                        {newQuery.outcomes.map((outcome, idx) => (
-                                            <input
-                                                key={idx}
-                                                type="text"
-                                                value={outcome}
-                                                onChange={(e) => {
-                                                    const outcomes = [...newQuery.outcomes];
-                                                    outcomes[idx] = e.target.value;
-                                                    setNewQuery({ ...newQuery, outcomes });
-                                                }}
-                                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                            />
-                                        ))}
+                                <form onSubmit={handleCreateQuery} className="space-y-6">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Question
+                                        </label>
+                                        <textarea
+                                            value={newQuery.description}
+                                            onChange={(e) => setNewQuery({ ...newQuery, description: e.target.value })}
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            rows={3}
+                                            placeholder="e.g., Did BTC close above $100,000 on January 5, 2026?"
+                                            required
+                                        />
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            Tip: Ask about events that have already occurred, not predictions.
+                                        </p>
                                     </div>
-                                </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Duration (Commit + Reveal phases)
-                                    </label>
-                                    <select
-                                        value={newQuery.duration}
-                                        onChange={(e) => setNewQuery({ ...newQuery, duration: parseInt(e.target.value) })}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Outcomes
+                                        </label>
+                                        <div className="flex gap-2">
+                                            {newQuery.outcomes.map((outcome, idx) => (
+                                                <input
+                                                    key={idx}
+                                                    type="text"
+                                                    value={outcome}
+                                                    onChange={(e) => {
+                                                        const outcomes = [...newQuery.outcomes];
+                                                        outcomes[idx] = e.target.value;
+                                                        setNewQuery({ ...newQuery, outcomes });
+                                                    }}
+                                                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Duration (Commit + Reveal phases)
+                                        </label>
+                                        <select
+                                            value={newQuery.duration}
+                                            onChange={(e) => setNewQuery({ ...newQuery, duration: parseInt(e.target.value) })}
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        >
+                                            <option value={120}>2 Minutes (1m commit + 1m reveal)</option>
+                                            <option value={300}>5 Minutes (2.5m + 2.5m)</option>
+                                            <option value={600}>10 Minutes (5m + 5m)</option>
+                                            <option value={3600}>1 Hour (30m + 30m)</option>
+                                            <option value={86400}>24 Hours (12h + 12h)</option>
+                                            <option value={604800}>7 Days (3.5d + 3.5d)</option>
+                                        </select>
+                                    </div>
+
+                                    <button
+                                        type="submit"
+                                        disabled={true}
+                                        className="w-full py-3 bg-gray-400 text-white rounded-lg cursor-not-allowed font-medium"
+                                        title="Query creation is temporarily disabled"
                                     >
-                                        <option value={120}>2 Minutes (1m commit + 1m reveal)</option>
-                                        <option value={300}>5 Minutes (2.5m + 2.5m)</option>
-                                        <option value={600}>10 Minutes (5m + 5m)</option>
-                                        <option value={3600}>1 Hour (30m + 30m)</option>
-                                        <option value={86400}>24 Hours (12h + 12h)</option>
-                                        <option value={604800}>7 Days (3.5d + 3.5d)</option>
-                                    </select>
-                                </div>
-
-                                <button
-                                    type="submit"
-                                    disabled={creating || !chainId}
-                                    className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 font-medium"
-                                >
-                                    {creating ? (
-                                        <span className="flex items-center justify-center gap-2">
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                            Creating...
-                                        </span>
-                                    ) : (
                                         <span className="flex items-center justify-center gap-2">
                                             <Plus className="w-4 h-4" />
-                                            Create Query
+                                            Create Query (Disabled)
                                         </span>
-                                    )}
-                                </button>
-                            </form>
+                                    </button>
+                                    <p className="text-sm text-gray-500 text-center">
+                                        Query creation is temporarily disabled for maintenance.
+                                    </p>
+                                </form>
+                            </div>
                         </div>
                     )}
                 </>

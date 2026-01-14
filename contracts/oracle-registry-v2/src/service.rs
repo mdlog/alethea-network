@@ -1119,12 +1119,13 @@ impl MutationRoot {
         };
         
         // Create the operation
+        // reward_value is already in attos (raw value), use from_attos
         let operation = Operation::CreateQuery {
             description: description.clone(),
             outcomes: outcomes.clone(),
             strategy: strategy_enum,
             min_votes: min_votes.map(|v| v as usize),
-            reward_amount: linera_sdk::linera_base_types::Amount::from_tokens(reward_value),
+            reward_amount: linera_sdk::linera_base_types::Amount::from_attos(reward_value),
             deadline: deadline_ts,
             duration_secs: duration_secs.map(|d| d as u64),
         };
@@ -1489,6 +1490,157 @@ impl MutationRoot {
         use oracle_registry_v2::Operation;
         
         let operation = Operation::ClaimRewards;
+        
+        self.runtime.schedule_operation(&operation);
+        Ok(true)
+    }
+    
+    /// Execute stake withdrawal (ACTUALLY EXECUTES THE OPERATION!)
+    /// 
+    /// This mutation withdraws stake from the voter's account.
+    /// The voter must be registered and have sufficient available stake.
+    /// 
+    /// # Arguments
+    /// * `amount` - Amount to withdraw (in tokens as string, e.g., "100.")
+    /// 
+    /// # Returns
+    /// `true` if operation was scheduled successfully
+    /// 
+    /// # Example
+    /// ```graphql
+    /// mutation {
+    ///   executeWithdrawStake(amount: "100.")
+    /// }
+    /// ```
+    async fn execute_withdraw_stake(&self, amount: String) -> Result<bool, String> {
+        use oracle_registry_v2::Operation;
+        
+        // Parse amount as Amount directly (expects format like "100." with trailing dot)
+        let withdraw_amount: Amount = amount.parse()
+            .map_err(|_| "Invalid amount format. Use format like '100.' with trailing dot".to_string())?;
+        
+        if withdraw_amount == Amount::ZERO {
+            return Err("Withdrawal amount must be greater than 0".to_string());
+        }
+        
+        let operation = Operation::WithdrawStake {
+            amount: withdraw_amount,
+        };
+        
+        self.runtime.schedule_operation(&operation);
+        Ok(true)
+    }
+    
+    /// Execute rewards claim for a specific voter (ACTUALLY EXECUTES THE OPERATION!)
+    /// 
+    /// This mutation claims rewards for a voter by their address.
+    /// Use this when the caller chain is different from the voter chain.
+    /// 
+    /// # Arguments
+    /// * `voter_address` - The voter's chain ID as hex string
+    /// 
+    /// # Returns
+    /// `true` if operation was scheduled successfully
+    async fn execute_claim_rewards_for(&self, voter_address: String) -> Result<bool, String> {
+        use oracle_registry_v2::Operation;
+        
+        if voter_address.is_empty() {
+            return Err("Voter address is required".to_string());
+        }
+        
+        let operation = Operation::ClaimRewardsFor { voter_address };
+        
+        self.runtime.schedule_operation(&operation);
+        Ok(true)
+    }
+    
+    /// Execute stake withdrawal for a specific voter (ACTUALLY EXECUTES THE OPERATION!)
+    /// 
+    /// This mutation withdraws stake for a voter by their address.
+    /// Use this when the caller chain is different from the voter chain.
+    /// 
+    /// # Arguments
+    /// * `voter_address` - The voter's chain ID as hex string
+    /// * `amount` - Amount to withdraw (in tokens as string, e.g., "100.")
+    /// 
+    /// # Returns
+    /// `true` if operation was scheduled successfully
+    async fn execute_withdraw_stake_for(&self, voter_address: String, amount: String) -> Result<bool, String> {
+        use oracle_registry_v2::Operation;
+        
+        if voter_address.is_empty() {
+            return Err("Voter address is required".to_string());
+        }
+        
+        // Parse amount as Amount directly (expects format like "100." with trailing dot)
+        let withdraw_amount: Amount = amount.parse()
+            .map_err(|_| "Invalid amount format. Use format like '100.' with trailing dot".to_string())?;
+        
+        if withdraw_amount == Amount::ZERO {
+            return Err("Withdrawal amount must be greater than 0".to_string());
+        }
+        
+        let operation = Operation::WithdrawStakeFor {
+            voter_address,
+            amount: withdraw_amount,
+        };
+        
+        self.runtime.schedule_operation(&operation);
+        Ok(true)
+    }
+    
+    /// Execute ClaimWithdrawableTokens operation
+    /// 
+    /// This mutation claims withdrawable tokens for a voter.
+    /// The tokens are sent to the user via the token contract.
+    /// 
+    /// # Arguments
+    /// * `voter_address` - The voter's chain ID as hex string
+    /// 
+    /// # Returns
+    /// `true` if operation was scheduled successfully
+    async fn execute_claim_withdrawable_tokens(&self, voter_address: String) -> Result<bool, String> {
+        use oracle_registry_v2::Operation;
+        
+        if voter_address.is_empty() {
+            return Err("Voter address is required".to_string());
+        }
+        
+        let operation = Operation::ClaimWithdrawableTokens { voter_address };
+        
+        self.runtime.schedule_operation(&operation);
+        Ok(true)
+    }
+    
+    /// Set token configuration (admin only)
+    /// 
+    /// This mutation configures the ALTH token contract for real token integration.
+    /// 
+    /// # Arguments
+    /// * `token_app_id` - The ALTH token application ID
+    /// * `token_chain_id` - The chain ID where the token contract is deployed
+    /// 
+    /// # Returns
+    /// `true` if operation was scheduled successfully
+    async fn set_token_config(
+        &self,
+        token_app_id: String,
+        token_chain_id: String,
+    ) -> Result<bool, String> {
+        use oracle_registry_v2::Operation;
+        
+        // Parse token app ID
+        let app_id = token_app_id.parse::<linera_sdk::linera_base_types::ApplicationId>()
+            .map_err(|e| format!("Invalid token app ID: {}", e))?;
+        
+        // Parse token chain ID
+        let chain_id = token_chain_id.parse::<linera_sdk::linera_base_types::ChainId>()
+            .map_err(|e| format!("Invalid token chain ID: {}", e))?;
+        
+        let operation = Operation::SetTokenConfig {
+            token_app_id: app_id,
+            token_chain_id: chain_id,
+        };
         
         self.runtime.schedule_operation(&operation);
         Ok(true)
@@ -1961,10 +2113,10 @@ impl MutationRoot {
             _ => return Err(format!("Invalid strategy: {}", strategy)),
         };
         
-        // Parse reward amount
+        // Parse reward amount - value is in attos (raw value)
         let reward_value = reward_amount.trim_end_matches('.').parse::<u128>()
             .map_err(|_| "Invalid reward amount format".to_string())?;
-        let reward = Amount::from_tokens(reward_value);
+        let reward = Amount::from_attos(reward_value);
         
         // Create SendCreateQueryMessage operation
         let operation = Operation::SendCreateQueryMessage {

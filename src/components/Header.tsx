@@ -62,6 +62,12 @@ export default function Header() {
                                 Profile
                             </Link>
                         )}
+                        <Link to="/integration" className="text-gray-600 hover:text-gray-900 transition-colors">
+                            Integration
+                        </Link>
+                        <Link to="/about" className="text-gray-600 hover:text-gray-900 transition-colors">
+                            About
+                        </Link>
                     </nav>
 
                     {/* Wallet & Token Balance */}
@@ -94,11 +100,16 @@ export default function Header() {
                                         {/* WASM Status */}
                                         <div className="px-4 py-2 border-b border-gray-100">
                                             <div className="flex items-center gap-2">
-                                                <span className={`w-2 h-2 rounded-full ${application ? 'bg-green-500' : 'bg-yellow-500'}`}></span>
+                                                <span className={`w-2 h-2 rounded-full ${application ? 'bg-green-500' : 'bg-yellow-500 animate-pulse'}`}></span>
                                                 <span className={`text-xs font-medium ${application ? 'text-green-600' : 'text-yellow-600'}`}>
-                                                    {application ? 'WASM Connected' : 'WASM Not Connected'}
+                                                    {application ? 'WASM Connected' : 'WASM Connecting...'}
                                                 </span>
                                             </div>
+                                            {!application && (
+                                                <p className="text-xs text-gray-400 mt-1">
+                                                    Connecting to blockchain in background
+                                                </p>
+                                            )}
                                         </div>
 
                                         {/* Chain ID */}

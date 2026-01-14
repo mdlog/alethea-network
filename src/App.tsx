@@ -7,6 +7,8 @@ import QueriesPage from './pages/QueriesPage';
 import ProfilePage from './pages/ProfilePage';
 import TokenPage from './pages/TokenPage';
 import DocsPage from './pages/DocsPage';
+import AboutPage from './pages/AboutPage';
+import IntegrationPage from './pages/IntegrationPage';
 
 function App() {
     return (
@@ -20,6 +22,9 @@ function App() {
                     <Route path="/profile" element={<ProfilePage />} />
                     <Route path="/token" element={<TokenPage />} />
                     <Route path="/docs" element={<DocsPage />} />
+                    <Route path="/docs/:section" element={<DocsPage />} />
+                    <Route path="/about" element={<AboutPage />} />
+                    <Route path="/integration" element={<IntegrationPage />} />
                 </Routes>
             </main>
             <Footer />

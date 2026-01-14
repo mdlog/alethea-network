@@ -117,7 +117,7 @@ function saveCompletedVote(userChainId: string, queryId: string, vote: Completed
 }
 
 export default function VoteModal({ query, onClose, onSuccess }: VoteModalProps) {
-    const { chainId, application, executeMutation } = useLinera();
+    const { chainId, owner, application, executeMutation, executeAppChainQuery } = useLinera();
     const [selectedOutcome, setSelectedOutcome] = useState<string>('');
     const [confidence, setConfidence] = useState(100);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -125,6 +125,51 @@ export default function VoteModal({ query, onClose, onSuccess }: VoteModalProps)
     const [pendingReveal, setPendingReveal] = useState<PendingReveal | null>(null);
     const [completedVote, setCompletedVote] = useState<CompletedVote | null>(null);
     const [voteMode, setVoteMode] = useState<'commit' | 'reveal' | 'completed'>('commit');
+
+    // Voter registration check
+    const [isRegisteredVoter, setIsRegisteredVoter] = useState<boolean | null>(null);
+    const [checkingRegistration, setCheckingRegistration] = useState(true);
+    const [voterStake, setVoterStake] = useState<string>('0');
+
+    // Check voter registration status on mount
+    useEffect(() => {
+        const checkVoterRegistration = async () => {
+            if (!chainId) {
+                setCheckingRegistration(false);
+                setIsRegisteredVoter(false);
+                return;
+            }
+
+            try {
+                // IMPORTANT: Registry stores voters by chainId, not owner address!
+                // The voter "address" in registry is actually the user's chain ID
+                const voterAddress = chainId.toLowerCase();
+                console.log('🔍 Checking voter registration for chainId:', voterAddress);
+                console.log('   (owner address is:', owner, ')');
+
+                const voterQuery = `{ voter(address: "${voterAddress}") { address name stake isActive } }`;
+                const result = await executeAppChainQuery(voterQuery);
+
+                console.log('📊 Voter check result:', result);
+
+                if (result?.voter && result.voter.isActive) {
+                    setIsRegisteredVoter(true);
+                    setVoterStake(result.voter.stake || '0');
+                    console.log('✅ User is registered voter with stake:', result.voter.stake);
+                } else {
+                    setIsRegisteredVoter(false);
+                    console.log('❌ User is NOT a registered voter (chainId not found in registry)');
+                }
+            } catch (err) {
+                console.error('Failed to check voter registration:', err);
+                setIsRegisteredVoter(false);
+            } finally {
+                setCheckingRegistration(false);
+            }
+        };
+
+        checkVoterRegistration();
+    }, [chainId, owner, executeAppChainQuery]);
 
     // Check for pending reveal or completed vote on mount
     useEffect(() => {
@@ -312,12 +357,15 @@ export default function VoteModal({ query, onClose, onSuccess }: VoteModalProps)
     };
 
     const deadline = new Date(query.deadline / 1000);
-    const isExpired = deadline < new Date();
 
     // Check if we're still in commit phase
     const now = Date.now() * 1000; // Convert to microseconds
     const commitPhaseEnd = query.commitPhaseEnd || 0;
     const revealPhaseEnd = query.revealPhaseEnd || 0;
+
+    // Query is expired only when reveal phase has ended
+    const isExpired = now >= revealPhaseEnd && revealPhaseEnd > 0;
+
     const isInCommitPhase = now < commitPhaseEnd;
     const isInRevealPhase = now >= commitPhaseEnd && now < revealPhaseEnd;
     const commitTimeRemaining = Math.max(0, (commitPhaseEnd - now) / 1000); // in milliseconds
@@ -369,11 +417,56 @@ export default function VoteModal({ query, onClose, onSuccess }: VoteModalProps)
                             <span>Query #{query.id}</span>
                             <span>{query.voteCount} votes</span>
                         </div>
+                        {isRegisteredVoter && voterStake !== '0' && (
+                            <div className="mt-2 text-sm text-green-600">
+                                ✓ Registered voter • Stake: {parseFloat(voterStake).toLocaleString()} ALTH
+                            </div>
+                        )}
                     </div>
 
 
 
-                    {isExpired ? (
+                    {/* Loading registration check */}
+                    {checkingRegistration ? (
+                        <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                            <div className="flex items-center gap-2 text-gray-600">
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                                <span>Checking voter registration...</span>
+                            </div>
+                        </div>
+                    ) : !isRegisteredVoter ? (
+                        /* Not registered as voter */
+                        <div className="space-y-4">
+                            <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                                <div className="flex items-center gap-2 text-amber-800 mb-2">
+                                    <AlertCircle className="w-5 h-5" />
+                                    <span className="font-medium">Not Registered as Voter</span>
+                                </div>
+                                <p className="text-sm text-amber-700">
+                                    You must register as a voter and stake ALTH tokens before you can vote on queries.
+                                </p>
+                            </div>
+
+                            <div className="p-4 bg-gray-50 rounded-lg">
+                                <p className="text-sm text-gray-600 mb-2">
+                                    <strong>How to become a voter:</strong>
+                                </p>
+                                <ol className="text-sm text-gray-600 list-decimal list-inside space-y-1">
+                                    <li>Get ALTH tokens from the Token Faucet</li>
+                                    <li>Go to the Voters page</li>
+                                    <li>Click "Register as Voter" and stake tokens</li>
+                                </ol>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="w-full px-4 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    ) : isExpired ? (
                         <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
                             <div className="flex items-center gap-2 text-red-700">
                                 <AlertCircle className="w-5 h-5" />

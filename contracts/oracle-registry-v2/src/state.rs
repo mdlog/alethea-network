@@ -25,6 +25,9 @@ pub struct VoterInfo {
     /// Locked stake (for active votes)
     pub locked_stake: Amount,
     
+    /// Withdrawable balance (tokens ready to be claimed)
+    pub withdrawable_balance: Amount,
+    
     /// Reputation score (0-100)
     pub reputation: u32,
     
@@ -137,6 +140,10 @@ pub struct VoteCommit {
     
     /// Whether vote has been revealed
     pub revealed: bool,
+    
+    /// Amount of stake locked for this commit
+    /// Stored to ensure exact unlock amount matches lock amount
+    pub stake_locked: Amount,
 }
 
 /// Vote information
@@ -226,6 +233,9 @@ pub struct ProtocolParameters {
     
     /// ALTH Token application ID (for real token integration)
     pub token_app_id: Option<linera_sdk::linera_base_types::ApplicationId>,
+    
+    /// ALTH Token chain ID (where token contract is deployed)
+    pub token_chain_id: Option<linera_sdk::linera_base_types::ChainId>,
 }
 
 impl Default for ProtocolParameters {
@@ -233,11 +243,12 @@ impl Default for ProtocolParameters {
         Self {
             min_stake: Amount::from_tokens(100),
             min_votes_default: 3,
-            default_query_duration: 3600, // 1 hour (for faster testing)
-            reward_percentage: 1000,        // 10%
-            slash_percentage: 500,          // 5%
-            protocol_fee: 100,              // 1%
-            token_app_id: None,             // Set after token deployment
+            default_query_duration: 300,
+            reward_percentage: 1000,
+            slash_percentage: 500,
+            protocol_fee: 100,
+            token_app_id: None,
+            token_chain_id: None,
         }
     }
 }
@@ -462,7 +473,24 @@ impl OracleRegistryV2 {
     
     /// Get pending rewards for a voter by chain ID
     pub async fn get_pending_rewards(&self, voter_chain: &ChainId) -> Amount {
-        self.pending_rewards.get(voter_chain).await.ok().flatten().unwrap_or(Amount::ZERO)
+        // MapView.get() may return Some(Amount::MAX) for uninitialized entries
+        // We need to check if the value is valid (not MAX)
+        match self.pending_rewards.get(voter_chain).await {
+            Ok(Some(amount)) => {
+                // Check if amount is suspiciously large (likely uninitialized)
+                // Amount::MAX is approximately 340282366920938463463374607431768211455
+                // We use a threshold of 10^30 (1 trillion tokens in attos) to detect uninitialized values
+                // This is much higher than any realistic reward amount
+                let amount_value: u128 = amount.into();
+                if amount_value > 1_000_000_000_000_000_000_000_000_000_000u128 {
+                    // This is likely an uninitialized value, return ZERO
+                    Amount::ZERO
+                } else {
+                    amount
+                }
+            },
+            _ => Amount::ZERO,
+        }
     }
     
     /// Lock stake for a voter (when they vote on a query)
@@ -567,7 +595,8 @@ impl OracleRegistryV2 {
         let fee_multiplier = 1.0 - (params.protocol_fee as f64 / 10000.0);
         let final_reward = (reward_with_reputation as f64 * fee_multiplier) as u128;
         
-        Amount::from_tokens(final_reward)
+        // base_reward is already in attos, so use from_attos
+        Amount::from_attos(final_reward)
     }
     
     /// Calculate slash amount for incorrect voters
@@ -590,7 +619,8 @@ impl OracleRegistryV2 {
         let slash_multiplier = params.slash_percentage as f64 / 10000.0;
         let slash_amount = (stake_value as f64 * slash_multiplier) as u128;
         
-        Amount::from_tokens(slash_amount)
+        // stake_value is in attos, so result should be in attos
+        Amount::from_attos(slash_amount)
     }
     
     /// Check if voter's stake would fall below minimum after slashing
@@ -636,7 +666,8 @@ impl OracleRegistryV2 {
             }
         }
         
-        (Amount::from_tokens(total_slashed), voters_slashed, voters_deactivated)
+        // total_slashed is in attos
+        (Amount::from_attos(total_slashed), voters_slashed, voters_deactivated)
     }
     
     /// Calculate total reward pool for a query
@@ -650,7 +681,8 @@ impl OracleRegistryV2 {
         let reward_value: u128 = query_reward.into();
         let fees_value: u128 = protocol_fees.into();
         
-        Amount::from_tokens(reward_value + fees_value)
+        // Both values are in attos
+        Amount::from_attos(reward_value + fees_value)
     }
     
     /// Calculate protocol fee from reward amount
@@ -665,7 +697,8 @@ impl OracleRegistryV2 {
         let fee_multiplier = params.protocol_fee as f64 / 10000.0;
         let fee_amount = (reward_value as f64 * fee_multiplier) as u128;
         
-        Amount::from_tokens(fee_amount)
+        // reward_amount is in attos, so result should be in attos
+        Amount::from_attos(fee_amount)
     }
     
     /// Calculate stake-weighted reward distribution
@@ -706,8 +739,9 @@ impl OracleRegistryV2 {
             let base_reward = (reward_value as f64 * proportion) as u128;
             
             // Apply reputation multiplier and protocol fee
+            // base_reward is in attos, so use from_attos
             let reward = self.calculate_voter_reward(
-                Amount::from_tokens(base_reward),
+                Amount::from_attos(base_reward),
                 info,
                 params,
             );
@@ -756,7 +790,8 @@ impl OracleRegistryV2 {
             let fee_multiplier = 1.0 - (params.protocol_fee as f64 / 10000.0);
             let final_reward = (base_reward as f64 * fee_multiplier) as u128;
             
-            rewards.insert(*voter, Amount::from_tokens(final_reward));
+            // base_reward is in attos, so use from_attos
+            rewards.insert(*voter, Amount::from_attos(final_reward));
         }
         
         rewards
@@ -782,9 +817,10 @@ impl OracleRegistryV2 {
         let per_voter_base = reward_value / correct_voters.len() as u128;
         
         // Distribute rewards equally with reputation multiplier
+        // Note: per_voter_base is already in attos, so use Amount::from_attos
         for (voter, info) in correct_voters {
             let reward = self.calculate_voter_reward(
-                Amount::from_tokens(per_voter_base),
+                Amount::from_attos(per_voter_base),
                 info,
                 params,
             );
