@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="logo.png" alt="Alethea Network Logo" width="200"/>
+</p>
+
 # 🎮 Alethea Dashboard - Production Ready Oracle Interface
 
 **Fully Functional Decentralized Oracle Dashboard with Linera Standard Token Integration**
