@@ -41,9 +41,10 @@ tmp/
 temp/
 *.tmp
 
-# Exclude folders (alethea-explorer is separate repo)
+# Exclude folders (separate repos and external dependencies)
 alethea-explorer/
 amm/
+linera-protocol/
 
 # Include all documentation in docs folder
 !docs/**/*.md
