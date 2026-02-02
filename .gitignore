@@ -65,6 +65,49 @@ linera-protocol/
 *_old.*
 *.bak
 
+# Exclude test scripts and temporary files in root
+/test_*.sh
+/check_*.sh
+/create_test_*.sh
+/create_query_*.sh
+/create_quick_*.sh
+/create_past_*.sh
+/create_recent_*.sh
+/create_january_*.sh
+/deploy_*.sh
+/mint_*.sh
+/monitor_*.sh
+/process_*.sh
+/quick_*.sh
+/rebuild_*.sh
+
+# Exclude temporary query files
+/queries_*.json
+/COPY_PASTE_COMMANDS.txt
+/READY_TO_PASTE.txt
+/WORKING_COMMANDS.txt
+/SIMPLE_COMMANDS.sh
+
+# Exclude detailed documentation (keep main docs)
+/JANUARY_2026_QUERIES.md
+/PAST_EVENTS_QUERIES_DETAIL.md
+/RECENT_QUERIES_2026_DETAIL.md
+/README_JANUARY_2026.md
+/README_QUERIES_INDONESIA.md
+/README_CLI_COMMANDS.md
+/MANUAL_QUERY_GUIDE_ENGLISH.md
+/PANDUAN_BUAT_QUERY_MANUAL.md
+/CREATE_QUERY_GUIDE.md
+/CREATE_QUERY_STEP_BY_STEP.md
+/QUERY_FORMAT_GUIDE.md
+/QUICK_START_CLI.md
+/CROSS_CHAIN_COMPARISON.md
+/alethea-architecture-complete.md
+
+# Keep important files
+!README.md
+!CHANGELOG.md
+
 # Exclude image files
 *.png
 *.jpg
