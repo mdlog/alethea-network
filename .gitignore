@@ -43,6 +43,7 @@ temp/
 
 # Exclude folders (separate repos and external dependencies)
 alethea-explorer/
+alethea-website/
 amm/
 linera-protocol/
 
