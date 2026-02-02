@@ -216,6 +216,34 @@ Helper library for DApps to integrate oracle services:
 2. **Reveal Phase**: Voters reveal actual vote and salt
 3. **Resolution**: Auto-resolved after reveal phase ends
 
+### Query Resolution Criteria
+
+A query is considered **RESOLVED** when:
+
+1. **Reveal Phase Ends**: The reveal deadline has passed
+2. **Minimum Votes Met**: At least `min_votes` voters have revealed their votes
+3. **Consensus Reached**: Majority outcome is determined based on voting strategy
+
+**Resolution Process:**
+```
+1. Reveal phase ends (timestamp > reveal_end)
+2. System counts revealed votes
+3. If vote_count >= min_votes:
+   - Calculate winning outcome based on strategy
+   - Distribute rewards to correct voters
+   - Update voter reputations
+   - Send callback to consumer (if registered)
+   - Status: RESOLVED
+4. If vote_count < min_votes:
+   - Status: EXPIRED (no resolution)
+   - Refund rewards to query creator
+```
+
+**Auto-Resolution:**
+- Triggered automatically when reveal phase ends
+- Can also be manually triggered via `ResolveQuery` mutation
+- Processes all pending queries in batch
+
 ### Stake Locking
 
 When committing to a query, 10% of available stake is locked:
@@ -223,6 +251,11 @@ When committing to a query, 10% of available stake is locked:
 stake_to_lock = available_stake / 10
 available_stake = total_stake - locked_stake
 ```
+
+**Stake Release:**
+- Locked stake is released after query is resolved
+- Incorrect voters lose 5% of locked stake (slashing)
+- Correct voters receive their stake back + rewards
 
 ### Reward Distribution (WeightedByStake)
 
