@@ -1,0 +1,18 @@
+[package]
+name = "alethea-sdk"
+version = "0.1.0"
+edition = "2024"
+authors = ["Alethea Network Team"]
+description = "Client SDK for integrating with Alethea Oracle Protocol"
+repository = "https://github.com/mdlog/alethea-network"
+license = "MIT OR Apache-2.0"
+keywords = ["blockchain", "oracle", "linera", "sdk"]
+
+[dependencies]
+linera-sdk = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+alethea-oracle-types = { workspace = true }
+
+[lib]
+crate-type = ["lib"]

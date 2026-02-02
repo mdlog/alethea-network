@@ -1,0 +1,35 @@
+[Unit]
+Description=Alethea Oracle Backend API
+Documentation=https://github.com/mdlog/alethea-network
+After=network.target
+
+[Service]
+Type=simple
+User=alethea
+Group=alethea
+WorkingDirectory=/opt/alethea/oracle-api-backend
+
+# Environment
+Environment="RUST_LOG=info"
+EnvironmentFile=/opt/alethea/.env.production
+
+# Execution
+ExecStart=/opt/alethea/oracle-api-backend/target/release/oracle-api-backend
+ExecReload=/bin/kill -HUP $MAINPID
+
+# Restart policy
+Restart=always
+RestartSec=10
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/alethea
+
+# Limits
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

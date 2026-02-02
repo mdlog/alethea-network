@@ -1,0 +1,53 @@
+--- a/alethea-contract/alethea-token/src/contract.rs
++++ b/alethea-contract/alethea-token/src/contract.rs
+@@ -368,10 +368,17 @@
+
+             Operation::StakeTransfer {
+                 from_chain_id,
+                 amount,
+                 to_registry,
+             } => {
+-                // SECURITY: This should ideally be called via cross-chain message from user's chain
+-                // For now, we trust the caller but log the operation
+-                // In production, implement proper cross-chain authentication
++                // ADD PERMISSION CHECK
++                // Only the owner of from_chain_id can stake their tokens
++                let from_chain_bytes: [u8; 32] = from_chain_id.0.into();
++                let user_owner = AccountOwner::Address32(from_chain_bytes.into());
++
++                // Verify caller has permission for this account
++                self.runtime
++                    .check_account_permission(user_owner)
++                    .expect("Permission denied: not authorized to stake from this chain");
+
+                 // Transfer tokens from user (identified by chainId) to registry
+                 // User's balance is stored under AccountOwner::Address32(chainId)
+-                let from_chain_bytes: [u8; 32] = from_chain_id.0.into();
+-                let user_owner = AccountOwner::Address32(from_chain_bytes.into());
+
+                 // Get user's balance
+                 let user_balance = self
+
+--- a/alethea-contract/alethea-token/src/contract.rs
++++ b/alethea-contract/alethea-token/src/contract.rs
+@@ -433,10 +433,17 @@
+             Operation::UnstakeTransfer {
+                 to_chain_id,
+                 amount,
+                 from_registry,
+             } => {
++                // ADD PERMISSION CHECK
++                // Only the owner of to_chain_id can unstake to their account
++                let to_chain_bytes: [u8; 32] = to_chain_id.0.into();
++                let user_owner = AccountOwner::Address32(to_chain_bytes.into());
++
++                self.runtime
++                    .check_account_permission(user_owner)
++                    .expect("Permission denied: not authorized to unstake to this chain");
++
+                 // Transfer tokens from registry back to user
+-                let to_chain_bytes: [u8; 32] = to_chain_id.0.into();
+-                let user_owner = AccountOwner::Address32(to_chain_bytes.into());
+
+                 // Get registry's balance using Address32 derived from registry app ID
+                 // Use the application description hash as Address32

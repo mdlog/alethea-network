@@ -1,0 +1,52 @@
+{
+    "name": "alethea-network-oracle-sdk",
+    "version": "1.0.0-beta",
+    "description": "TypeScript SDK for integrating with Alethea Oracle Network - a decentralized oracle service with account-based voting and prediction markets",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "build": "tsc",
+        "test": "jest",
+        "prepublishOnly": "npm run build"
+    },
+    "keywords": [
+        "oracle",
+        "prediction-market",
+        "blockchain",
+        "linera",
+        "alethea",
+        "decentralized-oracle",
+        "web3",
+        "dapp",
+        "typescript",
+        "sdk",
+        "voting",
+        "reputation",
+        "account-based"
+    ],
+    "author": "Alethea Network",
+    "license": "MIT",
+    "homepage": "https://github.com/alethea-network/alethea-oracle-sdk#readme",
+    "bugs": {
+        "url": "https://github.com/alethea-network/alethea-oracle-sdk/issues"
+    },
+    "devDependencies": {
+        "@types/jest": "^29.5.0",
+        "@types/node": "^20.19.25",
+        "jest": "^29.5.0",
+        "ts-jest": "^29.1.0",
+        "typescript": "^5.9.3"
+    },
+    "files": [
+        "dist",
+        "README.md",
+        "LICENSE"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/alethea-network/alethea-oracle-sdk.git"
+    },
+    "engines": {
+        "node": ">=16.0.0"
+    }
+}

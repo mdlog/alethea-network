@@ -1,0 +1,16 @@
+[package]
+name = "alethea-consumer-sdk"
+version = "1.0.0"
+edition = "2021"
+description = "SDK for integrating consumer applications with Alethea Oracle Network"
+license = "MIT"
+readme = "README.md"
+keywords = ["oracle", "linera", "prediction-market", "blockchain"]
+
+[dependencies]
+linera-sdk = { workspace = true }
+serde = { workspace = true }
+async-trait = { workspace = true }
+
+[lib]
+crate-type = ["rlib"]

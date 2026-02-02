@@ -1,0 +1,28 @@
+[package]
+name = "voter-template"
+version = "0.1.0"
+edition = "2021"
+authors = ["Alethea Network Team"]
+description = "Voter Template for Alethea Oracle Protocol"
+repository = "https://github.com/mdlog/alethea-network"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+linera-sdk = { workspace = true }
+serde = { workspace = true }
+async-trait = { workspace = true }
+thiserror = { workspace = true }
+async-graphql = { workspace = true }
+bcs = { workspace = true }
+alethea-oracle-types = { workspace = true }
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "voter-template-contract"
+path = "src/contract.rs"
+
+[[bin]]
+name = "voter-template-service"
+path = "src/service.rs"

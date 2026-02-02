@@ -1,0 +1,37 @@
+[package]
+name = "oracle-registry-v2"
+version = "0.2.0"
+edition = "2021"
+authors = ["Alethea Network Team"]
+description = "Account-Based Oracle Registry for Alethea Protocol"
+repository = "https://github.com/mdlog/alethea-network"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+async-graphql.workspace = true
+async-trait.workspace = true
+linera-sdk.workspace = true
+log.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+bcs.workspace = true
+sha2.workspace = true
+alethea-oracle-types.workspace = true
+alethea-oracle-messages.workspace = true
+alethea-token.workspace = true
+futures.workspace = true
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full"] }
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "oracle_registry_v2_contract"
+path = "src/contract.rs"
+
+[[bin]]
+name = "oracle_registry_v2_service"
+path = "src/service.rs"

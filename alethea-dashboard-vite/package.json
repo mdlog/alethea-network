@@ -1,0 +1,39 @@
+{
+    "name": "alethea-dashboard-vite",
+    "private": true,
+    "version": "2.0.0",
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build",
+        "preview": "vite preview",
+        "inbox": "node server/inbox-processor.js",
+        "dev:all": "concurrently \"npm run dev\" \"npm run inbox\""
+    },
+    "dependencies": {
+        "@linera/client": "0.15.6",
+        "@linera/signer": "0.15.6",
+        "cors": "^2.8.5",
+        "ethers": "^6.13.0",
+        "express": "^4.22.1",
+        "lucide-react": "^0.556.0",
+        "react": "^19.2.1",
+        "react-dom": "^19.2.1",
+        "react-router-dom": "^7.1.0",
+        "recharts": "^2.12.7"
+    },
+    "devDependencies": {
+        "@types/node": "^22.19.2",
+        "@types/react": "^19.0.0",
+        "@types/react-dom": "^19.0.0",
+        "@vitejs/plugin-react": "^5.0.0",
+        "autoprefixer": "^10.4.19",
+        "concurrently": "^8.2.2",
+        "postcss": "^8.4.38",
+        "tailwindcss": "^3.4.1",
+        "typescript": "~5.8.2",
+        "vite": "^6.2.0",
+        "vite-plugin-top-level-await": "^1.6.0",
+        "vite-plugin-wasm": "^3.5.0"
+    }
+}

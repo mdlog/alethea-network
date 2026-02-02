@@ -1,0 +1,65 @@
+{
+  "title": "Alethea Network Documentation",
+  "description": "Divine Truth for Modern Markets - Decentralized Oracle Platform on Linera",
+  "author": "Alethea Network Team",
+  "language": "en",
+  "gitbook": ">=3.2.0",
+  "root": ".",
+  "structure": {
+    "readme": "README.md",
+    "summary": "SUMMARY.md"
+  },
+  "plugins": [
+    "theme-default",
+    "search",
+    "highlight",
+    "copy-code-button",
+    "expandable-chapters",
+    "github",
+    "edit-link",
+    "prism",
+    "-lunr",
+    "search-plus",
+    "splitter",
+    "sharing-plus",
+    "favicon"
+  ],
+  "pluginsConfig": {
+    "github": {
+      "url": "https://github.com/alethea-network/alethea-network"
+    },
+    "edit-link": {
+      "base": "https://github.com/alethea-network/alethea-network/edit/master/docs",
+      "label": "Edit This Page"
+    },
+    "sharing": {
+      "facebook": true,
+      "twitter": true,
+      "all": ["facebook", "twitter", "linkedin", "telegram"]
+    },
+    "favicon": {
+      "shortcut": "assets/favicon.ico",
+      "bookmark": "assets/favicon.ico"
+    },
+    "theme-default": {
+      "showLevel": true,
+      "styles": {
+        "website": "styles/website.css"
+      }
+    }
+  },
+  "variables": {
+    "version": "0.1.0",
+    "linera_version": "0.15.4",
+    "rust_version": "1.86.0"
+  },
+  "links": {
+    "sidebar": {
+      "🏛️ Website": "https://aletheanetwork.io",
+      "💬 Discord": "https://discord.gg/alethea",
+      "🐦 Twitter": "https://twitter.com/AletheaNetwork",
+      "📱 Telegram": "https://t.me/aletheanetwork"
+    }
+  }
+}
+

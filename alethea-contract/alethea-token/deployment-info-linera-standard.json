@@ -1,0 +1,37 @@
+{
+    "deployment_date": "2026-01-26T13:22:08Z",
+    "version": "2.0.0-linera-standard",
+    "application_id": "a4bfb6702571dd0d833b77dac4db2a50afddd17b17cb58da7d6a97f5e946d192",
+    "chain_id": "ce18260eea4fcbc1fa29da51a92e48d71eaf77513f6eec9b933e5b2f9f94732f",
+    "registry_app_id": "46d22719d75164270467baf275715dc48a25707770de763e8689a8e97fa74946",
+    "treasury_owner": "0x97f8b39f99b4097e4f05961d3a93539dbcd99851091809eaf7588d74123649b4",
+    "initial_supply": "1000000000",
+    "token_name": "Alethea Token",
+    "token_symbol": "ALTH",
+    "decimals": 18,
+    "features": [
+        "Linera Standard Compliant",
+        "Registry Authorization Whitelist",
+        "Stake Amount Limits (100-10M ALTH)",
+        "Per-User Stake Cap (1M ALTH)",
+        "Secure Cross-Chain Staking",
+        "AccountOwner-based Balance Storage"
+    ],
+    "security_parameters": {
+        "min_stake_amount": "100",
+        "max_stake_amount": "10000000",
+        "max_stake_per_user": "1000000"
+    },
+    "changes_from_v1": [
+        "Added sender_owner to RequestStake message",
+        "Added sender_owner to RequestUnstake message",
+        "Balance lookup uses AccountOwner instead of Address32(chainId)",
+        "Follows Linera fungible token standard",
+        "Compatible with standard Linera applications"
+    ],
+    "migration_notes": {
+        "existing_users": "Old tokens at Address32(chainId) remain there. Request new tokens from faucet.",
+        "new_users": "Everything works according to Linera standard.",
+        "registry_stake": "Existing stake in registry remains valid."
+    }
+}

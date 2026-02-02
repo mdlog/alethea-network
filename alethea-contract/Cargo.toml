@@ -1,0 +1,23 @@
+[workspace]
+members = ["alethea-token", "oracle-registry-v2", "alethea-oracle-types", "alethea-consumer-sdk", "alethea-oracle-messages", "simple-market"]
+resolver = "2"
+
+[profile.release]
+opt-level = "z"
+lto = true
+
+[workspace.dependencies]
+async-graphql = "7.0"
+async-trait = "0.1"
+bcs = "0.1"
+futures = "0.3"
+linera-sdk = { version = "0.15.6", default-features = false }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+sha2 = "0.10"
+thiserror = "1.0"
+log = "0.4"
+tokio = { version = "1.48", features = ["rt", "macros"] }
+alethea-oracle-types = { path = "alethea-oracle-types" }
+alethea-oracle-messages = { path = "alethea-oracle-messages" }
+alethea-token = { path = "alethea-token" }

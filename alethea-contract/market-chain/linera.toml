@@ -1,0 +1,7 @@
+[project]
+name = "market-chain"
+
+[bytecode]
+contract = "/home/mdlog/Project-MDlabs/linera-new/target/wasm32-unknown-unknown/release/market-chain-contract.wasm"
+service = "/home/mdlog/Project-MDlabs/linera-new/target/wasm32-unknown-unknown/release/market-chain-service.wasm"
+

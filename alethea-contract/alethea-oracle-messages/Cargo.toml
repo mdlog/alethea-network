@@ -1,0 +1,10 @@
+[package]
+name = "alethea-oracle-messages"
+version = "0.1.0"
+edition = "2021"
+description = "Shared message types for Alethea Oracle cross-chain communication"
+license = "MIT"
+
+[dependencies]
+linera-sdk.workspace = true
+serde.workspace = true

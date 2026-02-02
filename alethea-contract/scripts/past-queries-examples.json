@@ -1,0 +1,76 @@
+{
+  "queries": [
+    {
+      "title": "Bitcoin Halving 2024",
+      "description": "Did Bitcoin halving occur on or before April 20, 2024?",
+      "outcomes": ["Yes", "No"],
+      "category": "Crypto",
+      "context": "Bitcoin halving is a scheduled event that occurs approximately every 4 years, reducing the block reward by 50%. The 2024 halving was expected around April 19-20, 2024, reducing rewards from 6.25 BTC to 3.125 BTC per block.",
+      "resolution_criteria": "Resolve based on official Bitcoin blockchain data. Halving occurs at block 840,000. Check if block 840,000 was mined on or before April 20, 2024.",
+      "source_urls": "https://www.blockchain.com/explorer/blocks/btc, https://bitcoinblockhalf.com/",
+      "bond_amount": "100000000000000000000",
+      "service_fee": "10000000000000000000",
+      "expected_answer": "Yes"
+    },
+    {
+      "title": "Ethereum Merge Completion",
+      "description": "Was Ethereum's Merge (transition to Proof-of-Stake) completed successfully on September 15, 2022?",
+      "outcomes": ["Yes", "No"],
+      "category": "Crypto",
+      "context": "The Ethereum Merge was a major network upgrade that transitioned Ethereum from Proof-of-Work (PoW) to Proof-of-Stake (PoS) consensus mechanism. This was one of the most significant events in crypto history.",
+      "resolution_criteria": "Resolve based on official Ethereum blockchain data. Merge occurred at block 15,537,393. Verify if the merge was completed successfully on September 15, 2022.",
+      "source_urls": "https://ethereum.org/en/upgrades/merge/, https://beaconcha.in/",
+      "bond_amount": "100000000000000000000",
+      "service_fee": "10000000000000000000",
+      "expected_answer": "Yes"
+    },
+    {
+      "title": "Bitcoin All-Time High 2024",
+      "description": "Did Bitcoin reach a new all-time high price above $73,000 in March 2024?",
+      "outcomes": ["Yes", "No"],
+      "category": "Crypto",
+      "context": "Bitcoin price reached new all-time highs in 2024, driven by ETF approvals and institutional adoption. The previous ATH was around $69,000 in November 2021.",
+      "resolution_criteria": "Resolve based on verified price data from major exchanges (Coinbase, Binance, Kraken). Check if BTC/USD price exceeded $73,000 in March 2024.",
+      "source_urls": "https://www.coindesk.com/price/bitcoin/, https://coinmarketcap.com/currencies/bitcoin/",
+      "bond_amount": "100000000000000000000",
+      "service_fee": "10000000000000000000",
+      "expected_answer": "Yes"
+    },
+    {
+      "title": "FIFA World Cup 2022 Winner",
+      "description": "Who won the FIFA World Cup 2022?",
+      "outcomes": ["Argentina", "France", "Croatia", "Morocco"],
+      "category": "Sports",
+      "context": "The 2022 FIFA World Cup was held in Qatar from November 20 to December 18, 2022. It was the first World Cup held in the Arab world and the second in Asia.",
+      "resolution_criteria": "Resolve based on official FIFA match results. The winner is determined by the final match result on December 18, 2022.",
+      "source_urls": "https://www.fifa.com/fifaplus/en/tournaments/mens/worldcup/qatar2022, https://www.espn.com/soccer/fifa-world-cup/",
+      "bond_amount": "100000000000000000000",
+      "service_fee": "10000000000000000000",
+      "expected_answer": "Argentina"
+    },
+    {
+      "title": "Super Bowl LVIII Winner 2024",
+      "description": "Who won Super Bowl LVIII (2024)?",
+      "outcomes": ["Kansas City Chiefs", "San Francisco 49ers"],
+      "category": "Sports",
+      "context": "Super Bowl LVIII was played on February 11, 2024, at Allegiant Stadium in Las Vegas, Nevada. It featured the AFC champion Kansas City Chiefs and NFC champion San Francisco 49ers.",
+      "resolution_criteria": "Resolve based on official NFL game results. The winner is determined by the final score of Super Bowl LVIII on February 11, 2024.",
+      "source_urls": "https://www.nfl.com/super-bowl/, https://www.espn.com/nfl/",
+      "bond_amount": "100000000000000000000",
+      "service_fee": "10000000000000000000",
+      "expected_answer": "Kansas City Chiefs"
+    },
+    {
+      "title": "UEFA Champions League 2023 Winner",
+      "description": "Which team won the UEFA Champions League 2022-23 season?",
+      "outcomes": ["Manchester City", "Inter Milan", "Real Madrid", "AC Milan"],
+      "category": "Sports",
+      "context": "The 2022-23 UEFA Champions League final was played on June 10, 2023, at the Atatürk Olympic Stadium in Istanbul, Turkey.",
+      "resolution_criteria": "Resolve based on official UEFA match results. The winner is determined by the final match result on June 10, 2023.",
+      "source_urls": "https://www.uefa.com/uefachampionsleague/, https://www.espn.com/soccer/league/_/name/uefa.champions",
+      "bond_amount": "100000000000000000000",
+      "service_fee": "10000000000000000000",
+      "expected_answer": "Manchester City"
+    }
+  ]
+}
