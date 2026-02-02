@@ -1,0 +1,11 @@
+# Oracle Registry v2 - Linera Project Configuration
+
+[project]
+name = "oracle_registry_v2"
+version = "0.2.0"
+
+[contract]
+path = "src/contract.rs"
+
+[service]
+path = "src/service.rs"
