@@ -41,9 +41,36 @@ tmp/
 temp/
 *.tmp
 
-# Exclude folders (alethea-explorer is separate repo)
+# Exclude folders (separate repos and external dependencies)
 alethea-explorer/
 amm/
+
+# Exclude legacy/unused contracts
+market-chain/
+voter-template/
+simple-market/
+
+# Exclude development/testing folders
+integration-tests/
+oracle-backend/
+oracle-cli/
+linera-executor/
+
+# Exclude deployment artifacts
+deployment/
+deployment-info*.txt
+*.env.*
+!.env.example
+
+# Exclude temporary/debug files
+-d
+-H
+execute-mint.sh
+mint_token.py
+mint-operation.json
+mint-to-address.sh
+linera-service.log
+todo!()
 
 # Include all documentation in docs folder
 !docs/**/*.md
@@ -62,6 +89,25 @@ amm/
 *.backup
 *_old.*
 *.bak
+
+# Exclude outdated documentation
+BLOB_PRUNING_FIX.md
+CONFIG_SETUP_SUMMARY.md
+CONTRACT_NOT_IN_WALLET.md
+DEPLOY_COMMANDS.md
+DEPLOYMENT_V3.3.0.md
+DOUBLE_MINTING_ANALYSIS.md
+ESCROW_ACCOUNT_EXPLANATION.md
+ESCROW_PER_CHAIN.md
+ESCROW_REWARD_FIX.md
+INSTANTIATION_FIX.md
+INSTANTIATION_ISSUE_ANALYSIS.md
+INSTANTIATION_PERSISTENT_ISSUE.md
+POST_DEPLOYMENT_CHECKLIST.md
+POST_DEPLOYMENT_STEPS.md
+QUICK_DEPLOY.sh
+SERVICE_ERROR_FIX.md
+SET_CONFIG_VIA_DASHBOARD.md
 
 # Exclude image files
 *.png
