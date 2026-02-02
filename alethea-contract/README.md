@@ -5,39 +5,29 @@
   **Smart Contracts for Alethea Oracle Network on Linera Blockchain**
 
   [![Status](https://img.shields.io/badge/status-testnet%20ready-blue)]()
-  [![Version](https://img.shields.io/badge/version-2.4.0-blue)]()
+  [![Version](https://img.shields.io/badge/version-3.4.0-blue)]()
   [![Network](https://img.shields.io/badge/network-linera%20conway-purple)]()
   [![License](https://img.shields.io/badge/license-MIT-blue)]()
 </div>
 
 ---
 
-## 🆕 Latest Updates (v2.4.0 - 2026-01-31)
+## 🆕 Latest Updates (v3.4.0 - February 2026)
 
-### Staking System Updates
-- **Escrow-Based Staking**: Token transfers use escrow model
-- **Testnet Mode Unstake**: Proceeds with credit even if escrow empty
-- **Add Stake Fix**: Properly calls `executeUpdateStakeFor` mutation
+### Current Status
+- **Oracle Resolution Network**: Fully operational on Conway Testnet
+- **Commit-Reveal Voting**: Secure two-phase voting system
+- **Stake-Weighted Consensus**: Reputation-based voting power
+- **Cross-Chain Ready**: Hub-and-spoke architecture for DApp integration
+- **Consumer SDK**: Easy integration for external applications
 
----
-
-## 📋 Previous Updates (v2.3.0)
-
-### Security Improvements
-- **MintReward Authorization**: Token minting now requires authenticated `registry_app_id` verification
-- **BurnSlash Authorization**: Token burning (slashing) requires registry authorization
-- **Unit Conversion Fixes**: Corrected `Amount::from_tokens()` vs `Amount::from_attos()` usage across contracts
-
-### Industry Standard Compliance
-- **UMA Optimistic Oracle** compatible request format (bond, liveness, reward)
-- **Reality.eth** compatible question types (Boolean, SingleSelect, Numeric, MultipleSelect)
-- **Dispute Mechanism** with bond-based challenge system
-
-### New Features
-- **Two-Step Reward Claiming**: Rewards → `withdrawableBalance` → Wallet
-- **Query with Bond**: Refundable deposits for query creation
-- **Dispute Window**: Configurable time for challenging results
-- **QueryFinalized Callback**: Safe settlement signal after dispute window
+### Key Features
+- ✅ Voter registration with minimum 100 ALTH stake
+- ✅ Query creation with customizable outcomes and rewards
+- ✅ Automatic resolution after reveal phase
+- ✅ Reward distribution to correct voters
+- ✅ Slashing mechanism for incorrect votes (5%)
+- ✅ Reputation system with 4 tiers (Novice → Master)
 
 ---
 
@@ -226,17 +216,21 @@ linera publish-and-create \
     --json-argument '"Hub"'
 ```
 
-### Current Deployment (Conway Testnet - 2026-01-31)
+### Current Deployment (Conway Testnet - February 2026)
 
 | Contract | Application ID |
 |----------|----------------|
-| **ALTH Token** | `1dc30375b1daa58cfdd00ba9f30cd5ab5107c7e3a6920ad7b23e463d449e3b35` |
-| **Oracle Registry V2** | `e557a2b2c668d1cbf4774694f55cade4c71a9723bf70d8f69afeac9b088aeed7` |
+| **Oracle Registry V2** | `f51da82d9521ae359becc31fbf09b8a2020b6237e760c5a6d565610965103990` |
+| **ALTH Token** | `dac6b92743e8f02acd8367b75aef1dba6e91618c1c4fb863b73b87ec55a33ddd` |
 | **Chain ID** | `9d0d233f813d271ff282485ba47d344995d36b9d06c40fed7d6cf55ab9e95fec` |
 
+**Network:** Linera Conway Testnet  
+**RPC:** `https://rpc.testnet-conway.linera.net`  
+**Faucet:** `https://faucet.testnet-conway.linera.net`
+
 **GraphQL Endpoints:**
-- Token: `http://localhost:8080/chains/9d0d233f.../applications/1dc30375...`
-- Registry: `http://localhost:8080/chains/9d0d233f.../applications/e557a2b2...`
+- Registry: `POST /chains/9d0d233f.../applications/f51da82d...`
+- Token: `POST /chains/9d0d233f.../applications/dac6b92...`
 
 ---
 
@@ -248,8 +242,8 @@ linera publish-and-create \
 import { ExternalDAppClient } from 'alethea-oracle-sdk';
 
 const client = new ExternalDAppClient({
-    // Conway Testnet (2026-01-31)
-    registryId: 'e557a2b2c668d1cbf4774694f55cade4c71a9723bf70d8f69afeac9b088aeed7',
+    // Conway Testnet (February 2026)
+    registryId: 'f51da82d9521ae359becc31fbf09b8a2020b6237e760c5a6d565610965103990',
     chainId: '9d0d233f813d271ff282485ba47d344995d36b9d06c40fed7d6cf55ab9e95fec',
     callbackChainId: 'your-dapp-chain-id',
     callbackAppId: 'your-dapp-app-id',
