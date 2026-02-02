@@ -4,7 +4,7 @@
 
 # Alethea Network
 
-**Decentralized Oracle Network & Prediction Market Platform on Linera Blockchain**
+**Decentralized Oracle Resolution Network on Linera Blockchain**
 
 [![Status](https://img.shields.io/badge/status-testnet%20ready-blue)]()
 [![Version](https://img.shields.io/badge/version-3.4.0-blue)]()
@@ -18,24 +18,23 @@
 
 ## Overview
 
-Alethea Network is a **decentralized oracle platform** built on Linera blockchain, providing consensus-based resolution for prediction markets and DApps. The platform features:
+Alethea Network is a **decentralized oracle resolution platform** built on Linera blockchain, providing consensus-based data verification and query resolution for DApps. The platform features:
 
 - **Decentralized Oracle**: Commit-reveal voting with stake-weighted consensus
-- **Prediction Markets**: Binary (Yes/No) markets with oracle resolution
+- **Query Resolution**: Binary and multi-outcome query resolution system
 - **Real Token Integration**: ALTH token for staking and rewards
 - **Hub-and-Spoke Architecture**: Scalable cross-chain communication
 - **Reputation System**: Accuracy-based voter scoring and rewards
+- **Consumer SDK**: Easy integration for any DApp needing oracle services
 
 ---
 
 ## Applications
 
-| Application | Description | Port | Status |
-|-------------|-------------|------|--------|
-| [alethea-dashboard-vite](./alethea-dashboard-vite/) | **Oracle Dashboard** - Voter registration, staking, queries, voting | 4002 | Active |
-| [alethea-market](./alethea-market/) | **Prediction Market** - Binary markets with oracle resolution | 4004 | Active |
-| [alethea-contract](./alethea-contract/) | **Smart Contracts** - Oracle registry, token, market contracts | - | Deployed |
-| [alethea-explorer](./alethea-explorer/) | **Blockchain Explorer** - Network monitoring (Next.js) | 3000 | In Progress |
+| Application | Description | Status |
+|-------------|-------------|--------|
+| [alethea-contract](./alethea-contract/) | **Smart Contracts** - Oracle registry, token, consumer SDK | Deployed |
+| [alethea-dashboard-vite](./alethea-dashboard-vite/) | **Oracle Dashboard** - Voter registration, staking, queries, voting | Active |
 
 ---
 
@@ -43,6 +42,29 @@ Alethea Network is a **decentralized oracle platform** built on Linera blockchai
 
 ```
 Alethea Network
+├── alethea-contract/                # Smart Contracts (Rust)
+│   ├── oracle-registry-v2/          # Main oracle registry
+│   │   ├── src/
+│   │   │   ├── contract.rs          # Core oracle logic
+│   │   │   ├── service.rs           # GraphQL API
+│   │   │   └── state.rs             # State management
+│   │   └── tests/                   # Integration tests
+│   │
+│   ├── alethea-token/               # ALTH token contract
+│   │   ├── src/
+│   │   │   ├── contract.rs          # Token operations
+│   │   │   └── service.rs           # Token API
+│   │   └── deploy.sh
+│   │
+│   ├── alethea-consumer-sdk/        # SDK for consumer apps
+│   │   ├── src/
+│   │   │   └── lib.rs               # Helper functions
+│   │   └── README.md
+│   │
+│   ├── alethea-oracle-messages/     # Shared message types
+│   ├── alethea-oracle-types/        # Shared data types
+│   └── scripts/                     # Deployment scripts
+│
 ├── alethea-dashboard-vite/          # Oracle Dashboard (Vite + React)
 │   ├── src/
 │   │   ├── components/              # UI components
@@ -63,32 +85,8 @@ Alethea Network
 │   │       └── DocsPage.tsx         # API documentation
 │   └── .env.local                   # Environment config
 │
-├── alethea-market/                  # Prediction Market (Vite + React)
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── CreateMarketModal.tsx
-│   │   │   ├── BetModal.tsx
-│   │   │   └── CallbackMonitor.tsx
-│   │   ├── contexts/
-│   │   │   └── LineraContext.tsx
-│   │   ├── pages/
-│   │   │   ├── HomePage.tsx
-│   │   │   ├── MarketsPage.tsx
-│   │   │   └── MarketDetailPage.tsx
-│   │   └── hooks/
-│   │       └── useOracleQuery.ts
-│   └── .env.local
-│
-├── alethea-contract/                # Smart Contracts (Rust)
-│   ├── oracle-registry-v2/          # Main oracle registry
-│   ├── simple-market/               # Prediction market contract
-│   ├── alethea-token/               # ALTH token contract
-│   ├── alethea-oracle-messages/     # Shared message types
-│   ├── alethea-oracle-types/        # Shared data types
-│   ├── alethea-consumer-sdk/        # SDK for consumer apps
-│   └── scripts/                     # Deployment scripts
-│
-└── linera-protocol/                 # Linera SDK (submodule)
+├── docs/                            # Documentation
+└── src/                             # Additional source files
 ```
 
 ---
@@ -117,15 +115,6 @@ npm run dev
 # Open http://localhost:4002
 ```
 
-### 3. Start Prediction Market (Optional)
-
-```bash
-cd alethea-market
-npm install
-npm run dev
-# Open http://localhost:4004
-```
-
 ---
 
 ## Current Deployment
@@ -144,7 +133,6 @@ npm run dev
 |----------|----------|----------------|
 | **Oracle Registry** | `9d0d233f...` | `f51da82d9521ae359becc31fbf09b8a2020b6237e760c5a6d565610965103990` |
 | **ALTH Token** | `9d0d233f...` | `dac6b92743e8f02acd8367b75aef1dba6e91618c1c4fb863b73b87ec55a33ddd` |
-| **Simple Market** | `9d0d233f...` | `afa5023760441e2fd5768f42b010f42f7fab98317612e915e51537a29d7f33d1` |
 
 Full Chain ID: `9d0d233f813d271ff282485ba47d344995d36b9d06c40fed7d6cf55ab9e95fec`
 
@@ -182,23 +170,6 @@ ClaimRewards
 UpdateStake / WithdrawStake
 ```
 
-### Simple Market
-
-Binary prediction market contract:
-
-- **Market Creation**: Yes/No questions with end time
-- **Betting**: Place bets on outcomes
-- **Oracle Integration**: Request resolution from Oracle Registry
-- **Payout**: Distribute winnings based on oracle result
-
-**Key Operations:**
-```
-CreateMarket
-PlaceBet
-RequestResolution
-ClaimPayout
-```
-
 ### ALTH Token
 
 Standard fungible token with:
@@ -208,6 +179,15 @@ Standard fungible token with:
 - **Minting**: Admin-controlled minting
 - **Cross-chain**: Secure cross-chain transfers
 
+### Consumer SDK
+
+Helper library for DApps to integrate oracle services:
+
+- **Query Creation**: Simplified query creation
+- **Callback Handling**: Process oracle responses
+- **Message Types**: Pre-defined message structures
+- **Error Handling**: Robust error management
+
 ---
 
 ## Features
@@ -216,25 +196,15 @@ Standard fungible token with:
 
 | Feature | Status | Description |
 |---------|--------|-------------|
-| **Wallet Connection** | Active | WASM-based wallet with IndexedDB storage |
-| **Token Faucet** | Active | Request 1,000 ALTH test tokens |
-| **Voter Registration** | Active | Register with 100+ ALTH stake |
-| **Query Creation** | Active | Create queries with rewards |
-| **Commit-Reveal Voting** | Active | Secure two-phase voting |
-| **Auto-Resolution** | Active | Automatic query resolution |
-| **Reward Claiming** | Active | Claim pending rewards |
-| **Stake Management** | Active | Add/withdraw stake |
-| **Reputation System** | Active | Accuracy-based scoring |
-
-### Prediction Market
-
-| Feature | Status | Description |
-|---------|--------|-------------|
-| **Market Creation** | Active | Create Yes/No prediction markets |
-| **Betting** | Active | Place bets with odds calculation |
-| **Oracle Integration** | Active | Request resolution via oracle |
-| **Callback Monitor** | Active | Track oracle query status |
-| **Payout System** | Active | Claim winnings after resolution |
+| **Wallet Connection** | ✅ Active | WASM-based wallet with IndexedDB storage |
+| **Token Faucet** | ✅ Active | Request 1,000 ALTH test tokens |
+| **Voter Registration** | ✅ Active | Register with 100+ ALTH stake |
+| **Query Creation** | ✅ Active | Create queries with rewards |
+| **Commit-Reveal Voting** | ✅ Active | Secure two-phase voting |
+| **Auto-Resolution** | ✅ Active | Automatic query resolution |
+| **Reward Claiming** | ✅ Active | Claim pending rewards |
+| **Stake Management** | ✅ Active | Add/withdraw stake |
+| **Reputation System** | ✅ Active | Accuracy-based scoring |
 
 ---
 
@@ -286,7 +256,7 @@ voter_reward = (voter_stake / total_correct_voters_stake) * total_reward
 | @linera/client | 0.15.6 | WASM Blockchain Client |
 | @linera/signer | 0.15.6 | Wallet Signing |
 | ethers | 6.13.0 | Mnemonic Generation |
-| Recharts | 2.12.7 | Charts (Dashboard) |
+| Recharts | 2.12.7 | Charts |
 | Lucide React | 0.556.0 | Icons |
 
 ### Smart Contracts
@@ -322,23 +292,6 @@ VITE_TOKEN_CHAIN_ID=9d0d233f813d271ff282485ba47d344995d36b9d06c40fed7d6cf55ab9e9
 
 # Service URL (empty for Vite proxy)
 VITE_SERVICE_URL=
-```
-
-### Market (.env.local)
-
-```env
-# Alethea Market - Conway Testnet
-VITE_FAUCET_URL=https://faucet.testnet-conway.linera.net
-
-# Chain Configuration
-VITE_CHAIN_ID=9d0d233f813d271ff282485ba47d344995d36b9d06c40fed7d6cf55ab9e95fec
-
-# Simple Market Contract
-VITE_MARKET_APP_ID=afa5023760441e2fd5768f42b010f42f7fab98317612e915e51537a29d7f33d1
-
-# Oracle Registry
-VITE_REGISTRY_APP_ID=f51da82d9521ae359becc31fbf09b8a2020b6237e760c5a6d565610965103990
-VITE_REGISTRY_CHAIN_ID=9d0d233f813d271ff282485ba47d344995d36b9d06c40fed7d6cf55ab9e95fec
 ```
 
 ---
@@ -391,9 +344,6 @@ POST /chains/{CHAIN_ID}/applications/{REGISTRY_APP_ID}
 
 # Token
 POST /chains/{USER_CHAIN_ID}/applications/{TOKEN_APP_ID}
-
-# Market
-POST /chains/{CHAIN_ID}/applications/{MARKET_APP_ID}
 ```
 
 ### Common Queries
@@ -483,23 +433,66 @@ mutation {
                      |
         +------------+------------+
         |            |            |
-    User Chain   Market Chain   Other Apps
+    User Chain   Consumer App   Other Apps
         |            |            |
-    - Vote       - Create      - Custom
-    - Stake      - Bet         - Logic
+    - Vote       - Query       - Custom
+    - Stake      - Callback    - Logic
     - Claim      - Resolve
 ```
 
 ### Message Types
 
-**OracleRequest** (Market -> Registry):
+**OracleRequest** (Consumer -> Registry):
 - `CreateQuery` - Request oracle resolution
-- `CreateQueryWithBond` - With bond and priority fee
+- `CreateQueryWithCallback` - With callback and priority fee
 
-**OracleCallback** (Registry -> Market):
+**OracleCallback** (Registry -> Consumer):
 - `QueryCreated` - Query registered
 - `QueryResolved` - Resolution complete
 - `QueryExpired` - No resolution
+
+---
+
+## Integration Guide
+
+### For DApp Developers
+
+1. **Add Consumer SDK dependency**:
+```toml
+[dependencies]
+alethea-consumer-sdk = { path = "../alethea-consumer-sdk" }
+alethea-oracle-messages = { path = "../alethea-oracle-messages" }
+```
+
+2. **Create Oracle Query**:
+```rust
+use alethea_oracle_messages::OracleRequest;
+
+// In your contract
+let request = OracleRequest::CreateQueryWithCallback {
+    description: "Query description".to_string(),
+    outcomes: vec!["Yes".to_string(), "No".to_string()],
+    reward_amount: Amount::from_tokens(100),
+    // ... other params
+};
+
+// Send to oracle registry
+self.send_message(oracle_chain_id, request);
+```
+
+3. **Handle Callback**:
+```rust
+use alethea_oracle_messages::OracleCallback;
+
+// In your message handler
+match message {
+    OracleCallback::QueryResolved { query_id, result } => {
+        // Process oracle result
+        self.handle_resolution(query_id, result);
+    }
+    _ => {}
+}
+```
 
 ---
 
@@ -546,11 +539,6 @@ linera publish-and-create \
 - Click refresh button
 - Process inbox: `mutation { processInbox(chainId: "...") }`
 
-**Market not resolving:**
-- Ensure Oracle Registry has voters
-- Check if query was created
-- Monitor callback events
-
 ---
 
 ## Development
@@ -559,13 +547,10 @@ linera publish-and-create \
 
 ```bash
 # Clone repository
-git clone https://github.com/your-org/alethea-network.git
+git clone https://github.com/mdlog/alethea-network.git
 
 # Install dashboard dependencies
 cd alethea-dashboard-vite && npm install
-
-# Install market dependencies
-cd ../alethea-market && npm install
 
 # Build contracts
 cd ../alethea-contract && cargo build --release
@@ -580,7 +565,7 @@ cargo test
 
 # Integration tests
 cd alethea-contract/oracle-registry-v2
-./run_integration_tests.sh
+cargo test --test integration_test
 ```
 
 ---
@@ -588,7 +573,7 @@ cd alethea-contract/oracle-registry-v2
 ## Resources
 
 - **Dashboard Docs**: [alethea-dashboard-vite/README.md](./alethea-dashboard-vite/README.md)
-- **Architecture**: [alethea-architecture-complete.md](./alethea-architecture-complete.md)
+- **Consumer SDK**: [alethea-contract/alethea-consumer-sdk/README.md](./alethea-contract/alethea-consumer-sdk/README.md)
 - **Changelog**: [CHANGELOG.md](./CHANGELOG.md)
 - **Linera Docs**: https://docs.linera.io
 
@@ -604,8 +589,8 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 **Built on Linera Blockchain**
 
-*Decentralized Oracle Network | Conway Testnet | Active Development*
+*Decentralized Oracle Resolution Network | Conway Testnet | Active Development*
 
-[Dashboard](http://localhost:4002) | [Market](http://localhost:4004) | [Contracts](./alethea-contract/)
+[Dashboard](http://localhost:4002) | [GitHub](https://github.com/mdlog/alethea-network) | [Contracts](./alethea-contract/)
 
 </div>
