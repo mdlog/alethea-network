@@ -1,7 +1,0 @@
-[project]
-name = "alethea-token"
-
-[application]
-name = "alethea-token"
-contract = "../target/wasm32-unknown-unknown/release/alethea-token-contract.wasm"
-service = "../target/wasm32-unknown-unknown/release/alethea-token-service.wasm"
