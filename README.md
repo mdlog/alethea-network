@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="logo.png" alt="Alethea Network Logo" width="200"/>
+
 # Alethea Network
 
 **Decentralized Oracle Network & Prediction Market Platform on Linera Blockchain**
