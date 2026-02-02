@@ -1,0 +1,34 @@
+{
+    "name": "alethea-market",
+    "private": true,
+    "version": "1.0.0",
+    "type": "module",
+    "description": "Prediction Market Demo - Alethea Oracle Integration",
+    "scripts": {
+        "dev": "vite --port 4004",
+        "build": "vite build",
+        "preview": "vite preview"
+    },
+    "dependencies": {
+        "@linera/client": "0.15.11",
+        "@linera/signer": "0.15.6",
+        "ethers": "^6.13.0",
+        "lucide-react": "^0.556.0",
+        "react": "^19.2.1",
+        "react-dom": "^19.2.1",
+        "react-router-dom": "^7.1.0"
+    },
+    "devDependencies": {
+        "@types/node": "^22.19.2",
+        "@types/react": "^19.0.0",
+        "@types/react-dom": "^19.0.0",
+        "@vitejs/plugin-react": "^5.0.0",
+        "autoprefixer": "^10.4.19",
+        "postcss": "^8.4.38",
+        "tailwindcss": "^3.4.1",
+        "typescript": "~5.8.2",
+        "vite": "^6.2.0",
+        "vite-plugin-top-level-await": "^1.6.0",
+        "vite-plugin-wasm": "^3.5.0"
+    }
+}

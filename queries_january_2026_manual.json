@@ -1,0 +1,229 @@
+{
+    "info": {
+        "total_queries": 14,
+        "periode": "1-3 Januari 2026",
+        "tanggal_sekarang": "2 Februari 2026",
+        "status": "Semua peristiwa sudah terjadi, siap di-resolve",
+        "commit_duration": "43200 detik (12 jam)",
+        "reveal_duration": "43200 detik (12 jam)",
+        "total_duration": "86400 detik (24 jam)"
+    },
+    "queries": [
+        {
+            "id": 1,
+            "category": "Kripto",
+            "title": "Bitcoin Price 1 Januari 2026",
+            "description": "Apakah harga Bitcoin (BTC) berada di atas $95,000 USD pada 1 Januari 2026 pukul 00:00 UTC?",
+            "context": "Bitcoin mengalami volatilitas di akhir 2025 dan awal 2026. Query ini memverifikasi harga BTC pada awal tahun 2026 berdasarkan data historis yang sudah tersedia.",
+            "resolution_criteria": "Resolusi berdasarkan harga penutupan Bitcoin pada 1 Januari 2026 pukul 00:00 UTC dari CoinGecko. Gunakan harga BTC/USD pada timestamp tersebut.",
+            "source_urls": "https://www.coingecko.com/en/coins/bitcoin, https://coinmarketcap.com/currencies/bitcoin/historical-data/",
+            "outcomes": [
+                "Ya, di atas $95,000",
+                "Tidak, di bawah $95,000"
+            ],
+            "duration": 86400,
+            "tags": "bitcoin,crypto,price,january2026"
+        },
+        {
+            "id": 2,
+            "category": "Kripto",
+            "title": "Ethereum Price 2 Januari 2026",
+            "description": "Apakah harga Ethereum (ETH) mencapai atau melampaui $3,500 USD pada 2 Januari 2026?",
+            "context": "Ethereum menunjukkan pergerakan harga yang menarik di awal 2026. Query ini memverifikasi apakah ETH mencapai level $3,500 pada 2 Januari 2026.",
+            "resolution_criteria": "Resolusi berdasarkan harga tertinggi (high) Ethereum pada 2 Januari 2026 dari CoinGecko atau CoinMarketCap. ETH harus mencapai atau melampaui $3,500 kapan saja di tanggal tersebut.",
+            "source_urls": "https://www.coingecko.com/en/coins/ethereum, https://coinmarketcap.com/currencies/ethereum/historical-data/",
+            "outcomes": [
+                "Ya, mencapai $3,500+",
+                "Tidak, di bawah $3,500"
+            ],
+            "duration": 86400,
+            "tags": "ethereum,crypto,price,january2026"
+        },
+        {
+            "id": 3,
+            "category": "Kripto",
+            "title": "Total Crypto Market Cap 1 Januari 2026",
+            "description": "Apakah total market cap cryptocurrency melebihi $3.2 triliun USD pada 1 Januari 2026?",
+            "context": "Total market cap crypto adalah indikator penting untuk mengukur kesehatan pasar secara keseluruhan. Query ini memverifikasi market cap total pada awal 2026.",
+            "resolution_criteria": "Resolusi berdasarkan data total market cap dari CoinGecko pada 1 Januari 2026. Gunakan snapshot market cap pada pukul 00:00 UTC atau data harian.",
+            "source_urls": "https://www.coingecko.com/en/global-charts, https://coinmarketcap.com/charts/",
+            "outcomes": [
+                "Ya, di atas $3.2T",
+                "Tidak, di bawah $3.2T"
+            ],
+            "duration": 86400,
+            "tags": "crypto,marketcap,january2026"
+        },
+        {
+            "id": 4,
+            "category": "Kripto",
+            "title": "Solana Price 3 Januari 2026",
+            "description": "Apakah harga Solana (SOL) berada di atas $180 USD pada 3 Januari 2026?",
+            "context": "Solana telah menunjukkan performa kuat di Q4 2025. Query ini memverifikasi harga SOL pada 3 Januari 2026 berdasarkan data historis.",
+            "resolution_criteria": "Resolusi berdasarkan harga penutupan Solana pada 3 Januari 2026 dari CoinGecko. Gunakan harga SOL/USD pada akhir hari (23:59 UTC).",
+            "source_urls": "https://www.coingecko.com/en/coins/solana, https://coinmarketcap.com/currencies/solana/historical-data/",
+            "outcomes": [
+                "Ya, di atas $180",
+                "Tidak, di bawah $180"
+            ],
+            "duration": 86400,
+            "tags": "solana,crypto,price,january2026"
+        },
+        {
+            "id": 5,
+            "category": "Teknologi",
+            "title": "GitHub Status 1 Januari 2026",
+            "description": "Apakah GitHub mengalami outage atau incident pada 1 Januari 2026?",
+            "context": "GitHub adalah platform development terbesar di dunia. Query ini memverifikasi apakah ada gangguan layanan pada 1 Januari 2026.",
+            "resolution_criteria": "Resolusi berdasarkan GitHub Status page. Incident atau outage didefinisikan sebagai gangguan yang dilaporkan di status page pada 1 Januari 2026.",
+            "source_urls": "https://www.githubstatus.com/, https://www.githubstatus.com/history",
+            "outcomes": [
+                "Ya, ada outage/incident",
+                "Tidak, tidak ada gangguan"
+            ],
+            "duration": 86400,
+            "tags": "github,technology,outage,january2026"
+        },
+        {
+            "id": 6,
+            "category": "Teknologi",
+            "title": "Apple Stock Price 2 Januari 2026",
+            "description": "Apakah harga saham Apple (AAPL) ditutup di atas $230 USD pada 2 Januari 2026?",
+            "context": "Apple adalah salah satu perusahaan teknologi terbesar. Query ini memverifikasi harga penutupan saham AAPL pada 2 Januari 2026.",
+            "resolution_criteria": "Resolusi berdasarkan harga penutupan resmi Apple (AAPL) di NASDAQ pada 2 Januari 2026. Gunakan data dari Yahoo Finance atau Bloomberg.",
+            "source_urls": "https://finance.yahoo.com/quote/AAPL/, https://www.nasdaq.com/market-activity/stocks/aapl",
+            "outcomes": [
+                "Ya, di atas $230",
+                "Tidak, di bawah $230"
+            ],
+            "duration": 86400,
+            "tags": "apple,stock,technology,january2026"
+        },
+        {
+            "id": 7,
+            "category": "Teknologi",
+            "title": "Tesla Stock Price 3 Januari 2026",
+            "description": "Apakah harga saham Tesla (TSLA) mencapai atau melampaui $400 USD pada 3 Januari 2026?",
+            "context": "Tesla adalah pemimpin dalam kendaraan listrik dan teknologi otonom. Query ini memverifikasi harga saham TSLA pada 3 Januari 2026.",
+            "resolution_criteria": "Resolusi berdasarkan harga tertinggi (high) Tesla (TSLA) di NASDAQ pada 3 Januari 2026. Gunakan data dari Yahoo Finance atau Bloomberg.",
+            "source_urls": "https://finance.yahoo.com/quote/TSLA/, https://www.nasdaq.com/market-activity/stocks/tsla",
+            "outcomes": [
+                "Ya, mencapai $400+",
+                "Tidak, di bawah $400"
+            ],
+            "duration": 86400,
+            "tags": "tesla,stock,technology,january2026"
+        },
+        {
+            "id": 8,
+            "category": "Sport",
+            "title": "Premier League Match 1 Januari 2026",
+            "description": "Apakah ada pertandingan Premier League yang berlangsung pada 1 Januari 2026?",
+            "context": "Premier League biasanya memiliki jadwal padat di periode Tahun Baru. Query ini memverifikasi apakah ada pertandingan pada 1 Januari 2026.",
+            "resolution_criteria": "Resolusi berdasarkan jadwal resmi Premier League. Minimal satu pertandingan harus berlangsung pada 1 Januari 2026 (kick-off di tanggal tersebut).",
+            "source_urls": "https://www.premierleague.com/fixtures, https://www.espn.com/soccer/fixtures/_/league/eng.1",
+            "outcomes": [
+                "Ya, ada pertandingan",
+                "Tidak, tidak ada pertandingan"
+            ],
+            "duration": 86400,
+            "tags": "premierleague,soccer,sport,january2026"
+        },
+        {
+            "id": 9,
+            "category": "Sport",
+            "title": "NBA Games 2 Januari 2026",
+            "description": "Apakah ada minimal 5 pertandingan NBA yang berlangsung pada 2 Januari 2026?",
+            "context": "NBA memiliki jadwal reguler yang padat di bulan Januari. Query ini memverifikasi jumlah pertandingan pada 2 Januari 2026.",
+            "resolution_criteria": "Resolusi berdasarkan jadwal resmi NBA. Minimal 5 pertandingan harus berlangsung pada 2 Januari 2026 (tip-off di tanggal tersebut).",
+            "source_urls": "https://www.nba.com/schedule, https://www.espn.com/nba/schedule",
+            "outcomes": [
+                "Ya, 5+ pertandingan",
+                "Tidak, kurang dari 5"
+            ],
+            "duration": 86400,
+            "tags": "nba,basketball,sport,january2026"
+        },
+        {
+            "id": 10,
+            "category": "Sport",
+            "title": "La Liga Match 3 Januari 2026",
+            "description": "Apakah Real Madrid atau Barcelona bermain di La Liga pada 3 Januari 2026?",
+            "context": "Real Madrid dan Barcelona adalah klub terbesar di La Liga. Query ini memverifikasi apakah salah satu dari mereka bermain pada 3 Januari 2026.",
+            "resolution_criteria": "Resolusi berdasarkan jadwal resmi La Liga. Real Madrid atau Barcelona harus bermain minimal satu pertandingan pada 3 Januari 2026.",
+            "source_urls": "https://www.laliga.com/en-GB/fixtures, https://www.espn.com/soccer/fixtures/_/league/esp.1",
+            "outcomes": [
+                "Ya, salah satu bermain",
+                "Tidak, keduanya tidak bermain"
+            ],
+            "duration": 86400,
+            "tags": "laliga,soccer,sport,january2026"
+        },
+        {
+            "id": 11,
+            "category": "Politik",
+            "title": "Perayaan Tahun Baru 2026",
+            "description": "Apakah perayaan kembang api Tahun Baru berlangsung di Times Square, New York pada 1 Januari 2026?",
+            "context": "Times Square New Year's Eve adalah salah satu perayaan Tahun Baru paling ikonik di dunia. Query ini memverifikasi apakah acara berlangsung pada 1 Januari 2026.",
+            "resolution_criteria": "Resolusi berdasarkan laporan media mainstream (CNN, BBC, New York Times). Acara ball drop dan kembang api harus berlangsung di Times Square pada malam 31 Des 2025 - 1 Jan 2026.",
+            "source_urls": "https://www.timessquarenyc.org/times-square-new-years-eve, https://www.cnn.com/, https://www.bbc.com/news",
+            "outcomes": [
+                "Ya, berlangsung",
+                "Tidak, dibatalkan"
+            ],
+            "duration": 86400,
+            "tags": "newyear,event,january2026"
+        },
+        {
+            "id": 12,
+            "category": "Politik",
+            "title": "Cuaca Tokyo 2 Januari 2026",
+            "description": "Apakah suhu udara di Tokyo, Jepang berada di bawah 10°C pada 2 Januari 2026?",
+            "context": "Tokyo mengalami musim dingin di bulan Januari. Query ini memverifikasi suhu udara pada 2 Januari 2026 berdasarkan data cuaca historis.",
+            "resolution_criteria": "Resolusi berdasarkan data suhu dari Japan Meteorological Agency atau Weather.com. Gunakan suhu rata-rata harian atau suhu pada pukul 12:00 JST.",
+            "source_urls": "https://www.jma.go.jp/jma/indexe.html, https://weather.com/weather/today/l/Tokyo+Japan",
+            "outcomes": [
+                "Ya, di bawah 10°C",
+                "Tidak, 10°C atau lebih"
+            ],
+            "duration": 86400,
+            "tags": "weather,tokyo,january2026"
+        },
+        {
+            "id": 13,
+            "category": "Politik",
+            "title": "Kurs USD/IDR 3 Januari 2026",
+            "description": "Apakah kurs USD/IDR berada di atas Rp 16,000 pada 3 Januari 2026?",
+            "context": "Kurs mata uang adalah indikator ekonomi penting. Query ini memverifikasi kurs USD/IDR pada 3 Januari 2026 berdasarkan data Bank Indonesia.",
+            "resolution_criteria": "Resolusi berdasarkan kurs tengah USD/IDR dari Bank Indonesia pada 3 Januari 2026. Gunakan kurs jual atau kurs tengah resmi.",
+            "source_urls": "https://www.bi.go.id/id/statistik/informasi-kurs/default.aspx, https://www.xe.com/currencyconverter/convert/?Amount=1&From=USD&To=IDR",
+            "outcomes": [
+                "Ya, di atas Rp 16,000",
+                "Tidak, di bawah Rp 16,000"
+            ],
+            "duration": 86400,
+            "tags": "currency,usd,idr,january2026"
+        }
+    ],
+    "cara_menggunakan": {
+        "step_1": "Buka dashboard: http://localhost:5173/queries",
+        "step_2": "Klik 'Create Query'",
+        "step_3": "Copy-paste field dari JSON ini ke form dashboard",
+        "step_4": "Isi field sesuai struktur:",
+        "fields": {
+            "description": "Copy dari field 'description' (WAJIB - ini adalah pertanyaan utama)",
+            "outcomes": "Copy dari field 'outcomes' (pisahkan dengan koma)",
+            "duration": "86400 (24 jam)",
+            "strategy": "WeightedByStake",
+            "minVotes": "3",
+            "rewardAmount": "100"
+        },
+        "step_5": "Submit dan tunggu konfirmasi"
+    },
+    "catatan": {
+        "note_1": "Field 'title', 'context', 'resolution_criteria', 'source_urls' bisa ditambahkan di description jika dashboard mendukung",
+        "note_2": "Jika dashboard tidak support metadata lengkap, gabungkan semua info di field 'description'",
+        "note_3": "Format description lengkap: '[TITLE] Description. Context: ... Resolution: ... Sources: ...'",
+        "note_4": "Durasi 86400 detik = 24 jam (12 jam commit + 12 jam reveal)"
+    }
+}

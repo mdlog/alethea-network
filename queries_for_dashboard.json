@@ -1,0 +1,188 @@
+{
+    "queries": [
+        {
+            "category": "Politik",
+            "title": "Pemilu Indonesia 2024 - Prabowo Menang",
+            "description": "Apakah Prabowo Subianto memenangkan Pemilihan Presiden Indonesia 2024 pada putaran pertama (14 Februari 2024)? Resolusi berdasarkan hasil resmi KPU yang diumumkan pada 20 Maret 2024. Sumber: https://pemilu2024.kpu.go.id/ dan https://www.bbc.com/indonesia/articles/c511z3z3z3zo",
+            "outcomes": [
+                "Ya",
+                "Tidak"
+            ],
+            "duration": 50400,
+            "expectedAnswer": "Ya"
+        },
+        {
+            "category": "Politik",
+            "title": "Trump-Biden Debate Juni 2024",
+            "description": "Apakah debat presiden AS antara Donald Trump dan Joe Biden berlangsung pada 27 Juni 2024? Resolusi berdasarkan laporan resmi dari CNN yang menjadi host debat. Sumber: https://www.cnn.com/politics/live-news/cnn-presidential-debate-06-27-24/ dan https://www.nytimes.com/live/2024/06/27/us/biden-trump-debate",
+            "outcomes": [
+                "Ya",
+                "Tidak"
+            ],
+            "duration": 50400,
+            "expectedAnswer": "Ya"
+        },
+        {
+            "category": "Politik",
+            "title": "UK General Election 2024 - Labour Menang",
+            "description": "Apakah Partai Labour memenangkan UK General Election pada 4 Juli 2024 dengan mayoritas mutlak? Resolusi berdasarkan hasil resmi Electoral Commission UK. Sumber: https://www.electoralcommission.org.uk/ dan https://www.bbc.com/news/election/2024/uk/results",
+            "outcomes": [
+                "Ya",
+                "Tidak"
+            ],
+            "duration": 50400,
+            "expectedAnswer": "Ya"
+        },
+        {
+            "category": "Kripto",
+            "title": "Bitcoin Spot ETF Approval 2024",
+            "description": "Apakah SEC (Securities and Exchange Commission) menyetujui Bitcoin Spot ETF pada 10 Januari 2024? Resolusi berdasarkan pengumuman resmi SEC. Sumber: https://www.sec.gov/news/press-release/2024-6 dan https://www.coindesk.com/policy/2024/01/10/sec-approves-spot-bitcoin-etfs/",
+            "outcomes": [
+                "Ya",
+                "Tidak"
+            ],
+            "duration": 50400,
+            "expectedAnswer": "Ya"
+        },
+        {
+            "category": "Kripto",
+            "title": "Ethereum Dencun Upgrade Maret 2024",
+            "description": "Apakah Ethereum Dencun upgrade (EIP-4844) berhasil diaktifkan pada 13 Maret 2024? Resolusi berdasarkan data blockchain Ethereum resmi. Sumber: https://etherscan.io/ dan https://ethereum.org/en/roadmap/dencun/",
+            "outcomes": [
+                "Ya",
+                "Tidak"
+            ],
+            "duration": 50400,
+            "expectedAnswer": "Ya"
+        },
+        {
+            "category": "Kripto",
+            "title": "Bitcoin Halving April 2024",
+            "description": "Apakah Bitcoin halving (block reward berkurang dari 6.25 BTC menjadi 3.125 BTC) terjadi pada 19-20 April 2024 di block 840,000? Resolusi berdasarkan data blockchain Bitcoin. Sumber: https://www.blockchain.com/explorer/blocks/btc/840000 dan https://bitcoinblockhalf.com/",
+            "outcomes": [
+                "Ya",
+                "Tidak"
+            ],
+            "duration": 50400,
+            "expectedAnswer": "Ya"
+        },
+        {
+            "category": "Kripto",
+            "title": "Solana Mencapai $200 di 2024",
+            "description": "Apakah harga Solana (SOL) mencapai atau melampaui $200 USD pada bulan Maret 2024? Resolusi berdasarkan data harga dari CoinGecko dan CoinMarketCap. Sumber: https://www.coingecko.com/en/coins/solana dan https://coinmarketcap.com/currencies/solana/",
+            "outcomes": [
+                "Ya",
+                "Tidak"
+            ],
+            "duration": 50400,
+            "expectedAnswer": "Ya"
+        },
+        {
+            "category": "Teknologi",
+            "title": "OpenAI GPT-4 Turbo Launch 2023",
+            "description": "Apakah OpenAI meluncurkan GPT-4 Turbo pada OpenAI DevDay tanggal 6 November 2023? Resolusi berdasarkan pengumuman resmi OpenAI. Sumber: https://openai.com/blog/new-models-and-developer-products-announced-at-devday dan https://platform.openai.com/docs/models/gpt-4-turbo-and-gpt-4",
+            "outcomes": [
+                "Ya",
+                "Tidak"
+            ],
+            "duration": 50400,
+            "expectedAnswer": "Ya"
+        },
+        {
+            "category": "Teknologi",
+            "title": "Apple Vision Pro Diluncurkan Februari 2024",
+            "description": "Apakah Apple Vision Pro resmi diluncurkan dan mulai dijual di AS pada 2 Februari 2024? Resolusi berdasarkan pengumuman resmi Apple. Sumber: https://www.apple.com/newsroom/2024/01/apple-vision-pro-available-february-2/ dan https://www.apple.com/apple-vision-pro/",
+            "outcomes": [
+                "Ya",
+                "Tidak"
+            ],
+            "duration": 50400,
+            "expectedAnswer": "Ya"
+        },
+        {
+            "category": "Teknologi",
+            "title": "Google Gemini Ultra Launch 2024",
+            "description": "Apakah Google meluncurkan Gemini Ultra (model AI paling canggih) pada 8 Februari 2024? Resolusi berdasarkan pengumuman resmi Google. Sumber: https://blog.google/technology/ai/google-gemini-update-sundar-pichai-2024/ dan https://deepmind.google/technologies/gemini/",
+            "outcomes": [
+                "Ya",
+                "Tidak"
+            ],
+            "duration": 50400,
+            "expectedAnswer": "Ya"
+        },
+        {
+            "category": "Teknologi",
+            "title": "Meta Quest 3 Diluncurkan Oktober 2023",
+            "description": "Apakah Meta Quest 3 resmi diluncurkan dan mulai dijual pada 10 Oktober 2023? Resolusi berdasarkan pengumuman resmi Meta. Sumber: https://www.meta.com/quest/quest-3/ dan https://about.fb.com/news/2023/09/meta-quest-3-mixed-reality-headset/",
+            "outcomes": [
+                "Ya",
+                "Tidak"
+            ],
+            "duration": 50400,
+            "expectedAnswer": "Ya"
+        },
+        {
+            "category": "Sport",
+            "title": "Super Bowl LVIII 2024 Winner",
+            "description": "Apakah Kansas City Chiefs memenangkan Super Bowl LVIII melawan San Francisco 49ers pada 11 Februari 2024? Resolusi berdasarkan hasil resmi NFL. Sumber: https://www.nfl.com/super-bowl/ dan https://www.espn.com/nfl/game/_/gameId/401671762",
+            "outcomes": [
+                "Ya",
+                "Tidak"
+            ],
+            "duration": 50400,
+            "expectedAnswer": "Ya"
+        },
+        {
+            "category": "Sport",
+            "title": "Copa America 2024 Winner",
+            "description": "Apakah Argentina memenangkan Copa America 2024 yang berlangsung di AS (final 14 Juli 2024)? Resolusi berdasarkan hasil resmi CONMEBOL. Sumber: https://www.conmebol.com/copaamerica/ dan https://www.espn.com/soccer/copa-america/",
+            "outcomes": [
+                "Ya",
+                "Tidak"
+            ],
+            "duration": 50400,
+            "expectedAnswer": "Ya"
+        },
+        {
+            "category": "Sport",
+            "title": "UEFA Euro 2024 Winner",
+            "description": "Apakah Spanyol memenangkan UEFA Euro 2024 yang berlangsung di Jerman (final 14 Juli 2024)? Resolusi berdasarkan hasil resmi UEFA. Sumber: https://www.uefa.com/euro2024/ dan https://www.espn.com/soccer/uefa-euro/",
+            "outcomes": [
+                "Ya",
+                "Tidak"
+            ],
+            "duration": 50400,
+            "expectedAnswer": "Ya"
+        },
+        {
+            "category": "Sport",
+            "title": "Paris Olympics 2024 - AS Juara Umum",
+            "description": "Apakah Amerika Serikat menjadi juara umum (total medali terbanyak) di Olimpiade Paris 2024 (26 Juli - 11 Agustus 2024)? Resolusi berdasarkan data resmi IOC. Sumber: https://olympics.com/en/paris-2024/medals dan https://www.olympic.org/paris-2024",
+            "outcomes": [
+                "Ya",
+                "Tidak"
+            ],
+            "duration": 50400,
+            "expectedAnswer": "Ya"
+        },
+        {
+            "category": "Sport",
+            "title": "NBA Finals 2024 Winner",
+            "description": "Apakah Boston Celtics memenangkan NBA Finals 2024 melawan Dallas Mavericks (final berakhir Juni 2024)? Resolusi berdasarkan hasil resmi NBA. Sumber: https://www.nba.com/finals dan https://www.espn.com/nba/playoffs/",
+            "outcomes": [
+                "Ya",
+                "Tidak"
+            ],
+            "duration": 50400,
+            "expectedAnswer": "Ya"
+        }
+    ],
+    "config": {
+        "commitDuration": 43200,
+        "revealDuration": 7200,
+        "totalDuration": 50400,
+        "strategy": "WeightedByStake",
+        "minVotes": 3,
+        "rewardAmount": "100000000000000000000"
+    }
+}
