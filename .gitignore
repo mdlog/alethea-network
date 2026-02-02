@@ -89,6 +89,7 @@ linera-protocol/
 /SIMPLE_COMMANDS.sh
 
 # Exclude detailed documentation (keep main docs)
+/WAVE_6_FINAL_SUBMISSION.md
 /JANUARY_2026_QUERIES.md
 /PAST_EVENTS_QUERIES_DETAIL.md
 /RECENT_QUERIES_2026_DETAIL.md
