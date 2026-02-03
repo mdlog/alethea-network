@@ -85,8 +85,8 @@ export class AletheaAPI {
 
   // Execute GraphQL query to the root Linera service
   private async rootQuery(query: string): Promise<any> {
-    // Use /linera proxy path to reach localhost:8080/
-    const url = `${LINERA_SERVICE_URL}/linera`;
+    // Use direct URL for root queries (blocks, chains)
+    const url = `${LINERA_SERVICE_URL}`;
 
     const response = await fetch(url, {
       method: 'POST',
