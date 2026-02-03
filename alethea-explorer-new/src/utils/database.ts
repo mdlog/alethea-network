@@ -15,7 +15,8 @@ const NETWORK = import.meta.env.VITE_NETWORK || 'Conway Testnet';
 // GraphQL endpoint for Linera service
 // In production (Vercel), use VITE_API_URL environment variable
 // In development, use Vite proxy (empty string)
-const LINERA_SERVICE_URL = import.meta.env.VITE_API_URL || '';
+// Default to evonft.xyz if no env variable is set
+const LINERA_SERVICE_URL = import.meta.env.VITE_API_URL || 'https://evonft.xyz';
 
 export class AletheaAPI {
   private chainId: string;
