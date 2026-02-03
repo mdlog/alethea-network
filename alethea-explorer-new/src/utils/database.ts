@@ -12,8 +12,10 @@ const CHAIN_ID = import.meta.env.VITE_CHAIN_ID || '9d0d233f813d271ff282485ba47d3
 const REGISTRY_APP_ID = import.meta.env.VITE_REGISTRY_APP_ID || 'f51da82d9521ae359becc31fbf09b8a2020b6237e760c5a6d565610965103990';
 const NETWORK = import.meta.env.VITE_NETWORK || 'Conway Testnet';
 
-// GraphQL endpoint for Linera service (via Vite proxy)
-const LINERA_SERVICE_URL = '';  // Empty to use Vite proxy
+// GraphQL endpoint for Linera service
+// In production (Vercel), use VITE_API_URL environment variable
+// In development, use Vite proxy (empty string)
+const LINERA_SERVICE_URL = import.meta.env.VITE_API_URL || '';
 
 export class AletheaAPI {
   private chainId: string;
