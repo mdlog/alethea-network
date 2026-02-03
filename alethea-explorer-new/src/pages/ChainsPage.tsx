@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Link2, Box, Clock, ChevronRight, XCircle, Activity, Hash } from 'lucide-react';
+import { Link2, Box, Clock, ChevronRight, XCircle, Hash } from 'lucide-react';
 import { useChains, useChainBlocks } from '../hooks/useDatabase';
 import { CopyableHash } from '../components/CopyableHash';
-import { BlockInfo } from '../types/blockchain';
 
 const formatTimeAgo = (timestamp: number) => {
   const now = Date.now();

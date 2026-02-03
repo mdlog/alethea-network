@@ -71,13 +71,6 @@ export const HomePage: React.FC = () => {
         }
     }, [searchParams]);
 
-    const handleSearch = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (searchQuery.trim()) {
-            setSearchedChainId(searchQuery.trim());
-        }
-    };
-
     const clearSearch = () => {
         setSearchQuery('');
         setSearchedChainId(null);
@@ -435,7 +428,6 @@ export const HomePage: React.FC = () => {
                                 </div>
                                 <div className="flex items-center justify-between pt-3 border-t border-alethea-border/30">
                                     <span className="text-sm text-alethea-gray-light">Chain: {formatHash(block.block.header.chainId)}</span>
-                                    <span className="text-sm text-purple-400">{block.block.operations?.length || 0} operations</span>
                                 </div>
                             </Link>
                         ))}

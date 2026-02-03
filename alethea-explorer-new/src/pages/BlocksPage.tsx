@@ -15,7 +15,7 @@ const formatTimeAgo = (timestamp: number) => {
   const blockTimeMs = timestamp / 1000; // Convert microseconds to milliseconds
   const diffMs = now - blockTimeMs;
   const diffSec = Math.floor(diffMs / 1000);
-  
+
   if (diffSec < 0) return 'just now';
   if (diffSec < 60) return `${diffSec}s ago`;
   const diffMin = Math.floor(diffSec / 60);
@@ -25,12 +25,12 @@ const formatTimeAgo = (timestamp: number) => {
   return `${Math.floor(diffHour / 24)}d ago`;
 };
 
-const BlockCard: React.FC<{ block: BlockInfo; index: number }> = ({ block, index }) => {
+const BlockCard: React.FC<{ block: BlockInfo }> = ({ block }) => {
   const timeAgo = formatTimeAgo(block.block.header.timestamp);
   const epochNum = block.block.header.epoch;
-  
+
   return (
-    <Link 
+    <Link
       to={`/block/${block.hash}`}
       className="block p-4 bg-alethea-card border border-alethea-border rounded-lg hover:border-alethea-primary/50 transition-all group"
     >
@@ -52,7 +52,7 @@ const BlockCard: React.FC<{ block: BlockInfo; index: number }> = ({ block, index
             </div>
           </div>
         </div>
-        
+
         {/* Right: Stats */}
         <div className="flex items-center gap-6">
           <div className="hidden md:block">
@@ -191,10 +191,10 @@ export const BlocksPage: React.FC = () => {
           <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
           <span>Recent Blocks</span>
         </h2>
-        
+
         <div className="space-y-3">
-          {blocks.map((block, index) => (
-            <BlockCard key={block.hash} block={block} index={index} />
+          {blocks.map((block) => (
+            <BlockCard key={block.hash} block={block} />
           ))}
         </div>
 

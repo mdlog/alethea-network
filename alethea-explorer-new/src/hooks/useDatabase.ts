@@ -15,16 +15,6 @@ let globalIsConnected = false;
 let globalHealth: HealthStatus | null = null;
 let connectionCheckPromise: Promise<void> | null = null;
 
-const checkGlobalConnection = async () => {
-  try {
-    const healthData = await api.getHealth();
-    globalHealth = healthData;
-    globalIsConnected = healthData.connected;
-  } catch (err) {
-    globalIsConnected = false;
-  }
-};
-
 export const useAPI = () => {
   const [isConnected, setIsConnected] = useState(globalIsConnected);
   const [health, setHealth] = useState<HealthStatus | null>(globalHealth);

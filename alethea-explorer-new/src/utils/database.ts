@@ -19,12 +19,10 @@ const LINERA_SERVICE_URL = '';  // Empty to use Vite proxy
 export class AletheaAPI {
   private chainId: string;
   private registryAppId: string;
-  private tokenAppId: string;
 
   constructor() {
     this.chainId = CHAIN_ID;
     this.registryAppId = REGISTRY_APP_ID;
-    this.tokenAppId = TOKEN_APP_ID;
   }
 
   // Execute GraphQL query to an application
@@ -59,7 +57,7 @@ export class AletheaAPI {
   async getHealth(): Promise<HealthStatus> {
     try {
       // Try to query the registry with a simple query to check if connected
-      const data = await this.appQuery(this.registryAppId, '{ queries { id } }');
+      await this.appQuery(this.registryAppId, '{ queries { id } }');
       return {
         status: 'OK',
         timestamp: new Date().toISOString(),
