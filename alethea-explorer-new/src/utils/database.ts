@@ -58,8 +58,10 @@ export class AletheaAPI {
 
   async getHealth(): Promise<HealthStatus> {
     try {
-      // Try to query the registry with a simple query to check if connected
-      await this.appQuery(this.registryAppId, '{ queries { id } }');
+      // Use blocks query to check connection - this is more reliable than registry app query
+      // because it queries the Linera service directly
+      const query = `{ blocks(chainId: "${this.chainId}", limit: 1) { hash } }`;
+      await this.rootQuery(query);
       return {
         status: 'OK',
         timestamp: new Date().toISOString(),
