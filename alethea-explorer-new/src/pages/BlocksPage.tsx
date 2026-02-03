@@ -5,11 +5,6 @@ import { useBlocks } from '../hooks/useDatabase';
 import { BlockInfo } from '../types/blockchain';
 import { CopyableHash } from '../components/CopyableHash';
 
-// Linera timestamps are in microseconds, convert to milliseconds for JS Date
-const formatTimestamp = (timestamp: number) => {
-  return new Date(timestamp / 1000).toLocaleString();
-};
-
 const formatTimeAgo = (timestamp: number) => {
   const now = Date.now();
   const blockTimeMs = timestamp / 1000; // Convert microseconds to milliseconds

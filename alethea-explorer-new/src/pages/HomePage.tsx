@@ -55,7 +55,6 @@ export const HomePage: React.FC = () => {
     const { blocks, latestBlock, loading: blocksLoading } = useBlocks(5);
     const { chains, loading: chainsLoading } = useChains();
 
-    const [searchQuery, setSearchQuery] = useState('');
     const [searchedChainId, setSearchedChainId] = useState<string | null>(null);
     const { blocks: chainBlocks, loading: chainBlocksLoading } = useChainBlocks(searchedChainId || '', 5);
 
@@ -67,12 +66,10 @@ export const HomePage: React.FC = () => {
         const chainParam = searchParams.get('chain');
         if (chainParam) {
             setSearchedChainId(chainParam);
-            setSearchQuery(chainParam);
         }
     }, [searchParams]);
 
     const clearSearch = () => {
-        setSearchQuery('');
         setSearchedChainId(null);
         navigate('/'); // Clear URL parameter
     };

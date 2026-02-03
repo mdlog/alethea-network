@@ -10,7 +10,6 @@ import {
 // Environment variables
 const CHAIN_ID = import.meta.env.VITE_CHAIN_ID || '9d0d233f813d271ff282485ba47d344995d36b9d06c40fed7d6cf55ab9e95fec';
 const REGISTRY_APP_ID = import.meta.env.VITE_REGISTRY_APP_ID || 'f51da82d9521ae359becc31fbf09b8a2020b6237e760c5a6d565610965103990';
-const TOKEN_APP_ID = import.meta.env.VITE_TOKEN_APP_ID || 'dac6b92743e8f02acd8367b75aef1dba6e91618c1c4fb863b73b87ec55a33ddd';
 const NETWORK = import.meta.env.VITE_NETWORK || 'Conway Testnet';
 
 // GraphQL endpoint for Linera service (via Vite proxy)
