@@ -11,6 +11,10 @@
 [![Network](https://img.shields.io/badge/network-linera%20conway-purple)]()
 [![Token](https://img.shields.io/badge/token-ALTH-gold)]()
 
+### 🌐 Live Applications
+
+**[Dashboard](https://alethea.network)** • **[Explorer](https://alethea-explorer.vercel.app)**
+
 </div>
 
 ---
