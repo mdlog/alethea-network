@@ -276,6 +276,7 @@ cargo test
 ## Resources
 
 - **Dashboard:** [alethea-dashboard-vite/README.md](./alethea-dashboard-vite/README.md)
+- **Explorer:** [https://alethea-explorer.vercel.app](https://alethea-explorer.vercel.app)
 - **Consumer SDK:** [alethea-contract/alethea-consumer-sdk/README.md](./alethea-contract/alethea-consumer-sdk/README.md)
 - **Changelog:** [CHANGELOG.md](./CHANGELOG.md)
 - **Linera Docs:** https://docs.linera.io
@@ -292,6 +293,6 @@ MIT License
 
 **Built on Linera Blockchain**
 
-[Dashboard](http://localhost:4002) • [GitHub](https://github.com/mdlog/alethea-network) • [Contracts](./alethea-contract/)
+[Dashboard](http://localhost:4002) • [Explorer](https://alethea-explorer.vercel.app) • [GitHub](https://github.com/mdlog/alethea-network) • [Contracts](./alethea-contract/)
 
 </div>
