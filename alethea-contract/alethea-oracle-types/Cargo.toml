@@ -1,7 +1,7 @@
 [package]
 name = "alethea-oracle-types"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 authors = ["Alethea Network Team"]
 description = "Shared types for Alethea Oracle Platform"
 repository = "https://github.com/mdlog/alethea-network"

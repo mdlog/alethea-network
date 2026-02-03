@@ -151,18 +151,18 @@ export default function HomePage() {
             paginatedPastQueries;
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-4 sm:space-y-6 md:space-y-8">
             {/* Hero Slider */}
             <HeroSlider />
 
             {/* Stats Grid */}
             {loading ? (
-                <div className="flex items-center justify-center py-12">
-                    <Loader2 className="w-8 h-8 animate-spin text-alethea-500" />
+                <div className="flex items-center justify-center py-8 sm:py-12">
+                    <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 animate-spin text-alethea-500" />
                 </div>
             ) : (
                 <>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
                         <StatCard
                             icon={<Users className="w-5 h-5" />}
                             label="Total Voters"
@@ -191,13 +191,13 @@ export default function HomePage() {
 
                     {/* Votes Section with Tabs */}
                     <div className="card overflow-hidden">
-                        <div className="p-6 border-b border-grey-200">
+                        <div className="p-3 sm:p-4 md:p-6 border-b border-grey-200">
                             {/* Tabs */}
-                            <div className="flex items-center justify-between mb-4">
-                                <div className="flex gap-1 bg-grey-100 p-1 rounded-lg">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3 sm:mb-4">
+                                <div className="flex gap-1 bg-grey-100 p-1 rounded-lg overflow-x-auto no-scrollbar">
                                     <button
                                         onClick={() => setActiveTab('active')}
-                                        className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${activeTab === 'active'
+                                        className={`px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-md transition-all whitespace-nowrap ${activeTab === 'active'
                                             ? 'bg-white text-black shadow-sm'
                                             : 'text-grey-600 hover:text-black'
                                             }`}
@@ -206,7 +206,7 @@ export default function HomePage() {
                                     </button>
                                     <button
                                         onClick={() => setActiveTab('upcoming')}
-                                        className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${activeTab === 'upcoming'
+                                        className={`px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-md transition-all whitespace-nowrap ${activeTab === 'upcoming'
                                             ? 'bg-white text-black shadow-sm'
                                             : 'text-grey-600 hover:text-black'
                                             }`}
@@ -215,7 +215,7 @@ export default function HomePage() {
                                     </button>
                                     <button
                                         onClick={() => setActiveTab('past')}
-                                        className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${activeTab === 'past'
+                                        className={`px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-md transition-all whitespace-nowrap ${activeTab === 'past'
                                             ? 'bg-white text-black shadow-sm'
                                             : 'text-grey-600 hover:text-black'
                                             }`}
@@ -223,9 +223,10 @@ export default function HomePage() {
                                         Past ({pastQueries.length})
                                     </button>
                                 </div>
-                                <Link to="/queries" className="text-alethea-600 hover:text-alethea-700 text-sm flex items-center gap-1">
-                                    <Bell className="w-4 h-4" />
-                                    Remind me
+                                <Link to="/queries" className="text-alethea-600 hover:text-alethea-700 text-xs sm:text-sm flex items-center gap-1 self-end sm:self-auto">
+                                    <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                    <span className="hidden sm:inline">Remind me</span>
+                                    <span className="sm:hidden">Remind</span>
                                 </Link>
                             </div>
 
@@ -260,8 +261,8 @@ export default function HomePage() {
                             })()}
                         </div>
 
-                        {/* Table Header */}
-                        <div className={`grid gap-4 px-6 py-3 bg-grey-50 text-xs font-medium text-grey-600 uppercase tracking-wider border-b border-grey-200 ${activeTab === 'past' ? 'grid-cols-12' : 'grid-cols-12'}`}>
+                        {/* Table Header - Hidden on mobile */}
+                        <div className={`hidden md:grid gap-4 px-4 md:px-6 py-3 bg-grey-50 text-xs font-medium text-grey-600 uppercase tracking-wider border-b border-grey-200 ${activeTab === 'past' ? 'grid-cols-12' : 'grid-cols-12'}`}>
                             <div className={activeTab === 'past' ? 'col-span-3' : 'col-span-4'}>Query</div>
                             <div className="col-span-2">{activeTab === 'past' ? 'Your Vote' : 'Phase'}</div>
                             <div className="col-span-2">{activeTab === 'past' ? 'Result' : 'Time Left'}</div>
@@ -271,15 +272,15 @@ export default function HomePage() {
 
                         {/* Query List */}
                         {displayQueries.length === 0 ? (
-                            <div className="p-12 text-center">
-                                <Activity className="w-12 h-12 mx-auto mb-4 text-grey-400" />
-                                <p className="text-grey-600">
+                            <div className="p-8 sm:p-12 text-center">
+                                <Activity className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4 text-grey-400" />
+                                <p className="text-sm sm:text-base text-grey-600">
                                     {activeTab === 'active' && 'No active votes at the moment'}
                                     {activeTab === 'upcoming' && 'No upcoming votes'}
                                     {activeTab === 'past' && 'No past votes yet'}
                                 </p>
                                 {activeTab === 'active' && (
-                                    <Link to="/queries" className="text-alethea-600 hover:text-alethea-700 mt-2 inline-block">
+                                    <Link to="/queries" className="text-alethea-600 hover:text-alethea-700 mt-2 inline-block text-sm sm:text-base">
                                         Create a new query
                                     </Link>
                                 )}
@@ -339,35 +340,35 @@ export default function HomePage() {
                     </div>
 
                     {/* Quick Links */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <Link
                             to="/voters"
-                            className="card hover:shadow-md p-6 group transition-shadow"
+                            className="card hover:shadow-md p-4 sm:p-5 md:p-6 group transition-shadow"
                         >
                             <div className="flex items-center justify-between">
-                                <div>
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <Zap className="w-5 h-5 text-alethea-600" />
-                                        <h3 className="text-lg font-semibold text-black">Become a Voter</h3>
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-2 mb-1 sm:mb-2">
+                                        <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-alethea-600 flex-shrink-0" />
+                                        <h3 className="text-sm sm:text-base md:text-lg font-semibold text-black truncate">Become a Voter</h3>
                                     </div>
-                                    <p className="text-sm text-grey-600">Register to participate and earn rewards</p>
+                                    <p className="text-xs sm:text-sm text-grey-600 line-clamp-1">Register to participate and earn rewards</p>
                                 </div>
-                                <ChevronRight className="w-6 h-6 text-grey-400 group-hover:text-alethea-600 transition-colors" />
+                                <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-grey-400 group-hover:text-alethea-600 transition-colors flex-shrink-0 ml-2" />
                             </div>
                         </Link>
                         <Link
                             to="/queries"
-                            className="card hover:shadow-md p-6 group transition-shadow"
+                            className="card hover:shadow-md p-4 sm:p-5 md:p-6 group transition-shadow"
                         >
                             <div className="flex items-center justify-between">
-                                <div>
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <Activity className="w-5 h-5 text-cyber-600" />
-                                        <h3 className="text-lg font-semibold text-black">Create Query</h3>
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-2 mb-1 sm:mb-2">
+                                        <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 flex-shrink-0" />
+                                        <h3 className="text-sm sm:text-base md:text-lg font-semibold text-black truncate">Create Query</h3>
                                     </div>
-                                    <p className="text-sm text-grey-600">Submit questions for the oracle network</p>
+                                    <p className="text-xs sm:text-sm text-grey-600 line-clamp-1">Submit questions for the oracle network</p>
                                 </div>
-                                <ChevronRight className="w-6 h-6 text-grey-400 group-hover:text-cyber-600 transition-colors" />
+                                <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-grey-400 group-hover:text-blue-600 transition-colors flex-shrink-0 ml-2" />
                             </div>
                         </Link>
                     </div>
@@ -413,7 +414,6 @@ function QueryRow({ query, onVote, onShowDetail, isPast = false }: { query: Quer
     const revealEnd = parseInt(query.revealEnd);
     const phase = getCurrentPhase(commitEnd, revealEnd);
 
-    // Check if user has pending reveal or completed vote
     const getPendingReveal = () => {
         if (!chainId) return null;
         try {
@@ -440,188 +440,231 @@ function QueryRow({ query, onVote, onShowDetail, isPast = false }: { query: Quer
 
     const pendingReveal = getPendingReveal();
     const completedVote = getCompletedVote();
-
     const hasRevealed = Boolean(completedVote);
     const hasCommitted = Boolean(pendingReveal) && !hasRevealed;
     const userVote = hasRevealed ? completedVote?.value : pendingReveal?.value;
 
-    // Calculate time remaining for current phase
     const now = Date.now() * 1000;
     const commitTimeLeft = Math.max(0, (commitEnd - now) / 1000);
     const revealTimeLeft = Math.max(0, (revealEnd - now) / 1000);
     const currentTimeLeft = phase === 'commit' ? commitTimeLeft : phase === 'reveal' ? revealTimeLeft : 0;
 
+    const getQuestionText = () => {
+        const questionMatch = query.description.match(/^([^?]+\?)/);
+        return questionMatch ? questionMatch[1] : query.description.split('Source:')[0].split('.')[0].trim();
+    };
+
     return (
-        <div className="grid grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-grey-50 transition-colors">
-            {/* Query Info - Clickable to show detail */}
-            <div
-                className={`${isPast ? 'col-span-3' : 'col-span-4'} cursor-pointer`}
-                onClick={onShowDetail}
-            >
-                <div className="flex items-center gap-3">
-                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${isPast
-                        ? query.status === 'Resolved' ? 'bg-emerald-500/20' : 'bg-grey-100'
-                        : phase === 'commit' ? 'bg-blue-500/20' : phase === 'reveal' ? 'bg-amber-500/20' : 'bg-grey-100'
-                        }`}>
-                        <span className={`text-xs font-bold ${isPast
-                            ? query.status === 'Resolved' ? 'text-emerald-600' : 'text-grey-600'
-                            : phase === 'commit' ? 'text-blue-600' : phase === 'reveal' ? 'text-amber-600' : 'text-grey-600'
-                            }`}>#{query.id}</span>
+        <>
+            {/* Mobile Card View */}
+            <div className="md:hidden p-3 sm:p-4 border-b border-grey-100 hover:bg-grey-50 transition-colors">
+                {/* Header Row */}
+                <div className="flex items-start justify-between gap-2 mb-2" onClick={onShowDetail}>
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isPast
+                            ? query.status === 'Resolved' ? 'bg-emerald-500/20' : 'bg-grey-100'
+                            : phase === 'commit' ? 'bg-blue-500/20' : phase === 'reveal' ? 'bg-amber-500/20' : 'bg-grey-100'
+                            }`}>
+                            <span className={`text-[10px] sm:text-xs font-bold ${isPast
+                                ? query.status === 'Resolved' ? 'text-emerald-600' : 'text-grey-600'
+                                : phase === 'commit' ? 'text-blue-600' : phase === 'reveal' ? 'text-amber-600' : 'text-grey-600'
+                                }`}>#{query.id}</span>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                            <p className="text-xs sm:text-sm font-medium text-black">
+                                {getQuestionText()}
+                            </p>
+                        </div>
                     </div>
-                    <div className="min-w-0">
-                        <p className="text-sm font-medium text-black hover:text-alethea-600 transition-colors">
-                            {(() => {
-                                const questionMatch = query.description.match(/^([^?]+\?)/);
-                                return questionMatch ? questionMatch[1] : query.description.split('Source:')[0].split('.')[0].trim();
-                            })()}
-                        </p>
-                        <p className="text-xs text-grey-700 mt-0.5 font-medium">
-                            {phase === 'commit'
-                                ? `Commit ends: ${new Date(commitEnd / 1000).toLocaleString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} UTC`
-                                : phase === 'reveal'
-                                    ? `Reveal ends: ${new Date(revealEnd / 1000).toLocaleString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} UTC`
-                                    : `Ended: ${new Date(revealEnd / 1000).toLocaleString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} UTC`
-                            }
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            {/* Column 2: Phase (Active) / Your Vote (Past) */}
-            <div className="col-span-2">
-                {isPast ? (
-                    userVote ? (
-                        <span className={`badge ${userVote === query.result ? 'badge-success' : 'badge-error'}`}>
-                            {userVote}
-                        </span>
-                    ) : (
-                        <span className="text-sm text-grey-500">Not voted</span>
-                    )
-                ) : phase === 'commit' ? (
-                    <div className="flex items-center gap-1.5">
-                        <Lock className="w-4 h-4 text-blue-600" />
-                        <span className="text-sm font-medium text-blue-600">Commit</span>
-                    </div>
-                ) : phase === 'reveal' ? (
-                    <div className="flex items-center gap-1.5">
-                        <Eye className="w-4 h-4 text-amber-600" />
-                        <span className="text-sm font-medium text-amber-600">Reveal</span>
-                    </div>
-                ) : (
-                    <div className="flex items-center gap-1.5">
-                        <Clock className="w-4 h-4 text-grey-500" />
-                        <span className="text-sm font-medium text-grey-500">Ended</span>
-                    </div>
-                )}
-            </div>
-
-            {/* Column 3: Time Left (Active) / Result (Past) */}
-            <div className="col-span-2">
-                {isPast ? (
-                    query.result ? (
-                        <span className="badge-info">{query.result}</span>
-                    ) : (
-                        <span className="text-sm text-grey-500">No result</span>
-                    )
-                ) : phase === 'ended' ? (
-                    <span className="text-sm text-grey-500">0s</span>
-                ) : (
-                    <span className={`text-sm font-mono font-medium ${phase === 'commit' ? 'text-blue-600' : 'text-amber-600'}`}>
-                        {formatTimeRemaining(currentTimeLeft)}
-                    </span>
-                )}
-            </div>
-
-            {/* Column 4: Your vote (Active) / Outcome (Past) */}
-            <div className="col-span-2">
-                {isPast ? (
-                    userVote ? (
-                        userVote === query.result ? (
-                            <span className="flex items-center gap-1.5 text-sm text-emerald-600">
-                                <span className="status-dot-success" />
-                                Correct
-                            </span>
-                        ) : (
-                            <span className="flex items-center gap-1.5 text-sm text-red-600">
-                                <span className="status-dot-error" />
-                                Wrong
-                            </span>
-                        )
-                    ) : (
-                        <span className="text-sm text-grey-500">-</span>
-                    )
-                ) : hasCommitted ? (
-                    <div className="badge-info">
-                        <Lock className="w-3.5 h-3.5" />
-                        <span>{userVote}</span>
-                    </div>
-                ) : hasRevealed ? (
-                    <div className="badge-success">
-                        <Eye className="w-3.5 h-3.5" />
-                        <span>{userVote}</span>
-                    </div>
-                ) : (
-                    <select
-                        className="select text-sm py-1.5"
-                        defaultValue=""
-                        onChange={(e) => {
-                            if (e.target.value) onVote();
-                        }}
-                    >
-                        <option value="">Choose</option>
-                        {query.outcomes.map((outcome) => (
-                            <option key={outcome} value={outcome}>{outcome}</option>
-                        ))}
-                    </select>
-                )}
-            </div>
-
-            {/* Vote Status */}
-            <div className={`${isPast ? 'col-span-3' : 'col-span-2'} flex items-center justify-between`}>
-                <div className="flex items-center gap-1.5">
-                    {isPast ? (
-                        <>
-                            <span className={query.status === 'Resolved' ? 'status-dot-success' : 'status-dot'} />
-                            <span className="text-sm text-grey-600">
-                                {query.status === 'Resolved' ? 'Resolved' : 'Expired'}
-                                {userVote && query.result && (
-                                    <span className={`ml-1 ${userVote === query.result ? 'text-emerald-600' : 'text-red-600'}`}>
-                                        ({userVote === query.result ? '+reward' : '-slashed'})
-                                    </span>
-                                )}
-                            </span>
-                        </>
-                    ) : hasCommitted ? (
-                        <>
-                            <span className={`status-dot ${phase === 'reveal' ? 'status-dot-warning' : 'bg-blue-500'}`} />
-                            <span className="text-sm text-blue-600">
-                                {phase === 'reveal' ? 'Reveal now' : 'Committed'}
-                            </span>
-                        </>
-                    ) : hasRevealed ? (
-                        <>
-                            <span className="status-dot-success" />
-                            <span className="text-sm text-emerald-600">Revealed</span>
-                        </>
-                    ) : (
-                        <>
-                            <span className={`status-dot ${phase === 'commit' ? 'bg-amber-500' : phase === 'reveal' ? 'bg-amber-500' : 'bg-grey-300'}`} />
-                            <span className="text-sm text-grey-600">
-                                {phase === 'commit' ? 'Not voted' : phase === 'reveal' ? 'Missed' : 'Ended'}
-                            </span>
-                        </>
+                    {/* Phase Badge */}
+                    {!isPast && (
+                        <div className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] sm:text-xs font-medium flex-shrink-0 ${phase === 'commit' ? 'bg-blue-100 text-blue-700' :
+                            phase === 'reveal' ? 'bg-amber-100 text-amber-700' :
+                                'bg-grey-100 text-grey-600'
+                            }`}>
+                            {phase === 'commit' ? <Lock className="w-3 h-3" /> :
+                                phase === 'reveal' ? <Eye className="w-3 h-3" /> :
+                                    <Clock className="w-3 h-3" />}
+                            <span className="capitalize">{phase}</span>
+                        </div>
                     )}
                 </div>
-                {!isPast && (
-                    <button
-                        onClick={onVote}
-                        className="w-8 h-8 rounded-lg border border-alethea-500/30 flex items-center justify-center hover:bg-alethea-100 hover:border-alethea-500/50 transition-all"
-                    >
-                        <ChevronRight className="w-4 h-4 text-alethea-600" />
-                    </button>
-                )}
+
+                {/* Info Row */}
+                <div className="flex items-center justify-between gap-2 text-[10px] sm:text-xs text-grey-600 mb-3">
+                    <span className="font-mono">
+                        {phase === 'commit'
+                            ? `Commit: ${new Date(commitEnd / 1000).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
+                            : phase === 'reveal'
+                                ? `Reveal: ${new Date(revealEnd / 1000).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
+                                : `Ended: ${new Date(revealEnd / 1000).toLocaleString('en-US', { month: 'short', day: 'numeric' })}`
+                        }
+                    </span>
+                    {!isPast && phase !== 'ended' && (
+                        <span className={`font-mono font-medium ${phase === 'commit' ? 'text-blue-600' : 'text-amber-600'}`}>
+                            {formatTimeRemaining(currentTimeLeft)}
+                        </span>
+                    )}
+                </div>
+
+                {/* Action Row */}
+                <div className="flex items-center justify-between gap-2">
+                    {/* Status/Vote Info */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                        {isPast ? (
+                            <>
+                                {query.result && <span className="badge-info text-[10px] sm:text-xs">{query.result}</span>}
+                                {userVote && (
+                                    <span className={`badge text-[10px] sm:text-xs ${userVote === query.result ? 'badge-success' : 'badge-error'}`}>
+                                        {userVote === query.result ? '✓ Correct' : '✗ Wrong'}
+                                    </span>
+                                )}
+                            </>
+                        ) : (
+                            <>
+                                {hasCommitted && <span className="badge-info text-[10px] sm:text-xs"><Lock className="w-3 h-3 mr-1" />Committed</span>}
+                                {hasRevealed && <span className="badge-success text-[10px] sm:text-xs"><Eye className="w-3 h-3 mr-1" />Revealed</span>}
+                                {!hasCommitted && !hasRevealed && phase !== 'ended' && (
+                                    <span className="text-[10px] sm:text-xs text-grey-500">Not voted</span>
+                                )}
+                            </>
+                        )}
+                    </div>
+
+                    {/* Vote Button */}
+                    {!isPast && (
+                        <button
+                            onClick={onVote}
+                            className="px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium rounded-lg bg-alethea-500 text-white hover:bg-alethea-600 transition-colors flex items-center gap-1"
+                        >
+                            {hasCommitted && phase === 'reveal' ? 'Reveal' : hasCommitted ? 'View' : 'Vote'}
+                            <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4" />
+                        </button>
+                    )}
+                </div>
             </div>
-        </div>
+
+            {/* Desktop Table Row */}
+            <div className="hidden md:grid grid-cols-12 gap-4 px-4 md:px-6 py-4 items-center hover:bg-grey-50 transition-colors">
+                {/* Query Info */}
+                <div className={`${isPast ? 'col-span-3' : 'col-span-4'} cursor-pointer`} onClick={onShowDetail}>
+                    <div className="flex items-center gap-3">
+                        <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${isPast
+                            ? query.status === 'Resolved' ? 'bg-emerald-500/20' : 'bg-grey-100'
+                            : phase === 'commit' ? 'bg-blue-500/20' : phase === 'reveal' ? 'bg-amber-500/20' : 'bg-grey-100'
+                            }`}>
+                            <span className={`text-xs font-bold ${isPast
+                                ? query.status === 'Resolved' ? 'text-emerald-600' : 'text-grey-600'
+                                : phase === 'commit' ? 'text-blue-600' : phase === 'reveal' ? 'text-amber-600' : 'text-grey-600'
+                                }`}>#{query.id}</span>
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-sm font-medium text-black hover:text-alethea-600 transition-colors">
+                                {getQuestionText()}
+                            </p>
+                            <p className="text-xs text-grey-600 mt-0.5">
+                                {phase === 'commit'
+                                    ? `Commit: ${new Date(commitEnd / 1000).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
+                                    : phase === 'reveal'
+                                        ? `Reveal: ${new Date(revealEnd / 1000).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
+                                        : `Ended: ${new Date(revealEnd / 1000).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
+                                }
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Phase / Your Vote */}
+                <div className="col-span-2">
+                    {isPast ? (
+                        userVote ? (
+                            <span className={`badge ${userVote === query.result ? 'badge-success' : 'badge-error'}`}>{userVote}</span>
+                        ) : (
+                            <span className="text-sm text-grey-500">Not voted</span>
+                        )
+                    ) : phase === 'commit' ? (
+                        <div className="flex items-center gap-1.5">
+                            <Lock className="w-4 h-4 text-blue-600" />
+                            <span className="text-sm font-medium text-blue-600">Commit</span>
+                        </div>
+                    ) : phase === 'reveal' ? (
+                        <div className="flex items-center gap-1.5">
+                            <Eye className="w-4 h-4 text-amber-600" />
+                            <span className="text-sm font-medium text-amber-600">Reveal</span>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-1.5">
+                            <Clock className="w-4 h-4 text-grey-500" />
+                            <span className="text-sm font-medium text-grey-500">Ended</span>
+                        </div>
+                    )}
+                </div>
+
+                {/* Time Left / Result */}
+                <div className="col-span-2">
+                    {isPast ? (
+                        query.result ? <span className="badge-info">{query.result}</span> : <span className="text-sm text-grey-500">No result</span>
+                    ) : phase === 'ended' ? (
+                        <span className="text-sm text-grey-500">0s</span>
+                    ) : (
+                        <span className={`text-sm font-mono font-medium ${phase === 'commit' ? 'text-blue-600' : 'text-amber-600'}`}>
+                            {formatTimeRemaining(currentTimeLeft)}
+                        </span>
+                    )}
+                </div>
+
+                {/* Your vote / Outcome */}
+                <div className="col-span-2">
+                    {isPast ? (
+                        userVote ? (
+                            userVote === query.result ? (
+                                <span className="flex items-center gap-1.5 text-sm text-emerald-600"><span className="status-dot-success" />Correct</span>
+                            ) : (
+                                <span className="flex items-center gap-1.5 text-sm text-red-600"><span className="status-dot-error" />Wrong</span>
+                            )
+                        ) : <span className="text-sm text-grey-500">-</span>
+                    ) : hasCommitted ? (
+                        <div className="badge-info"><Lock className="w-3.5 h-3.5" /><span>{userVote}</span></div>
+                    ) : hasRevealed ? (
+                        <div className="badge-success"><Eye className="w-3.5 h-3.5" /><span>{userVote}</span></div>
+                    ) : (
+                        <button onClick={onVote} className="text-sm text-alethea-600 hover:text-alethea-700 font-medium">Vote →</button>
+                    )}
+                </div>
+
+                {/* Status */}
+                <div className={`${isPast ? 'col-span-3' : 'col-span-2'} flex items-center justify-between`}>
+                    <div className="flex items-center gap-1.5">
+                        {isPast ? (
+                            <>
+                                <span className={query.status === 'Resolved' ? 'status-dot-success' : 'status-dot'} />
+                                <span className="text-sm text-grey-600">{query.status === 'Resolved' ? 'Resolved' : 'Expired'}</span>
+                            </>
+                        ) : hasCommitted ? (
+                            <>
+                                <span className={`status-dot ${phase === 'reveal' ? 'status-dot-warning' : 'bg-blue-500'}`} />
+                                <span className="text-sm text-blue-600">{phase === 'reveal' ? 'Reveal now' : 'Committed'}</span>
+                            </>
+                        ) : hasRevealed ? (
+                            <>
+                                <span className="status-dot-success" />
+                                <span className="text-sm text-emerald-600">Revealed</span>
+                            </>
+                        ) : (
+                            <>
+                                <span className={`status-dot ${phase === 'commit' ? 'bg-amber-500' : phase === 'reveal' ? 'bg-amber-500' : 'bg-grey-300'}`} />
+                                <span className="text-sm text-grey-600">{phase === 'commit' ? 'Not voted' : phase === 'reveal' ? 'Missed' : 'Ended'}</span>
+                            </>
+                        )}
+                    </div>
+                    {!isPast && (
+                        <button onClick={onVote} className="w-8 h-8 rounded-lg border border-alethea-500/30 flex items-center justify-center hover:bg-alethea-100 transition-all">
+                            <ChevronRight className="w-4 h-4 text-alethea-600" />
+                        </button>
+                    )}
+                </div>
+            </div>
+        </>
     );
 }
 
@@ -632,33 +675,21 @@ function StatCard({ icon, label, value, color }: {
     color: 'teal' | 'cyan' | 'purple' | 'emerald';
 }) {
     const config = {
-        teal: {
-            icon: 'bg-alethea-100 text-alethea-600',
-            glow: 'group-hover:shadow-md',
-        },
-        cyan: {
-            icon: 'bg-cyber-100 text-cyber-600',
-            glow: 'group-hover:shadow-md',
-        },
-        purple: {
-            icon: 'bg-purple-100 text-purple-600',
-            glow: 'group-hover:shadow-md',
-        },
-        emerald: {
-            icon: 'bg-emerald-100 text-emerald-600',
-            glow: 'group-hover:shadow-md',
-        },
+        teal: { icon: 'bg-alethea-100 text-alethea-600' },
+        cyan: { icon: 'bg-blue-100 text-blue-600' },
+        purple: { icon: 'bg-purple-100 text-purple-600' },
+        emerald: { icon: 'bg-emerald-100 text-emerald-600' },
     };
 
     const c = config[color];
 
     return (
-        <div className={`group card p-5 transition-all duration-300 hover:-translate-y-1 hover:border-grey-200 ${c.glow}`}>
-            <div className={`w-10 h-10 rounded-lg ${c.icon} flex items-center justify-center mb-3`}>
-                {icon}
+        <div className="group card p-3 sm:p-4 md:p-5 transition-all duration-300 hover:-translate-y-1 hover:border-grey-200 hover:shadow-md">
+            <div className={`w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-lg ${c.icon} flex items-center justify-center mb-2 sm:mb-3`}>
+                <div className="w-4 h-4 sm:w-5 sm:h-5">{icon}</div>
             </div>
-            <p className="text-xs text-grey-600 uppercase tracking-wider mb-1">{label}</p>
-            <p className="text-2xl font-bold text-black">{value}</p>
+            <p className="text-[10px] sm:text-xs text-grey-600 uppercase tracking-wider mb-0.5 sm:mb-1 truncate">{label}</p>
+            <p className="text-lg sm:text-xl md:text-2xl font-bold text-black">{value}</p>
         </div>
     );
 }

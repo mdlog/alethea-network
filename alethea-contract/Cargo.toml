@@ -1,5 +1,5 @@
 [workspace]
-members = ["alethea-token", "oracle-registry-v2", "alethea-oracle-types", "alethea-consumer-sdk", "alethea-oracle-messages", "simple-market"]
+members = ["alethea-token", "oracle-registry-v2", "alethea-oracle-types", "alethea-consumer-sdk", "alethea-oracle-messages", "alethea-sdk"]
 resolver = "2"
 
 [profile.release]

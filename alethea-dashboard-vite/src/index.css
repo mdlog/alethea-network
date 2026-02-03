@@ -281,3 +281,40 @@ body {
         @apply mx-2 max-w-full;
     }
 }
+
+/* Small mobile (< 375px) */
+@media (max-width: 374px) {
+    html {
+        font-size: 14px;
+    }
+
+    .container {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+}
+
+/* Touch-friendly styles */
+@media (hover: none) and (pointer: coarse) {
+    .btn-primary,
+    .btn-secondary,
+    .btn-ghost {
+        min-height: 44px;
+    }
+    
+    /* Better tap targets */
+    button, a {
+        min-height: 40px;
+    }
+}
+
+/* Safe area for notched devices */
+@supports (padding-top: env(safe-area-inset-top)) {
+    header {
+        padding-top: env(safe-area-inset-top);
+    }
+    
+    footer {
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+}

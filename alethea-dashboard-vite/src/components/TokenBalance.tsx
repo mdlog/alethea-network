@@ -89,10 +89,10 @@ export default function TokenBalance({ showRefresh = true, compact = false }: To
 
     if (compact) {
         return (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-alethea-50 border border-alethea-200 rounded-lg">
-                <Coins className="w-4 h-4 text-alethea-600" />
-                <span className="text-sm font-medium text-alethea-700">
-                    {loading ? '...' : formatBalance(balance)} {tokenSymbol}
+            <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-alethea-50 border border-alethea-200 rounded-md sm:rounded-lg">
+                <Coins className="w-3 h-3 sm:w-4 sm:h-4 text-alethea-600" />
+                <span className="text-[10px] sm:text-xs md:text-sm font-medium text-alethea-700">
+                    {loading ? '...' : formatBalance(balance)}
                 </span>
             </div>
         );

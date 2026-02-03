@@ -4,7 +4,22 @@ export default {
         "./index.html",
         "./src/**/*.{js,ts,jsx,tsx}",
     ],
+    safelist: [
+        // Hero slider gradient colors
+        'from-teal-500', 'via-teal-600', 'to-emerald-700',
+        'from-amber-500', 'via-orange-500', 'to-red-500',
+        'from-violet-500', 'via-purple-600', 'to-indigo-700',
+        'bg-gradient-to-br',
+    ],
     theme: {
+        screens: {
+            'xs': '375px',
+            'sm': '640px',
+            'md': '768px',
+            'lg': '1024px',
+            'xl': '1280px',
+            '2xl': '1536px',
+        },
         extend: {
             fontFamily: {
                 sans: ['Inter', 'sans-serif'],

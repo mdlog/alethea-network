@@ -37,12 +37,11 @@
 |-----------|-------------|
 | `oracle-registry-v2/` | Core oracle contract with voter registration, query management, commit-reveal voting, dispute handling |
 | `alethea-token/` | ALTH token contract with stake management and authorized minting/burning |
-| `simple-market/` | Minimal prediction market for testing oracle resolution callbacks |
 | `alethea-oracle-messages/` | **Industry-standard** shared message types for cross-chain communication |
+| `alethea-oracle-types/` | Shared types for Alethea Oracle Platform |
 | `alethea-oracle-sdk/` | TypeScript SDK for DApp integration |
 | `alethea-consumer-sdk/` | Rust SDK for contract integration |
-| `market-chain/` | Legacy prediction market with AMM (reference) |
-| `integration-tests/` | Integration test suite |
+| `alethea-sdk/` | Client SDK for integrating with Alethea Oracle Protocol |
 
 ---
 
@@ -230,7 +229,7 @@ linera publish-and-create \
 
 **GraphQL Endpoints:**
 - Registry: `POST /chains/9d0d233f.../applications/f51da82d...`
-- Token: `POST /chains/9d0d233f.../applications/dac6b92...`
+- Token: `POST /chains/9d0d233f.../applications/dac6b927...`
 
 ---
 
@@ -336,8 +335,8 @@ async fn execute_message(&mut self, message: Message) {
 - [Oracle Registry Guide](oracle-registry-v2/REGISTRATION_GUIDE.md)
 - [Oracle Messages Reference](alethea-oracle-messages/README.md)
 - [SDK Documentation](alethea-oracle-sdk/README.md)
-- [Simple Market Guide](simple-market/README.md)
-- [Integration Guide](docs/alethea-network/INTEGRATION_TEST_GUIDE.md)
+- [Consumer SDK](alethea-consumer-sdk/README.md)
+- [Integration Guide](docs/alethea-network/SDK_INTEGRATION_GUIDE.md)
 
 ---
 
@@ -345,6 +344,8 @@ async fn execute_message(&mut self, message: Message) {
 
 | Version | Changes |
 |---------|---------|
+| v3.4.0 | Configuration cleanup, removed deprecated components, fixed Rust editions |
+| v3.3.0 | Escrow & Reward Minting fixes, token integration updates |
 | v2.3.0 | Industry-standard formats, dispute mechanism, security fixes |
 | v2.2.0 | Hub-and-Spoke architecture, consumer app registration |
 | v2.1.0 | Hybrid model with bonds, query metadata |

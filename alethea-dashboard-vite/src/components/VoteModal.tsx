@@ -392,34 +392,34 @@ export default function VoteModal({ query, onClose, onSuccess }: VoteModalProps)
 
     return (
         <div className="modal-overlay" onClick={onClose}>
-            <div className="modal-content max-w-lg" onClick={e => e.stopPropagation()}>
+            <div className="modal-content max-w-lg mx-2 sm:mx-auto" onClick={e => e.stopPropagation()}>
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-grey-200">
-                    <div className="flex items-center gap-3">
-                        <Lock className="w-6 h-6 text-alethea-600" />
-                        <h2 className="text-xl font-bold text-black">
+                <div className="flex items-center justify-between p-4 sm:p-6 border-b border-grey-200">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                        <Lock className="w-5 h-5 sm:w-6 sm:h-6 text-alethea-600" />
+                        <h2 className="text-lg sm:text-xl font-bold text-black">
                             {voteMode === 'reveal' ? 'Reveal Vote' : 'Commit Vote'}
                         </h2>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-grey-100 rounded-lg transition-colors">
+                    <button onClick={onClose} className="p-1.5 sm:p-2 hover:bg-grey-100 rounded-lg transition-colors">
                         <X className="w-5 h-5 text-grey-600" />
                     </button>
                 </div>
 
                 {/* Content */}
-                <div className="p-6">
+                <div className="p-4 sm:p-6 max-h-[70vh] sm:max-h-[80vh] overflow-y-auto">
                     {/* Query Info */}
-                    <div className="mb-6">
-                        <h3 className="font-semibold text-lg text-black mb-2">
+                    <div className="mb-4 sm:mb-6">
+                        <h3 className="font-semibold text-sm sm:text-lg text-black mb-1 sm:mb-2 line-clamp-3">
                             {query.description}
                         </h3>
-                        <div className="flex items-center gap-4 text-sm text-grey-600">
+                        <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm text-grey-600">
                             <span>Query #{query.id}</span>
                             <span>{query.voteCount} votes</span>
                         </div>
                         {isRegisteredVoter && voterStake !== '0' && (
-                            <div className="mt-2 text-sm text-green-700">
-                                ✓ Registered voter • Stake: {parseFloat(voterStake).toLocaleString()} ALTH
+                            <div className="mt-1.5 sm:mt-2 text-xs sm:text-sm text-green-700">
+                                ✓ Registered • Stake: {parseFloat(voterStake).toLocaleString()} ALTH
                             </div>
                         )}
                     </div>
@@ -428,30 +428,30 @@ export default function VoteModal({ query, onClose, onSuccess }: VoteModalProps)
 
                     {/* Loading registration check */}
                     {checkingRegistration ? (
-                        <div className="p-4 bg-grey-50 border border-grey-200 rounded-lg">
+                        <div className="p-3 sm:p-4 bg-grey-50 border border-grey-200 rounded-lg">
                             <div className="flex items-center gap-2 text-grey-700">
-                                <Loader2 className="w-5 h-5 animate-spin text-alethea-600" />
-                                <span>Checking voter registration...</span>
+                                <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin text-alethea-600" />
+                                <span className="text-sm sm:text-base">Checking voter registration...</span>
                             </div>
                         </div>
                     ) : !isRegisteredVoter ? (
                         /* Not registered as voter */
-                        <div className="space-y-4">
-                            <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                                <div className="flex items-center gap-2 text-amber-700 mb-2">
-                                    <AlertCircle className="w-5 h-5" />
-                                    <span className="font-medium">Not Registered as Voter</span>
+                        <div className="space-y-3 sm:space-y-4">
+                            <div className="p-3 sm:p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                                <div className="flex items-center gap-2 text-amber-700 mb-1.5 sm:mb-2">
+                                    <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+                                    <span className="text-sm sm:text-base font-medium">Not Registered as Voter</span>
                                 </div>
-                                <p className="text-sm text-amber-600">
-                                    You must register as a voter and stake ALTH tokens before you can vote on queries.
+                                <p className="text-xs sm:text-sm text-amber-600">
+                                    You must register as a voter and stake ALTH tokens before you can vote.
                                 </p>
                             </div>
 
-                            <div className="p-4 bg-grey-50 rounded-lg">
-                                <p className="text-sm text-grey-700 mb-2">
+                            <div className="p-3 sm:p-4 bg-grey-50 rounded-lg">
+                                <p className="text-xs sm:text-sm text-grey-700 mb-1.5 sm:mb-2">
                                     <strong>How to become a voter:</strong>
                                 </p>
-                                <ol className="text-sm text-grey-600 list-decimal list-inside space-y-1">
+                                <ol className="text-xs sm:text-sm text-grey-600 list-decimal list-inside space-y-0.5 sm:space-y-1">
                                     <li>Get ALTH tokens from the Token Faucet</li>
                                     <li>Go to the Voters page</li>
                                     <li>Click "Register as Voter" and stake tokens</li>
@@ -461,39 +461,39 @@ export default function VoteModal({ query, onClose, onSuccess }: VoteModalProps)
                             <button
                                 type="button"
                                 onClick={onClose}
-                                className="w-full btn-secondary py-3"
+                                className="w-full btn-secondary py-2.5 sm:py-3 text-sm sm:text-base"
                             >
                                 Close
                             </button>
                         </div>
                     ) : isExpired ? (
-                        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                        <div className="p-3 sm:p-4 bg-red-50 border border-red-200 rounded-lg">
                             <div className="flex items-center gap-2 text-red-700">
-                                <AlertCircle className="w-5 h-5" />
-                                <span>This query has expired.</span>
+                                <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+                                <span className="text-sm sm:text-base">This query has expired.</span>
                             </div>
                         </div>
                     ) : completedVote ? (
                         /* Already Voted */
-                        <div className="space-y-6">
-                            <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                                <div className="flex items-center gap-2 text-green-700 mb-2">
-                                    <Eye className="w-5 h-5" />
-                                    <span className="font-medium">Vote Submitted Successfully!</span>
+                        <div className="space-y-4 sm:space-y-6">
+                            <div className="p-3 sm:p-4 bg-green-50 border border-green-200 rounded-lg">
+                                <div className="flex items-center gap-2 text-green-700 mb-1.5 sm:mb-2">
+                                    <Eye className="w-4 h-4 sm:w-5 sm:h-5" />
+                                    <span className="text-sm sm:text-base font-medium">Vote Submitted!</span>
                                 </div>
-                                <p className="text-sm text-green-600">
+                                <p className="text-xs sm:text-sm text-green-600">
                                     You have already voted on this query.
                                 </p>
                             </div>
 
-                            <div className="p-4 bg-grey-50 rounded-lg">
-                                <p className="text-sm text-grey-700">
+                            <div className="p-3 sm:p-4 bg-grey-50 rounded-lg space-y-1">
+                                <p className="text-xs sm:text-sm text-grey-700">
                                     <strong className="text-black">Your Vote:</strong> {completedVote.value}
                                 </p>
-                                <p className="text-sm text-grey-700">
+                                <p className="text-xs sm:text-sm text-grey-700">
                                     <strong className="text-black">Confidence:</strong> {completedVote.confidence}%
                                 </p>
-                                <p className="text-sm text-grey-700">
+                                <p className="text-xs sm:text-sm text-grey-700">
                                     <strong className="text-black">Revealed:</strong> {new Date(completedVote.revealedAt).toLocaleString()}
                                 </p>
                             </div>
@@ -501,104 +501,106 @@ export default function VoteModal({ query, onClose, onSuccess }: VoteModalProps)
                             <button
                                 type="button"
                                 onClick={onClose}
-                                className="w-full btn-secondary py-3"
+                                className="w-full btn-secondary py-2.5 sm:py-3 text-sm sm:text-base"
                             >
                                 Close
                             </button>
                         </div>
                     ) : pendingReveal ? (
                         /* Reveal Mode */
-                        <div className="space-y-6">
+                        <div className="space-y-4 sm:space-y-6">
                             {isInCommitPhase ? (
                                 /* Still in commit phase - show countdown */
-                                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                                    <div className="flex items-center gap-2 text-blue-700 mb-2">
-                                        <Clock className="w-5 h-5" />
-                                        <span className="font-medium">Vote Committed Successfully!</span>
+                                <div className="p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                    <div className="flex items-center gap-2 text-blue-700 mb-1.5 sm:mb-2">
+                                        <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
+                                        <span className="text-sm sm:text-base font-medium">Vote Committed!</span>
                                     </div>
-                                    <p className="text-sm text-blue-600 mb-3">
+                                    <p className="text-xs sm:text-sm text-blue-600 mb-2 sm:mb-3">
                                         Your vote for "{pendingReveal.value}" has been committed.
                                     </p>
-                                    <div className="p-3 bg-blue-100 rounded-lg">
-                                        <p className="text-sm text-blue-700 font-medium text-center">
-                                            Reveal phase starts in: <span className="text-lg font-bold text-blue-800">{formatTimeRemaining(commitTimeRemaining)}</span>
+                                    <div className="p-2 sm:p-3 bg-blue-100 rounded-lg">
+                                        <p className="text-xs sm:text-sm text-blue-700 font-medium text-center">
+                                            Reveal starts in: <span className="text-base sm:text-lg font-bold text-blue-800">{formatTimeRemaining(commitTimeRemaining)}</span>
                                         </p>
                                     </div>
                                 </div>
                             ) : isInRevealPhase ? (
                                 /* In reveal phase - can reveal */
-                                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                                    <div className="flex items-center gap-2 text-green-700 mb-2">
-                                        <Eye className="w-5 h-5" />
-                                        <span className="font-medium">Reveal Phase Active!</span>
+                                <div className="p-3 sm:p-4 bg-green-50 border border-green-200 rounded-lg">
+                                    <div className="flex items-center gap-2 text-green-700 mb-1.5 sm:mb-2">
+                                        <Eye className="w-4 h-4 sm:w-5 sm:h-5" />
+                                        <span className="text-sm sm:text-base font-medium">Reveal Phase Active!</span>
                                     </div>
-                                    <p className="text-sm text-green-600">
+                                    <p className="text-xs sm:text-sm text-green-600">
                                         You can now reveal your vote for "{pendingReveal.value}".
                                     </p>
                                 </div>
                             ) : (
                                 /* Reveal phase ended */
-                                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                                    <div className="flex items-center gap-2 text-red-700 mb-2">
-                                        <AlertCircle className="w-5 h-5" />
-                                        <span className="font-medium">Reveal Phase Ended</span>
+                                <div className="p-3 sm:p-4 bg-red-50 border border-red-200 rounded-lg">
+                                    <div className="flex items-center gap-2 text-red-700 mb-1.5 sm:mb-2">
+                                        <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+                                        <span className="text-sm sm:text-base font-medium">Reveal Phase Ended</span>
                                     </div>
-                                    <p className="text-sm text-red-600">
+                                    <p className="text-xs sm:text-sm text-red-600">
                                         The reveal phase has ended. Your vote was not revealed in time.
                                     </p>
                                 </div>
                             )}
 
-                            <div className="p-4 bg-grey-50 rounded-lg">
-                                <p className="text-sm text-grey-700">
+                            <div className="p-3 sm:p-4 bg-grey-50 rounded-lg space-y-1">
+                                <p className="text-xs sm:text-sm text-grey-700">
                                     <strong className="text-black">Your Vote:</strong> {pendingReveal.value}
                                 </p>
-                                <p className="text-sm text-grey-700">
+                                <p className="text-xs sm:text-sm text-grey-700">
                                     <strong className="text-black">Confidence:</strong> {pendingReveal.confidence}%
                                 </p>
                             </div>
 
                             {error && (
-                                <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+                                <div className="p-3 sm:p-4 bg-red-50 border border-red-200 rounded-lg text-xs sm:text-sm text-red-700">
                                     {error}
                                 </div>
                             )}
 
-                            <div className="flex gap-3">
+                            <div className="flex gap-2 sm:gap-3">
                                 <button
                                     type="button"
                                     onClick={onClose}
-                                    className="flex-1 btn-secondary py-3"
+                                    className="flex-1 btn-secondary py-2.5 sm:py-3 text-sm sm:text-base"
                                 >
                                     {isInCommitPhase ? 'Close' : 'Cancel'}
                                 </button>
                                 <button
                                     onClick={handleReveal}
                                     disabled={isSubmitting || isInCommitPhase || !isInRevealPhase}
-                                    className={`flex-1 px-4 py-3 text-white rounded-lg font-medium transition-all ${isInCommitPhase || !isInRevealPhase
+                                    className={`flex-1 px-3 sm:px-4 py-2.5 sm:py-3 text-white rounded-lg text-sm sm:text-base font-medium transition-all ${isInCommitPhase || !isInRevealPhase
                                         ? 'bg-grey-300 text-grey-500 cursor-not-allowed'
                                         : 'bg-green-600 hover:bg-green-500'
                                         }`}
                                 >
                                     {isSubmitting ? (
-                                        <span className="flex items-center justify-center gap-2">
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                            Revealing...
+                                        <span className="flex items-center justify-center gap-1.5 sm:gap-2">
+                                            <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" />
+                                            <span className="hidden xs:inline">Revealing...</span>
+                                            <span className="xs:hidden">...</span>
                                         </span>
                                     ) : isInCommitPhase ? (
-                                        <span className="flex items-center justify-center gap-2">
-                                            <Clock className="w-4 h-4" />
-                                            Wait for Reveal Phase
+                                        <span className="flex items-center justify-center gap-1.5 sm:gap-2">
+                                            <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                            <span className="hidden sm:inline">Wait for Reveal</span>
+                                            <span className="sm:hidden">Wait</span>
                                         </span>
                                     ) : !isInRevealPhase ? (
-                                        <span className="flex items-center justify-center gap-2">
-                                            <AlertCircle className="w-4 h-4" />
-                                            Phase Ended
+                                        <span className="flex items-center justify-center gap-1.5 sm:gap-2">
+                                            <AlertCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                            <span>Ended</span>
                                         </span>
                                     ) : (
-                                        <span className="flex items-center justify-center gap-2">
-                                            <Eye className="w-4 h-4" />
-                                            Reveal Vote
+                                        <span className="flex items-center justify-center gap-1.5 sm:gap-2">
+                                            <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                            <span>Reveal Vote</span>
                                         </span>
                                     )}
                                 </button>
@@ -606,27 +608,27 @@ export default function VoteModal({ query, onClose, onSuccess }: VoteModalProps)
                         </div>
                     ) : (
                         /* Commit Vote Mode */
-                        <div className="space-y-6">
+                        <div className="space-y-4 sm:space-y-6">
                             {/* Mode Info */}
-                            <div className="p-4 rounded-lg bg-alethea-50 border border-alethea-200">
-                                <p className="text-sm">
+                            <div className="p-3 sm:p-4 rounded-lg bg-alethea-50 border border-alethea-200">
+                                <p className="text-xs sm:text-sm">
                                     <strong className="text-alethea-600">Commit/Reveal:</strong>{' '}
                                     <span className="text-alethea-700">
-                                        Your vote is hidden until reveal phase. More secure against vote manipulation.
+                                        Your vote is hidden until reveal phase.
                                     </span>
                                 </p>
                             </div>
 
                             {/* Outcome Selection */}
                             <div>
-                                <label className="block text-sm font-medium text-grey-700 mb-3">
+                                <label className="block text-xs sm:text-sm font-medium text-grey-700 mb-2 sm:mb-3">
                                     Select Your Answer
                                 </label>
-                                <div className="space-y-2">
+                                <div className="space-y-1.5 sm:space-y-2">
                                     {query.outcomes.map((outcome) => (
                                         <label
                                             key={outcome}
-                                            className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${selectedOutcome === outcome
+                                            className={`flex items-center p-3 sm:p-4 border-2 rounded-lg cursor-pointer transition-all ${selectedOutcome === outcome
                                                 ? 'border-alethea-500 bg-alethea-50'
                                                 : 'border-grey-200 hover:border-grey-300 bg-white'
                                                 }`}
@@ -639,15 +641,15 @@ export default function VoteModal({ query, onClose, onSuccess }: VoteModalProps)
                                                 onChange={(e) => setSelectedOutcome(e.target.value)}
                                                 className="sr-only"
                                             />
-                                            <div className={`w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center ${selectedOutcome === outcome
+                                            <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 mr-2 sm:mr-3 flex items-center justify-center ${selectedOutcome === outcome
                                                 ? 'border-alethea-500 bg-alethea-500'
                                                 : 'border-grey-400'
                                                 }`}>
                                                 {selectedOutcome === outcome && (
-                                                    <div className="w-2 h-2 bg-white rounded-full" />
+                                                    <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-white rounded-full" />
                                                 )}
                                             </div>
-                                            <span className="font-medium text-black">{outcome}</span>
+                                            <span className="text-sm sm:text-base font-medium text-black">{outcome}</span>
                                         </label>
                                     ))}
                                 </div>
@@ -655,8 +657,8 @@ export default function VoteModal({ query, onClose, onSuccess }: VoteModalProps)
 
                             {/* Confidence Slider */}
                             <div>
-                                <label className="block text-sm font-medium text-grey-700 mb-2">
-                                    Confidence Level: {confidence}%
+                                <label className="block text-xs sm:text-sm font-medium text-grey-700 mb-1.5 sm:mb-2">
+                                    Confidence: {confidence}%
                                 </label>
                                 <input
                                     type="range"
@@ -669,56 +671,58 @@ export default function VoteModal({ query, onClose, onSuccess }: VoteModalProps)
                             </div>
 
                             {error && (
-                                <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+                                <div className="p-3 sm:p-4 bg-red-50 border border-red-200 rounded-lg text-xs sm:text-sm text-red-700">
                                     {error}
                                 </div>
                             )}
 
-                            {/* Phase Warning - Show if not in commit phase */}
+                            {/* Phase Warning */}
                             {!isInCommitPhase && (
-                                <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                                    <div className="flex items-center gap-2 text-amber-700">
-                                        <AlertCircle className="w-5 h-5" />
-                                        <span className="font-medium">
+                                <div className="p-3 sm:p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                                    <div className="flex items-start gap-2 text-amber-700">
+                                        <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs sm:text-sm font-medium">
                                             {isInRevealPhase
-                                                ? 'Commit phase has ended. This query is now in reveal phase.'
-                                                : 'This query has expired. Voting is no longer available.'}
+                                                ? 'Commit phase ended. Now in reveal phase.'
+                                                : 'Query expired. Voting closed.'}
                                         </span>
                                     </div>
                                 </div>
                             )}
 
                             {/* Actions */}
-                            <div className="flex gap-3">
+                            <div className="flex gap-2 sm:gap-3">
                                 <button
                                     type="button"
                                     onClick={onClose}
-                                    className="flex-1 btn-secondary py-3"
+                                    className="flex-1 btn-secondary py-2.5 sm:py-3 text-sm sm:text-base"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={handleCommit}
                                     disabled={isSubmitting || !selectedOutcome || !isInCommitPhase}
-                                    className={`flex-1 px-4 py-3 text-white rounded-lg font-medium transition-all ${isSubmitting || !selectedOutcome || !isInCommitPhase
+                                    className={`flex-1 px-3 sm:px-4 py-2.5 sm:py-3 text-white rounded-lg text-sm sm:text-base font-medium transition-all ${isSubmitting || !selectedOutcome || !isInCommitPhase
                                         ? 'bg-grey-300 text-grey-500 cursor-not-allowed'
                                         : 'btn-primary'
                                         }`}
                                 >
                                     {isSubmitting ? (
-                                        <span className="flex items-center justify-center gap-2">
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                            Committing...
+                                        <span className="flex items-center justify-center gap-1.5 sm:gap-2">
+                                            <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" />
+                                            <span className="hidden xs:inline">Committing...</span>
+                                            <span className="xs:hidden">...</span>
                                         </span>
                                     ) : !isInCommitPhase ? (
-                                        <span className="flex items-center justify-center gap-2">
-                                            <AlertCircle className="w-4 h-4" />
-                                            {isInRevealPhase ? 'Commit Phase Ended' : 'Query Expired'}
+                                        <span className="flex items-center justify-center gap-1.5 sm:gap-2">
+                                            <AlertCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                            <span className="hidden sm:inline">{isInRevealPhase ? 'Commit Ended' : 'Expired'}</span>
+                                            <span className="sm:hidden">Ended</span>
                                         </span>
                                     ) : (
-                                        <span className="flex items-center justify-center gap-2">
-                                            <Lock className="w-4 h-4" />
-                                            Commit Vote
+                                        <span className="flex items-center justify-center gap-1.5 sm:gap-2">
+                                            <Lock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                            <span>Commit Vote</span>
                                         </span>
                                     )}
                                 </button>

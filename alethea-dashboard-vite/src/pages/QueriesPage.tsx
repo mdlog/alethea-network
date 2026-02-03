@@ -244,21 +244,21 @@ export default function QueriesPage() {
     );
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
             {/* Header */}
             <div>
-                <h1 className="text-2xl font-bold text-black">Oracle Queries</h1>
-                <p className="text-grey-700">Create queries and vote on outcomes</p>
+                <h1 className="text-xl sm:text-2xl font-bold text-black">Oracle Queries</h1>
+                <p className="text-sm sm:text-base text-grey-700">Create queries and vote on outcomes</p>
             </div>
 
             {/* Tabs */}
             <div className="border-b border-grey-200">
-                <nav className="flex gap-8">
+                <nav className="flex gap-4 sm:gap-8 overflow-x-auto no-scrollbar">
                     {(['active', 'past'] as const).map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
-                            className={`py-3 border-b-2 font-medium text-sm capitalize transition-colors ${activeTab === tab
+                            className={`py-2 sm:py-3 border-b-2 font-medium text-xs sm:text-sm capitalize transition-colors whitespace-nowrap ${activeTab === tab
                                 ? 'border-alethea-500 text-alethea-600'
                                 : 'border-transparent text-grey-700 hover:text-black'
                                 }`}
@@ -271,26 +271,26 @@ export default function QueriesPage() {
 
             {/* Error */}
             {error && (
-                <div className="p-4 card border-red-500/30 text-red-400">
+                <div className="p-3 sm:p-4 card border-red-500/30 text-sm text-red-400">
                     {error}
                 </div>
             )}
 
             {/* Content */}
             {loading ? (
-                <div className="flex items-center justify-center py-12">
-                    <Loader2 className="w-8 h-8 animate-spin text-alethea-500" />
+                <div className="flex items-center justify-center py-8 sm:py-12">
+                    <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 animate-spin text-alethea-500" />
                 </div>
             ) : (
                 <>
                     {/* Active Queries */}
                     {activeTab === 'active' && (
-                        <div className="space-y-4">
+                        <div className="space-y-3 sm:space-y-4">
                             {activeQueries.length === 0 ? (
-                                <div className="card p-12 text-center">
-                                    <AlertCircle className="w-12 h-12 text-grey-600 mx-auto mb-4" />
-                                    <h3 className="text-lg font-medium text-black mb-2">No Active Queries</h3>
-                                    <p className="text-grey-700">No active queries at the moment</p>
+                                <div className="card p-8 sm:p-12 text-center">
+                                    <AlertCircle className="w-10 h-10 sm:w-12 sm:h-12 text-grey-600 mx-auto mb-3 sm:mb-4" />
+                                    <h3 className="text-base sm:text-lg font-medium text-black mb-2">No Active Queries</h3>
+                                    <p className="text-sm text-grey-700">No active queries at the moment</p>
                                 </div>
                             ) : (
                                 activeQueries.map((query) => (
@@ -309,12 +309,12 @@ export default function QueriesPage() {
 
                     {/* Past Queries */}
                     {activeTab === 'past' && (
-                        <div className="space-y-4">
+                        <div className="space-y-3 sm:space-y-4">
                             {pastQueries.length === 0 ? (
-                                <div className="card p-12 text-center">
-                                    <CheckCircle className="w-12 h-12 text-grey-600 mx-auto mb-4" />
-                                    <h3 className="text-lg font-medium text-black">No Past Queries</h3>
-                                    <p className="text-grey-700">Resolved queries will appear here</p>
+                                <div className="card p-8 sm:p-12 text-center">
+                                    <CheckCircle className="w-10 h-10 sm:w-12 sm:h-12 text-grey-600 mx-auto mb-3 sm:mb-4" />
+                                    <h3 className="text-base sm:text-lg font-medium text-black">No Past Queries</h3>
+                                    <p className="text-sm text-grey-700">Resolved queries will appear here</p>
                                 </div>
                             ) : (
                                 <>
@@ -323,24 +323,24 @@ export default function QueriesPage() {
                                     ))}
 
                                     {totalPastPages > 1 && (
-                                        <div className="flex items-center justify-between card p-4">
-                                            <p className="text-sm text-grey-600">
-                                                Showing {(pastPage - 1) * ITEMS_PER_PAGE + 1} - {Math.min(pastPage * ITEMS_PER_PAGE, pastQueries.length)} of {pastQueries.length}
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 card p-3 sm:p-4">
+                                            <p className="text-xs sm:text-sm text-grey-600 text-center sm:text-left">
+                                                {(pastPage - 1) * ITEMS_PER_PAGE + 1} - {Math.min(pastPage * ITEMS_PER_PAGE, pastQueries.length)} of {pastQueries.length}
                                             </p>
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center justify-center gap-1 sm:gap-2">
                                                 <button
                                                     onClick={() => setPastPage(p => Math.max(1, p - 1))}
                                                     disabled={pastPage === 1}
-                                                    className="btn-secondary text-sm disabled:opacity-50"
+                                                    className="btn-secondary text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2 disabled:opacity-50"
                                                 >
-                                                    Previous
+                                                    Prev
                                                 </button>
                                                 <div className="flex items-center gap-1">
-                                                    {Array.from({ length: totalPastPages }, (_, i) => i + 1).map(page => (
+                                                    {Array.from({ length: Math.min(totalPastPages, 5) }, (_, i) => i + 1).map(page => (
                                                         <button
                                                             key={page}
                                                             onClick={() => setPastPage(page)}
-                                                            className={`w-8 h-8 text-sm font-medium rounded-lg ${page === pastPage
+                                                            className={`w-7 h-7 sm:w-8 sm:h-8 text-xs sm:text-sm font-medium rounded-lg ${page === pastPage
                                                                 ? 'bg-alethea-500 text-white'
                                                                 : 'hover:bg-grey-50 text-grey-700'
                                                                 }`}
@@ -352,7 +352,7 @@ export default function QueriesPage() {
                                                 <button
                                                     onClick={() => setPastPage(p => Math.min(totalPastPages, p + 1))}
                                                     disabled={pastPage === totalPastPages}
-                                                    className="btn-secondary text-sm disabled:opacity-50"
+                                                    className="btn-secondary text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2 disabled:opacity-50"
                                                 >
                                                     Next
                                                 </button>
@@ -542,93 +542,90 @@ function QueryCard({ query, onVote, onResolve, canVote, isPast, isResolving, use
     }, [userChainId, query.id]);
 
     return (
-        <div className="card-hover p-6">
-            <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                    <h3 className="font-semibold text-lg text-black">{query.description}</h3>
-                    <div className="flex items-center gap-4 mt-2 text-sm text-grey-600">
-                        <span>Query #{query.id}</span>
+        <div className="card-hover p-4 sm:p-6">
+            <div className="flex items-start justify-between gap-2 mb-3 sm:mb-4">
+                <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-sm sm:text-lg text-black">
+                        {(() => {
+                            const questionMatch = query.description.match(/^([^?]+\?)/);
+                            if (questionMatch) {
+                                return questionMatch[1];
+                            }
+                            // If no question mark, show the full description
+                            return query.description;
+                        })()}
+                    </h3>
+                    <div className="flex items-center gap-2 sm:gap-4 mt-1 sm:mt-2 text-xs sm:text-sm text-grey-600">
+                        <span>#{query.id}</span>
                         <span>{query.voteCount} votes</span>
                     </div>
                 </div>
-                <div className="flex flex-col items-end gap-2">
-                    <span className={`badge ${query.status === 'Resolved' ? 'badge-success' :
-                        query.status === 'Expired' ? 'badge-neutral' : 'badge-info'
-                        }`}>
-                        {query.status}
-                    </span>
-                </div>
+                <span className={`badge text-[10px] sm:text-xs flex-shrink-0 ${query.status === 'Resolved' ? 'badge-success' :
+                    query.status === 'Expired' ? 'badge-neutral' : 'badge-info'
+                    }`}>
+                    {query.status}
+                </span>
             </div>
 
             {/* Phase Timer */}
             {!isPast && query.status === 'Active' && (
-                <div className={`mb-4 p-3 rounded-lg border ${phase === 'commit' ? 'bg-blue-500/10 border-blue-500/30' :
+                <div className={`mb-3 sm:mb-4 p-2 sm:p-3 rounded-lg border ${phase === 'commit' ? 'bg-blue-500/10 border-blue-500/30' :
                     phase === 'reveal' ? 'bg-amber-500/10 border-amber-500/30' :
                         'bg-grey-50 border-grey-200'
                     }`}>
                     <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 sm:gap-2">
                             {phase === 'commit' ? (
                                 <>
-                                    <Lock className="w-4 h-4 text-blue-400" />
-                                    <span className="text-sm font-medium text-blue-400">Commit Phase</span>
+                                    <Lock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-400" />
+                                    <span className="text-xs sm:text-sm font-medium text-blue-400">Commit</span>
                                 </>
                             ) : phase === 'reveal' ? (
                                 <>
-                                    <Eye className="w-4 h-4 text-amber-400" />
-                                    <span className="text-sm font-medium text-amber-400">Reveal Phase</span>
+                                    <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
+                                    <span className="text-xs sm:text-sm font-medium text-amber-400">Reveal</span>
                                 </>
                             ) : (
                                 <>
-                                    <Clock className="w-4 h-4 text-grey-700" />
-                                    <span className="text-sm font-medium text-grey-700">Voting Ended</span>
+                                    <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-grey-700" />
+                                    <span className="text-xs sm:text-sm font-medium text-grey-700">Ended</span>
                                 </>
                             )}
                         </div>
                         {!isEnded && (
-                            <div className="flex items-center gap-1 text-sm font-mono">
-                                <Clock className={`w-4 h-4 ${phase === 'commit' ? 'text-blue-400' : 'text-amber-400'}`} />
-                                <span className={phase === 'commit' ? 'text-blue-400' : 'text-amber-400'}>
-                                    {formatTimeRemaining(timeRemainingMs)}
-                                </span>
-                            </div>
+                            <span className={`text-xs sm:text-sm font-mono ${phase === 'commit' ? 'text-blue-400' : 'text-amber-400'}`}>
+                                {formatTimeRemaining(timeRemainingMs)}
+                            </span>
                         )}
                     </div>
-                    <p className="text-xs mt-1 text-grey-600">
-                        {phase === 'commit'
-                            ? 'Submit your hidden vote commitment'
-                            : phase === 'reveal'
-                                ? 'Reveal your committed vote'
-                                : 'Waiting for resolution'}
-                    </p>
                 </div>
             )}
 
             {isPast && query.result ? (
-                <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
-                    <p className="text-sm text-emerald-400">
+                <div className="p-2.5 sm:p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
+                    <p className="text-xs sm:text-sm text-emerald-400">
                         <span className="font-medium">Result:</span> {query.result}
                     </p>
                 </div>
             ) : canVote && onVote && !isEnded ? (
-                <div className="flex items-center justify-between">
-                    <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0">
+                    <div className="flex flex-wrap gap-1.5 sm:gap-2">
                         {query.outcomes.map((outcome) => (
-                            <span key={outcome} className="py-1.5 px-3 bg-grey-50 rounded-lg text-sm text-grey-700">
+                            <span key={outcome} className="py-1 sm:py-1.5 px-2 sm:px-3 bg-grey-50 rounded-lg text-xs sm:text-sm text-grey-700">
                                 {outcome}
                             </span>
                         ))}
                     </div>
-                    <button onClick={onVote} className="btn-primary flex items-center gap-2">
-                        <Vote className="w-4 h-4" />
+                    <button onClick={onVote} className="btn-primary flex items-center justify-center gap-2 text-xs sm:text-sm px-3 py-1.5 sm:py-2">
+                        <Vote className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                         Vote
                     </button>
                 </div>
             ) : (
-                <div className="flex items-center justify-between">
-                    <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0">
+                    <div className="flex flex-wrap gap-1.5 sm:gap-2">
                         {query.outcomes.map((outcome) => (
-                            <span key={outcome} className="py-1.5 px-3 bg-grey-50 rounded-lg text-sm text-grey-700">
+                            <span key={outcome} className="py-1 sm:py-1.5 px-2 sm:px-3 bg-grey-50 rounded-lg text-xs sm:text-sm text-grey-700">
                                 {outcome}
                             </span>
                         ))}
@@ -637,23 +634,23 @@ function QueryCard({ query, onVote, onResolve, canVote, isPast, isResolving, use
                         <button
                             onClick={onResolve}
                             disabled={isResolving}
-                            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 disabled:bg-grey-50 disabled:text-grey-600 transition-colors"
+                            className="flex items-center justify-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 disabled:bg-grey-50 disabled:text-grey-600 transition-colors"
                         >
                             {isResolving ? (
                                 <>
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                    Resolving...
+                                    <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" />
+                                    <span className="hidden xs:inline">Resolving...</span>
                                 </>
                             ) : (
                                 <>
-                                    <CheckCircle className="w-4 h-4" />
+                                    <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                                     Resolve
                                 </>
                             )}
                         </button>
                     )}
                     {isEnded && query.voteCount === 0 && query.status === 'Active' && (
-                        <span className="text-sm text-grey-600">No votes - will expire</span>
+                        <span className="text-xs sm:text-sm text-grey-600">No votes - will expire</span>
                     )}
                 </div>
             )}

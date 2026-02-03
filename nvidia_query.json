@@ -1,0 +1,3 @@
+{
+    "query": "mutation { createQuery(description: \"Did NVIDIA (NVDA) stock reach or exceed $150 USD on January 30, 2026? This market resolves to \\\"Yes, reached $150+\\\" if NVIDIA Corporation (NVDA) stock reached or exceeded $150 USD at any point during regular trading hours on January 30, 2026. It resolves to \\\"No, below $150\\\" if the stock stayed below $150 throughout the trading day. The resolution will use NASDAQ's official intraday high price. After-hours trading does not count. Source: NASDAQ Official (https://www.nasdaq.com/market-activity/stocks/nvda)\", outcomes: [\"Yes, reached $150+\", \"No, below $150\"], strategy: \"WeightedByStake\", minVotes: 3, rewardAmount: \"100000000000000000000\", durationSecs: 86400) }"
+}
