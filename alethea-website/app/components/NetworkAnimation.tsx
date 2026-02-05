@@ -22,11 +22,11 @@ export default function NetworkAnimation() {
         const connectionDistance = 150;
 
         class Particle {
-            x: number;
-            y: number;
-            vx: number;
-            vy: number;
-            radius: number;
+            x!: number;
+            y!: number;
+            vx!: number;
+            vy!: number;
+            radius!: number;
 
             constructor() {
                 if (!canvas) return;
