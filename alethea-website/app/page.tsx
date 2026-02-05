@@ -5,6 +5,58 @@ import { ArrowRight, Github, Shield, Zap, Users, Circle } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
+// Puzzle Text Animation Component
+function PuzzleText({ text, className = '' }: { text: string; className?: string }) {
+    const [assembled, setAssembled] = useState(false);
+    const letters = text.split('');
+
+    useEffect(() => {
+        const timer = setTimeout(() => setAssembled(true), 100);
+        return () => clearTimeout(timer);
+    }, []);
+
+    return (
+        <div className={`relative ${className}`}>
+            {letters.map((letter, index) => {
+                const randomX = assembled ? 0 : (Math.random() - 0.5) * 300;
+                const randomY = assembled ? 0 : (Math.random() - 0.5) * 300;
+                const randomRotate = assembled ? 0 : (Math.random() - 0.5) * 180;
+                const delay = index * 0.03;
+
+                return (
+                    <motion.span
+                        key={index}
+                        className="inline-block"
+                        initial={{
+                            x: randomX,
+                            y: randomY,
+                            rotate: randomRotate,
+                            opacity: 0,
+                            scale: 0.5,
+                        }}
+                        animate={{
+                            x: 0,
+                            y: 0,
+                            rotate: 0,
+                            opacity: 1,
+                            scale: 1,
+                        }}
+                        transition={{
+                            duration: 0.8,
+                            delay: delay,
+                            type: 'spring',
+                            stiffness: 100,
+                            damping: 15,
+                        }}
+                    >
+                        {letter === ' ' ? '\u00A0' : letter}
+                    </motion.span>
+                );
+            })}
+        </div>
+    );
+}
+
 // Blockchain Animation Component
 function BlockchainGrid() {
     const [blocks, setBlocks] = useState<{ id: number; active: boolean; connected: boolean; y: number }[]>([]);
@@ -85,10 +137,10 @@ function BlockchainGrid() {
                         <motion.div
                             key={block.id}
                             className={`relative border transition-all duration-200 ${block.active
-                                    ? 'border-white bg-white shadow-lg shadow-white/50'
-                                    : block.connected
-                                        ? 'border-gray-600 bg-gray-800'
-                                        : 'border-gray-800'
+                                ? 'border-white bg-white shadow-lg shadow-white/50'
+                                : block.connected
+                                    ? 'border-gray-600 bg-gray-800'
+                                    : 'border-gray-800'
                                 }`}
                             animate={{
                                 scale: block.active ? 1.3 : 1,
@@ -125,8 +177,8 @@ function BlockchainGrid() {
                     <motion.div
                         key={block.id}
                         className={`absolute w-12 h-12 border-2 rounded ${block.active
-                                ? 'border-white bg-white/20 shadow-lg shadow-white/30'
-                                : 'border-gray-600 bg-gray-800/50'
+                            ? 'border-white bg-white/20 shadow-lg shadow-white/30'
+                            : 'border-gray-600 bg-gray-800/50'
                             }`}
                         style={{
                             left: `${x}px`,
@@ -197,25 +249,25 @@ export default function Home() {
                         LIVE_ON_CONWAY_TESTNET
                     </motion.div>
 
-                    {/* Main Heading - Brutalist Typography */}
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.1 }}
-                        className="mb-8"
-                    >
+                    {/* Main Heading - Puzzle Animation */}
+                    <div className="mb-8">
                         <h1 className="text-7xl md:text-8xl font-black tracking-tighter leading-none mb-4">
-                            DECENTRALIZED
+                            <PuzzleText text="DECENTRALIZED" />
                             <br />
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-gray-400 to-white">
-                                ORACLE
+                                <PuzzleText text="ORACLE" />
                             </span>
                         </h1>
-                        <div className="flex items-center gap-4 text-2xl font-mono">
+                        <motion.div
+                            className="flex items-center gap-4 text-2xl font-mono"
+                            initial={{ opacity: 0, x: -50 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 1.2, duration: 0.6 }}
+                        >
                             <div className="w-12 h-1 bg-white" />
-                            <span className="text-gray-400">FOR LINERA PROTOCOL</span>
-                        </div>
-                    </motion.div>
+                            <PuzzleText text="FOR LINERA PROTOCOL" className="text-gray-400" />
+                        </motion.div>
+                    </div>
 
                     {/* Description */}
                     <motion.p
