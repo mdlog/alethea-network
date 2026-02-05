@@ -7,72 +7,152 @@ import { useEffect, useState } from 'react';
 
 // Blockchain Animation Component
 function BlockchainGrid() {
-    const [blocks, setBlocks] = useState<{ id: number; active: boolean; connected: boolean }[]>([]);
-    const gridSize = 12; // 12x8 grid
+    const [blocks, setBlocks] = useState<{ id: number; active: boolean; connected: boolean; y: number }[]>([]);
+    const [phase, setPhase] = useState<'blinking' | 'rising'>('blinking');
+    const gridSize = 12;
     const gridHeight = 8;
+    const totalBlocks = gridSize * gridHeight;
 
     useEffect(() => {
         // Initialize blocks
-        const initialBlocks = Array.from({ length: gridSize * gridHeight }, (_, i) => ({
+        const initialBlocks = Array.from({ length: totalBlocks }, (_, i) => ({
             id: i,
             active: false,
             connected: false,
+            y: 0,
         }));
         setBlocks(initialBlocks);
 
-        // Animation sequence
         let currentIndex = 0;
+        let animationPhase: 'blinking' | 'rising' = 'blinking';
+
         const interval = setInterval(() => {
-            setBlocks(prev => {
-                const newBlocks = [...prev];
+            if (animationPhase === 'blinking') {
+                setBlocks(prev => {
+                    const newBlocks = [...prev];
 
-                // Deactivate previous block
-                if (currentIndex > 0) {
-                    newBlocks[currentIndex - 1] = { ...newBlocks[currentIndex - 1], active: false, connected: true };
-                }
+                    // Deactivate previous block
+                    if (currentIndex > 0) {
+                        newBlocks[currentIndex - 1] = { ...newBlocks[currentIndex - 1], active: false, connected: true, y: 0 };
+                    }
 
-                // Activate current block
-                if (currentIndex < newBlocks.length) {
-                    newBlocks[currentIndex] = { ...newBlocks[currentIndex], active: true, connected: false };
-                    currentIndex++;
-                } else {
-                    // Reset animation
-                    currentIndex = 0;
-                    return initialBlocks;
-                }
+                    // Activate current block
+                    if (currentIndex < newBlocks.length) {
+                        newBlocks[currentIndex] = { ...newBlocks[currentIndex], active: true, connected: false, y: 0 };
+                        currentIndex++;
+                    } else {
+                        // Switch to rising phase
+                        animationPhase = 'rising';
+                        setPhase('rising');
+                        currentIndex = 0;
+                    }
 
-                return newBlocks;
-            });
-        }, 100); // Blink every 100ms
+                    return newBlocks;
+                });
+            } else {
+                // Rising phase - blocks float up like bubbles
+                setBlocks(prev => {
+                    return prev.map(block => ({
+                        ...block,
+                        y: block.y - 2, // Move up
+                        active: Math.random() > 0.95, // Random sparkle
+                    }));
+                });
+            }
+        }, animationPhase === 'blinking' ? 80 : 50);
 
-        return () => clearInterval(interval);
-    }, []);
+        // Reset animation after rising phase
+        const resetTimeout = setTimeout(() => {
+            if (animationPhase === 'rising') {
+                setBlocks(initialBlocks);
+                setPhase('blinking');
+                currentIndex = 0;
+                animationPhase = 'blinking';
+            }
+        }, 5000);
 
+        return () => {
+            clearInterval(interval);
+            clearTimeout(resetTimeout);
+        };
+    }, [phase]);
+
+    if (phase === 'blinking') {
+        return (
+            <div className="absolute inset-0 opacity-20">
+                <div className="grid grid-cols-12 gap-4 h-full p-8">
+                    {blocks.map((block) => (
+                        <motion.div
+                            key={block.id}
+                            className={`relative border transition-all duration-200 ${block.active
+                                    ? 'border-white bg-white shadow-lg shadow-white/50'
+                                    : block.connected
+                                        ? 'border-gray-600 bg-gray-800'
+                                        : 'border-gray-800'
+                                }`}
+                            animate={{
+                                scale: block.active ? 1.3 : 1,
+                                opacity: block.active ? 1 : block.connected ? 0.7 : 0.2,
+                            }}
+                            transition={{ duration: 0.15 }}
+                        >
+                            {/* Connection line to next block */}
+                            {block.connected && block.id % gridSize !== gridSize - 1 && (
+                                <motion.div
+                                    className="absolute top-1/2 left-full w-4 h-0.5 bg-gray-500 -translate-y-1/2"
+                                    initial={{ scaleX: 0 }}
+                                    animate={{ scaleX: 1 }}
+                                    transition={{ duration: 0.2 }}
+                                />
+                            )}
+                        </motion.div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
+    // Rising phase - blocks on the right side
     return (
-        <div className="absolute inset-0 opacity-20">
-            <div className="grid grid-cols-12 gap-4 h-full p-8">
-                {blocks.map((block) => (
+        <div className="absolute right-0 top-0 bottom-0 w-64 overflow-hidden opacity-30">
+            {blocks.map((block) => {
+                const row = Math.floor(block.id / gridSize);
+                const col = block.id % gridSize;
+                const initialY = row * 60 + 100;
+                const x = col * 20;
+
+                return (
                     <motion.div
                         key={block.id}
-                        className={`relative border transition-all duration-300 ${block.active
-                            ? 'border-white bg-white shadow-lg shadow-white/50'
-                            : block.connected
-                                ? 'border-gray-600 bg-gray-800'
-                                : 'border-gray-800'
+                        className={`absolute w-12 h-12 border-2 rounded ${block.active
+                                ? 'border-white bg-white/20 shadow-lg shadow-white/30'
+                                : 'border-gray-600 bg-gray-800/50'
                             }`}
-                        animate={{
-                            scale: block.active ? 1.2 : 1,
-                            opacity: block.active ? 1 : block.connected ? 0.6 : 0.2,
+                        style={{
+                            left: `${x}px`,
+                            top: `${initialY + block.y}px`,
                         }}
-                        transition={{ duration: 0.2 }}
+                        animate={{
+                            scale: block.active ? 1.2 : [1, 1.05, 1],
+                            rotate: block.y < -100 ? [0, 5, -5, 0] : 0,
+                        }}
+                        transition={{
+                            scale: { duration: 0.3 },
+                            rotate: { duration: 2, repeat: Infinity },
+                        }}
                     >
-                        {/* Connection line to next block */}
-                        {block.connected && block.id % gridSize !== gridSize - 1 && (
-                            <div className="absolute top-1/2 left-full w-4 h-0.5 bg-gray-600 -translate-y-1/2" />
+                        {/* Chain connection */}
+                        {block.id > 0 && block.id % 3 === 0 && (
+                            <div className="absolute top-1/2 right-full w-8 h-0.5 bg-gray-600 -translate-y-1/2" />
                         )}
+
+                        {/* Block number */}
+                        <div className="absolute inset-0 flex items-center justify-center text-[8px] font-mono text-gray-400">
+                            {block.id}
+                        </div>
                     </motion.div>
-                ))}
-            </div>
+                );
+            })}
         </div>
     );
 }
