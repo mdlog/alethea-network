@@ -51,11 +51,13 @@ temp/
 
 # Exclude folders (separate repos and external dependencies)
 alethea-explorer/
-alethea-website/
 alethea-market/
 contracts/
 amm/
 linera-protocol/
+
+# Include alethea-website (main website for alethea.network)
+# alethea-website/ - REMOVED from exclusion
 
 # Include all documentation in docs folder
 !docs/**/*.md
