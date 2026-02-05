@@ -11,9 +11,7 @@ export default function Home() {
             <nav className="fixed top-0 left-0 right-0 bg-black border-b-2 border-white z-50">
                 <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-white flex items-center justify-center p-1.5">
-                            <Image src="/logo.png" alt="Alethea Network" width={48} height={48} className="w-full h-full object-contain" />
-                        </div>
+                        <Image src="/logo.png" alt="Alethea Network" width={48} height={48} className="object-contain" />
                         <div className="font-mono">
                             <div className="text-sm font-bold tracking-wider">ALETHEA</div>
                             <div className="text-xs text-gray-500">NETWORK</div>
@@ -195,9 +193,7 @@ export default function Home() {
                 <div className="max-w-7xl mx-auto">
                     <div className="flex flex-col md:flex-row justify-between items-center gap-6 font-mono text-sm">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-white flex items-center justify-center p-1.5">
-                                <Image src="/logo.png" alt="Alethea Network" width={40} height={40} className="w-full h-full object-contain" />
-                            </div>
+                            <Image src="/logo.png" alt="Alethea Network" width={40} height={40} className="object-contain" />
                             <span className="font-bold">ALETHEA_NETWORK</span>
                         </div>
                         <div className="flex items-center gap-8">
