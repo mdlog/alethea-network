@@ -81,12 +81,14 @@ export async function sendQueryReminder(options) {
         .header {
             padding: 32px 32px 24px 32px;
             border-bottom: 1px solid #f0f0f0;
+            text-align: center;
         }
         .logo { 
-            width: 32px; 
-            height: 32px; 
-            border-radius: 6px;
-            margin-bottom: 16px;
+            width: 64px; 
+            height: 64px; 
+            border-radius: 8px;
+            margin: 0 auto 16px auto;
+            display: block;
         }
         .title {
             font-size: 13px;
@@ -358,7 +360,7 @@ export async function sendWelcomeEmail(options) {
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; background-color: #f8f9fa; padding: 20px; }
         .container { max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
         .header { padding: 32px; text-align: center; border-bottom: 1px solid #f0f0f0; }
-        .logo { width: 32px; height: 32px; border-radius: 6px; margin-bottom: 16px; }
+        .logo { width: 64px; height: 64px; border-radius: 8px; margin: 0 auto 16px auto; display: block; }
         .content { padding: 32px; }
         .footer { padding: 24px; text-align: center; border-top: 1px solid #f0f0f0; font-size: 12px; color: #999; }
     </style>
