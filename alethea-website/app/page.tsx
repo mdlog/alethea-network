@@ -11,17 +11,17 @@ function PuzzleText({ text, className = '' }: { text: string; className?: string
     const letters = text.split('');
 
     useEffect(() => {
-        const timer = setTimeout(() => setAssembled(true), 100);
+        const timer = setTimeout(() => setAssembled(true), 50);
         return () => clearTimeout(timer);
     }, []);
 
     return (
         <div className={`relative ${className}`}>
             {letters.map((letter, index) => {
-                const randomX = assembled ? 0 : (Math.random() - 0.5) * 300;
-                const randomY = assembled ? 0 : (Math.random() - 0.5) * 300;
-                const randomRotate = assembled ? 0 : (Math.random() - 0.5) * 180;
-                const delay = index * 0.03;
+                const randomX = assembled ? 0 : (Math.random() - 0.5) * 200;
+                const randomY = assembled ? 0 : (Math.random() - 0.5) * 200;
+                const randomRotate = assembled ? 0 : (Math.random() - 0.5) * 90;
+                const delay = index * 0.02;
 
                 return (
                     <motion.span
@@ -32,7 +32,7 @@ function PuzzleText({ text, className = '' }: { text: string; className?: string
                             y: randomY,
                             rotate: randomRotate,
                             opacity: 0,
-                            scale: 0.5,
+                            scale: 0.3,
                         }}
                         animate={{
                             x: 0,
@@ -42,11 +42,11 @@ function PuzzleText({ text, className = '' }: { text: string; className?: string
                             scale: 1,
                         }}
                         transition={{
-                            duration: 0.8,
+                            duration: 0.6,
                             delay: delay,
                             type: 'spring',
-                            stiffness: 100,
-                            damping: 15,
+                            stiffness: 120,
+                            damping: 12,
                         }}
                     >
                         {letter === ' ' ? '\u00A0' : letter}
@@ -273,7 +273,7 @@ export default function Home() {
                     <motion.p
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.2 }}
+                        transition={{ delay: 1.5, duration: 0.6 }}
                         className="text-xl text-gray-400 mb-12 max-w-2xl font-mono leading-relaxed"
                     >
                         Committee-based consensus with reputation-weighted voting.
@@ -285,7 +285,7 @@ export default function Home() {
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.3 }}
+                        transition={{ delay: 1.8, duration: 0.6 }}
                         className="flex flex-col sm:flex-row gap-4"
                     >
                         <a
