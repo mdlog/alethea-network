@@ -115,9 +115,21 @@ linera-protocol/
 /CROSS_CHAIN_COMPARISON.md
 /alethea-architecture-complete.md
 
+# Exclude temporary/testing documentation
+/FAUCET_FIX_SUMMARY.md
+/FAUCET_QUICK_FIX.md
+/FAUCET_TEST_PLAN.md
+/FAUCET_TROUBLESHOOTING.md
+/VOTER_BALANCE_ANALYSIS.md
+/VOTERS_BALANCE_ANALYSIS.md
+/VOTERS_BALANCE_SUMMARY.md
+/TOKEN_INTEGRATION.md
+/SESSION_SUMMARY_*.md
+
 # Keep important files
 !README.md
 !CHANGELOG.md
+!PRODUCTION_DEPLOYMENT.md
 
 # Exclude image files
 *.png
