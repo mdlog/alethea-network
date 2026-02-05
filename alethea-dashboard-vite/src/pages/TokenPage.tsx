@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useLinera } from '../contexts/LineraContext';
+import { useToken } from '../contexts/TokenContext';
 import {
     Coins, RefreshCw, Loader2, Send, ArrowDownCircle,
     TrendingUp, Flame, Info, ExternalLink
 } from 'lucide-react';
-import TokenBalance from '../components/TokenBalance';
 import TransferToken from '../components/TransferToken';
 import TreasuryInfo from '../components/TreasuryInfo';
 import TokenFaucet from '../components/TokenFaucet';
@@ -26,11 +26,12 @@ interface TokenInfo {
 }
 
 export default function TokenPage() {
-    const { chainId, owner, status, executeAppChainQuery } = useLinera();
+    const { chainId, owner, status } = useLinera();
+    const { balance, refreshBalance } = useToken();
     const [tokenInfo, setTokenInfo] = useState<TokenInfo | null>(null);
-    const [balance, setBalance] = useState('0');
     const [loading, setLoading] = useState(true);
     const [showTransfer, setShowTransfer] = useState(false);
+
 
     const loadData = async () => {
         setLoading(true);
@@ -90,29 +91,10 @@ export default function TokenPage() {
                     }
                 }
 
-                // Load user balance from USER's chain (not token chain)
+                // Refresh balance from TokenContext (shared with header)
                 if (owner && chainId) {
-                    const userChainUrl = `${SERVICE_URL}/chains/${chainId}/applications/${TOKEN_APP_ID}`;
-                    const queryOwner = (owner.startsWith('0x') ? owner : `0x${owner}`).toLowerCase();
-
-                    console.log('🔍 TokenPage: Loading balance for', queryOwner, 'on chain', chainId);
-
-                    const balanceResponse = await fetch(userChainUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Bypass-Tunnel-Reminder': 'true' },
-                        body: JSON.stringify({
-                            // Updated query format for new token contract
-                            query: `query { balance(owner: "${queryOwner}") }`
-                        }),
-                    });
-
-                    if (balanceResponse.ok) {
-                        const balanceResult = await balanceResponse.json();
-                        console.log('📊 TokenPage balance response:', balanceResult);
-                        if (balanceResult.data?.balance) {
-                            setBalance(balanceResult.data.balance);
-                        }
-                    }
+                    console.log('🔍 TokenPage: Refreshing balance via TokenContext');
+                    await refreshBalance();
                 }
             }
 
@@ -133,9 +115,14 @@ export default function TokenPage() {
         }
     }, [status, owner]);
 
-    const formatAmount = (amount: string): string => {
-        const cleanAmount = amount.endsWith('.') ? amount.slice(0, -1) : amount;
-        const num = parseFloat(cleanAmount);
+    const formatAmount = (amount: string | number): string => {
+        let num: number;
+        if (typeof amount === 'string') {
+            const cleanAmount = amount.endsWith('.') ? amount.slice(0, -1) : amount;
+            num = parseFloat(cleanAmount);
+        } else {
+            num = amount;
+        }
         if (isNaN(num) || num === 0) return '0';
         if (num >= 1000000000) return `${(num / 1000000000).toFixed(2)}B`;
         if (num >= 1000000) return `${(num / 1000000).toFixed(2)}M`;
@@ -277,8 +264,8 @@ export default function TokenPage() {
                                 <div className="flex gap-2 sm:gap-3">
                                     <button
                                         onClick={() => setShowTransfer(true)}
-                                        disabled={parseFloat(balance) <= 0}
-                                        className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-sm transition-colors ${parseFloat(balance) > 0
+                                        disabled={balance <= 0}
+                                        className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-sm transition-colors ${balance > 0
                                             ? 'btn-primary'
                                             : 'bg-grey-50 text-grey-600 cursor-not-allowed'
                                             }`}
@@ -303,15 +290,15 @@ export default function TokenPage() {
                                 <div className="space-y-2 sm:space-y-3">
                                     <button
                                         onClick={() => setShowTransfer(true)}
-                                        disabled={parseFloat(balance) <= 0}
-                                        className={`w-full flex items-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-lg transition-colors text-left ${parseFloat(balance) > 0
+                                        disabled={balance <= 0}
+                                        className={`w-full flex items-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-lg transition-colors text-left ${balance > 0
                                             ? 'bg-grey-50 hover:bg-grey-100 border border-grey-100'
                                             : 'bg-grey-50 cursor-not-allowed opacity-50'
                                             }`}
                                     >
-                                        <Send className={`w-4 h-4 sm:w-5 sm:h-5 ${parseFloat(balance) > 0 ? 'text-alethea-600' : 'text-grey-600'}`} />
+                                        <Send className={`w-4 h-4 sm:w-5 sm:h-5 ${balance > 0 ? 'text-alethea-600' : 'text-grey-600'}`} />
                                         <div>
-                                            <p className={`text-sm font-medium ${parseFloat(balance) > 0 ? 'text-black' : 'text-grey-600'}`}>Transfer Tokens</p>
+                                            <p className={`text-sm font-medium ${balance > 0 ? 'text-black' : 'text-grey-600'}`}>Transfer Tokens</p>
                                             <p className="text-xs text-grey-600 hidden sm:block">Send tokens to another address</p>
                                         </div>
                                     </button>

@@ -13,7 +13,7 @@
 
 ### 🌐 Live Applications
 
-**[Dashboard](https://alethea.network)** • **[Explorer](https://alethea-explorer.vercel.app)**
+**[Dashboard](https://vote.alethea.network)** • **[Explorer](https://explorer.alethea.network)**
 
 </div>
 
@@ -280,7 +280,7 @@ cargo test
 ## Resources
 
 - **Dashboard:** [alethea-dashboard-vite/README.md](./alethea-dashboard-vite/README.md)
-- **Explorer:** [https://alethea-explorer.vercel.app](https://alethea-explorer.vercel.app)
+- **Explorer:** [https://explorer.alethea.network](https://explorer.alethea.network)
 - **Consumer SDK:** [alethea-contract/alethea-consumer-sdk/README.md](./alethea-contract/alethea-consumer-sdk/README.md)
 - **Changelog:** [CHANGELOG.md](./CHANGELOG.md)
 - **Linera Docs:** https://docs.linera.io
@@ -297,6 +297,6 @@ MIT License
 
 **Built on Linera Blockchain**
 
-[Dashboard](http://localhost:4002) • [Explorer](https://alethea-explorer.vercel.app) • [GitHub](https://github.com/mdlog/alethea-network) • [Contracts](./alethea-contract/)
+[Dashboard](https://vote.alethea.network) • [Explorer](https://explorer.alethea.network) • [GitHub](https://github.com/mdlog/alethea-network) • [Contracts](./alethea-contract/)
 
 </div>

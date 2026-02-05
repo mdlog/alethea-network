@@ -13,17 +13,26 @@ const execPromise = promisify(exec);
 const app = express();
 const PORT = 4003;
 
+// Linera service URL - configurable via environment variable
+// Default to localhost:8080 for local development
+// On production (nectiq.xyz), set LINERA_SERVICE_URL=https://evonft.xyz
+const LINERA_SERVICE_URL = process.env.LINERA_SERVICE_URL || 'http://localhost:8080';
+
 app.use(cors());
 app.use(express.json());
 
 // Health check
 app.get('/health', (req, res) => {
-    res.json({ status: 'ok', service: 'inbox-processor' });
+    res.json({
+        status: 'ok',
+        service: 'inbox-processor',
+        lineraServiceUrl: LINERA_SERVICE_URL
+    });
 });
 
 // Process inbox using curl command (most reliable - same as manual)
 async function processInboxWithCurl(chainId) {
-    const curlCommand = `curl -s -X POST http://localhost:8080 -H "Content-Type: application/json" -d '{"query": "mutation { processInbox(chainId: \\"${chainId}\\") }"}'`;
+    const curlCommand = `curl -s -X POST ${LINERA_SERVICE_URL} -H "Content-Type: application/json" -d '{"query": "mutation { processInbox(chainId: \\"${chainId}\\") }"}'`;
 
     console.log(`🔧 Executing: ${curlCommand}`);
 
@@ -139,13 +148,23 @@ app.post('/process-inbox-retry', async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
+// Listen on all interfaces (0.0.0.0) to allow access from other computers
+// Change to 'localhost' if you only want local access
+const HOST = process.env.INBOX_HOST || '0.0.0.0';
+
+app.listen(PORT, HOST, () => {
     console.log(`\n${'='.repeat(60)}`);
-    console.log(`🚀 Inbox Processor running on http://localhost:${PORT}`);
+    console.log(`🚀 Inbox Processor running on http://${HOST}:${PORT}`);
     console.log(`${'='.repeat(60)}`);
+    console.log(`\nConfiguration:`);
+    console.log(`  Linera Service: ${LINERA_SERVICE_URL}`);
+    console.log(`  Host: ${HOST === '0.0.0.0' ? 'Accessible from network' : 'Local only'}`);
     console.log(`\nEndpoints:`);
     console.log(`  POST /process-inbox        { chainId: "..." }`);
     console.log(`  POST /process-inbox-retry  { chainId: "...", maxRetries: 5, delayMs: 2000 }`);
     console.log(`  GET  /health`);
+    console.log(`\nEnvironment variables:`);
+    console.log(`  LINERA_SERVICE_URL - Set Linera service URL (default: http://localhost:8080)`);
+    console.log(`  INBOX_HOST - Set to 'localhost' to restrict to local only`);
     console.log(`\nWaiting for requests...\n`);
 });

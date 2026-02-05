@@ -58,10 +58,10 @@ export default function Header() {
                 color: 'bg-orange-100 text-orange-700 border-orange-200',
                 icon: (
                     <svg viewBox="0 0 40 40" className="w-3.5 h-3.5">
-                        <path fill="#E17726" d="M35.9 5L22.1 15.3l2.5-6L35.9 5z"/>
-                        <path fill="#E27625" d="M4.1 5l13.6 10.4-2.4-6L4.1 5zM31 27.3l-3.6 5.6 7.8 2.1 2.2-7.6-6.4-.1zM2.6 27.4l2.2 7.6 7.8-2.1-3.6-5.6-6.4.1z"/>
-                        <path fill="#E27625" d="M12.1 17.5l-2.2 3.3 7.7.3-.3-8.3-5.2 4.7zM27.9 17.5l-5.3-4.8-.2 8.4 7.7-.3-2.2-3.3zM12.6 32.9l4.7-2.3-4-3.2-.7 5.5zM22.7 30.6l4.7 2.3-.7-5.5-4 3.2z"/>
-                        <path fill="#F5841F" d="M35 21.1l-7.2-2.1 2.2 3.3-3.1 6.1 4.1-.1h6.1l-2.1-7.2zM12.2 19l-7.2 2.1-2.4 7.3h6.1l4.1.1-3.1-6.1 2.5-3.4zM22.4 21.1l.5-8.3 2.1-5.7H15l2.1 5.7.5 8.3.2 2.5v5.9h4.2l.1-5.9.3-2.5z"/>
+                        <path fill="#E17726" d="M35.9 5L22.1 15.3l2.5-6L35.9 5z" />
+                        <path fill="#E27625" d="M4.1 5l13.6 10.4-2.4-6L4.1 5zM31 27.3l-3.6 5.6 7.8 2.1 2.2-7.6-6.4-.1zM2.6 27.4l2.2 7.6 7.8-2.1-3.6-5.6-6.4.1z" />
+                        <path fill="#E27625" d="M12.1 17.5l-2.2 3.3 7.7.3-.3-8.3-5.2 4.7zM27.9 17.5l-5.3-4.8-.2 8.4 7.7-.3-2.2-3.3zM12.6 32.9l4.7-2.3-4-3.2-.7 5.5zM22.7 30.6l4.7 2.3-.7-5.5-4 3.2z" />
+                        <path fill="#F5841F" d="M35 21.1l-7.2-2.1 2.2 3.3-3.1 6.1 4.1-.1h6.1l-2.1-7.2zM12.2 19l-7.2 2.1-2.4 7.3h6.1l4.1.1-3.1-6.1 2.5-3.4zM22.4 21.1l.5-8.3 2.1-5.7H15l2.1 5.7.5 8.3.2 2.5v5.9h4.2l.1-5.9.3-2.5z" />
                     </svg>
                 ),
             };
@@ -78,7 +78,7 @@ export default function Header() {
     return (
         <>
             <header className="sticky top-0 z-50 bg-white border-b border-grey-100">
-                <div className="container mx-auto px-2 sm:px-4">
+                <div className="w-full max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
                     <div className="flex items-center justify-between h-14 sm:h-16">
                         {/* Logo */}
                         <Link to="/" className="flex items-center gap-1.5 sm:gap-2 md:gap-3 group flex-shrink-0">
@@ -95,11 +95,10 @@ export default function Header() {
                                 <Link
                                     key={link.path}
                                     to={link.path}
-                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-1.5 ${
-                                        isActive(link.path)
+                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-1.5 ${isActive(link.path)
                                             ? 'text-alethea-600 bg-alethea-50'
                                             : 'text-grey-700 hover:text-black hover:bg-grey-50'
-                                    }`}
+                                        }`}
                                 >
                                     {link.icon}
                                     {link.label}
@@ -127,9 +126,9 @@ export default function Header() {
                                         {/* Wallet Type Indicator */}
                                         {walletType === 'metamask' ? (
                                             <svg viewBox="0 0 40 40" className="w-3.5 h-3.5 sm:w-4 sm:h-4">
-                                                <path fill="#E17726" d="M35.9 5L22.1 15.3l2.5-6L35.9 5z"/>
-                                                <path fill="#E27625" d="M4.1 5l13.6 10.4-2.4-6L4.1 5z"/>
-                                                <path fill="#F5841F" d="M35 21.1l-7.2-2.1 2.2 3.3-3.1 6.1 4.1-.1h6.1l-2.1-7.2zM12.2 19l-7.2 2.1-2.4 7.3h6.1l4.1.1-3.1-6.1 2.5-3.4z"/>
+                                                <path fill="#E17726" d="M35.9 5L22.1 15.3l2.5-6L35.9 5z" />
+                                                <path fill="#E27625" d="M4.1 5l13.6 10.4-2.4-6L4.1 5z" />
+                                                <path fill="#F5841F" d="M35 21.1l-7.2-2.1 2.2 3.3-3.1 6.1 4.1-.1h6.1l-2.1-7.2zM12.2 19l-7.2 2.1-2.4 7.3h6.1l4.1.1-3.1-6.1 2.5-3.4z" />
                                             </svg>
                                         ) : (
                                             <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-500" />
@@ -271,11 +270,10 @@ export default function Header() {
                                         key={link.path}
                                         to={link.path}
                                         onClick={() => setMobileMenuOpen(false)}
-                                        className={`mx-1 px-3 py-2.5 sm:py-3 rounded-md sm:rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
-                                            isActive(link.path)
+                                        className={`mx-1 px-3 py-2.5 sm:py-3 rounded-md sm:rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 flex items-center gap-2 ${isActive(link.path)
                                                 ? 'text-alethea-600 bg-alethea-50 border-l-2 border-alethea-500'
                                                 : 'text-grey-700 hover:text-black hover:bg-grey-50'
-                                        }`}
+                                            }`}
                                     >
                                         {link.icon && <span className="w-4 h-4">{link.icon}</span>}
                                         {link.label}

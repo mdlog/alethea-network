@@ -1,10 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useLinera } from '../contexts/LineraContext';
+import { useToken } from '../contexts/TokenContext';
 import { Coins, RefreshCw, Loader2 } from 'lucide-react';
 
 const TOKEN_APP_ID = import.meta.env.VITE_TOKEN_APP_ID || '';
-// Use relative URL for Vite proxy, or explicit URL if set
-const SERVICE_URL = import.meta.env.VITE_SERVICE_URL || '';
 
 interface TokenBalanceProps {
     showRefresh?: boolean;
@@ -13,74 +12,31 @@ interface TokenBalanceProps {
 
 export default function TokenBalance({ showRefresh = true, compact = false }: TokenBalanceProps) {
     const { chainId, owner, status } = useLinera();
-    const [balance, setBalance] = useState<string>('0');
-    const [loading, setLoading] = useState(false);
+    const { balance, refreshBalance, loading } = useToken();
     const tokenSymbol = 'ALTH'; // Fixed symbol for Alethea Token
 
-    const loadBalance = async () => {
-        if (!TOKEN_APP_ID || !owner || !chainId) return;
-
-        setLoading(true);
-        try {
-            // Linera standard: query on USER's chain, not token chain
-            const graphqlUrl = `${SERVICE_URL}/chains/${chainId}/applications/${TOKEN_APP_ID}`;
-
-            // LINERA STANDARD: Use owner address (AccountOwner)
-            const queryOwner = (owner.startsWith('0x') ? owner : `0x${owner}`).toLowerCase();
-            console.log('🔍 TokenBalance: Loading balance for owner:', queryOwner);
-
-            // Simple balance query - tokenInfo may not exist in all token contracts
-            const response = await fetch(graphqlUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Bypass-Tunnel-Reminder': 'true' },
-                body: JSON.stringify({
-                    query: `{ balance(owner: "${queryOwner}") }`
-                }),
-            });
-
-            if (response.ok) {
-                const result = await response.json();
-                console.log('📊 TokenBalance: Balance response:', result);
-
-                if (result.errors) {
-                    console.error('❌ TokenBalance: GraphQL errors:', result.errors);
-                }
-
-                if (result.data) {
-                    const balanceValue = result.data.balance || '0';
-                    console.log('💰 TokenBalance: Setting balance to:', balanceValue);
-                    setBalance(balanceValue);
-                }
-            } else {
-                console.error('❌ TokenBalance: HTTP error:', response.status);
-            }
-        } catch (err) {
-            console.error('Failed to load token balance:', err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
+    // Load balance on mount and refresh periodically
     useEffect(() => {
         if (status === 'Ready' && owner && chainId) {
-            loadBalance();
+            console.log('🔍 TokenBalance: Initial load for owner:', owner);
+            refreshBalance();
+
             // Auto-refresh every 30 seconds
             const interval = setInterval(() => {
-                loadBalance();
+                console.log('🔄 TokenBalance: Auto-refresh');
+                refreshBalance();
             }, 30000);
             return () => clearInterval(interval);
         }
-    }, [status, owner, chainId]);
+    }, [status, owner, chainId, refreshBalance]);
 
 
 
-    const formatBalance = (bal: string): string => {
-        const cleanBal = bal.endsWith('.') ? bal.slice(0, -1) : bal;
-        const num = parseFloat(cleanBal);
-        if (isNaN(num) || num === 0) return '0';
-        if (num >= 1000000) return `${(num / 1000000).toFixed(2)}M`;
-        if (num >= 1000) return `${(num / 1000).toFixed(2)}K`;
-        return num.toFixed(2);
+    const formatBalance = (bal: number): string => {
+        if (isNaN(bal) || bal === 0) return '0';
+        if (bal >= 1000000) return `${(bal / 1000000).toFixed(2)}M`;
+        if (bal >= 1000) return `${(bal / 1000).toFixed(2)}K`;
+        return bal.toFixed(2);
     };
 
     if (!TOKEN_APP_ID) {
@@ -118,7 +74,7 @@ export default function TokenBalance({ showRefresh = true, compact = false }: To
                 </div>
                 {showRefresh && (
                     <button
-                        onClick={loadBalance}
+                        onClick={refreshBalance}
                         disabled={loading}
                         className="p-2 hover:bg-grey-50 rounded-lg transition-colors"
                     >

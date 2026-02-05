@@ -13,6 +13,7 @@ import {
 const TOKEN_APP_ID = import.meta.env.VITE_TOKEN_APP_ID || '';
 const TOKEN_CHAIN_ID = import.meta.env.VITE_TOKEN_CHAIN_ID || import.meta.env.VITE_CHAIN_ID;
 const SERVICE_URL = import.meta.env.VITE_SERVICE_URL || '';
+const INBOX_PROCESSOR_URL = import.meta.env.VITE_INBOX_PROCESSOR_URL || '';
 // Treasury owner is the admin that holds the initial token supply
 // Conway Testnet Deployment (2026-01-31)
 const TREASURY_OWNER = import.meta.env.VITE_ADMIN_OWNER || '0xf53bade3e76939a3ede4a22993d877fdbabe5394b98a6b83cdfbac9f317e6ca7';
@@ -177,36 +178,40 @@ export default function TokenFaucet({ onSuccess }: TokenFaucetProps) {
             console.log('✅ Transfer initiated from treasury!');
 
             // STEP 2: Wait for cross-chain message to propagate
-            setStep('Waiting for cross-chain message (5s)...');
-            await new Promise(resolve => setTimeout(resolve, 5000));
+            setStep('Waiting for cross-chain message (8s)...');
+            await new Promise(resolve => setTimeout(resolve, 8000));
 
-            // STEP 3: Process inbox on user chain via backend service
-            // Call multiple times to ensure message is received
+            // STEP 3: Process inbox on user chain via multiple methods
             setStep('Processing inbox...');
             console.log('📥 Processing inbox for user chain:', chainId);
 
             let inboxSuccess = false;
 
-            // Try backend inbox processor via Vite proxy (avoids CORS)
-            for (let i = 0; i < 3; i++) {
-                try {
-                    console.log(`📥 Inbox attempt ${i + 1}/3...`);
-                    setStep(`Processing inbox (attempt ${i + 1}/3)...`);
+            // Method 1: Try backend inbox processor with more retries
+            const inboxEndpoint = INBOX_PROCESSOR_URL
+                ? `${INBOX_PROCESSOR_URL}/process-inbox-retry`
+                : '/process-inbox-retry';
 
-                    const inboxResponse = await fetch('/process-inbox-retry', {
+            console.log('📥 Using inbox endpoint:', inboxEndpoint);
+
+            for (let i = 0; i < 5; i++) {
+                try {
+                    console.log(`📥 Inbox attempt ${i + 1}/5...`);
+                    setStep(`Processing inbox (attempt ${i + 1}/5)...`);
+
+                    const inboxResponse = await fetch(inboxEndpoint, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             chainId: chainId,
-                            maxRetries: 3,
-                            delayMs: 2000
+                            maxRetries: 5,
+                            delayMs: 3000
                         }),
                     });
                     const inboxResult = await inboxResponse.json();
                     console.log('📥 Backend inbox result:', inboxResult);
 
                     if (inboxResult.success) {
-                        // Check if there were messages processed
                         const processed = inboxResult.data?.processInbox;
                         if (processed && processed.length > 0) {
                             console.log('✅ Messages processed:', processed.length);
@@ -214,17 +219,45 @@ export default function TokenFaucet({ onSuccess }: TokenFaucetProps) {
                             break;
                         } else {
                             console.log('⏳ No messages yet, waiting...');
-                            await new Promise(resolve => setTimeout(resolve, 3000));
+                            await new Promise(resolve => setTimeout(resolve, 4000));
                         }
                     }
                 } catch (backendErr) {
                     console.warn('⚠️ Backend inbox processor error:', backendErr);
-                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    await new Promise(resolve => setTimeout(resolve, 3000));
+                }
+            }
+
+            // Method 2: Try direct HTTP inbox processing via Linera service
+            if (!inboxSuccess) {
+                console.log('📥 Trying direct HTTP inbox processing...');
+                setStep('Trying alternative inbox processing...');
+
+                try {
+                    const directInboxUrl = `${SERVICE_URL}/chains/${chainId}/applications/${TOKEN_APP_ID}`;
+                    const inboxMutation = `mutation { processInbox }`;
+
+                    const directResponse = await fetch(directInboxUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Bypass-Tunnel-Reminder': 'true' },
+                        body: JSON.stringify({ query: inboxMutation }),
+                    });
+
+                    if (directResponse.ok) {
+                        const directResult = await directResponse.json();
+                        console.log('📥 Direct HTTP inbox result:', directResult);
+                        if (directResult.data?.processInbox) {
+                            inboxSuccess = true;
+                        }
+                    }
+                } catch (directErr) {
+                    console.warn('⚠️ Direct HTTP inbox failed:', directErr);
                 }
             }
 
             if (!inboxSuccess) {
-                console.log('⚠️ Inbox may need manual processing. Click Refresh Balance.');
+                console.log('⚠️ Inbox processing may have failed. Validators might be experiencing issues.');
+                console.log('⚠️ Token transfer was sent - click Refresh Balance to receive tokens.');
             }
 
             // STEP 4: Receive tokens via WASM query
@@ -361,6 +394,7 @@ export default function TokenFaucet({ onSuccess }: TokenFaucetProps) {
                     <div className="text-sm text-emerald-700">
                         <p className="font-medium">Tokens sent!</p>
                         <p className="text-xs mt-1 text-emerald-600">Click "Refresh Balance" to receive {MINT_AMOUNT} ALTH.</p>
+                        <p className="text-xs mt-1 text-emerald-500">If balance shows 0, wait 1-2 minutes and refresh again.</p>
                     </div>
                 </div>
             )}
@@ -418,19 +452,41 @@ export default function TokenFaucet({ onSuccess }: TokenFaucetProps) {
                         <p className="font-mono text-[10px] break-all bg-white p-1 rounded border border-grey-100 text-grey-600">
                             {owner || 'Not connected'}
                         </p>
+                        <p><strong className="text-grey-700">Inbox Processor:</strong></p>
+                        <p className="font-mono text-[10px] break-all bg-white p-1 rounded border border-grey-100 text-grey-600">
+                            {INBOX_PROCESSOR_URL || 'Local (Vite proxy)'}
+                        </p>
                         <button
                             onClick={async () => {
                                 if (!chainId) return;
                                 setStep('Force processing inbox...');
                                 try {
-                                    // Direct HTTP call to process inbox
-                                    const resp = await fetch('/inbox', {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({
-                                            query: `mutation { processInbox(chainId: "${chainId}") }`
-                                        })
-                                    });
+                                    // Use INBOX_PROCESSOR_URL if set, otherwise use Vite proxy
+                                    const inboxEndpoint = INBOX_PROCESSOR_URL
+                                        ? `${INBOX_PROCESSOR_URL}/process-inbox`
+                                        : '/inbox';
+
+                                    console.log('📥 Force processing via:', inboxEndpoint);
+
+                                    let resp;
+                                    if (INBOX_PROCESSOR_URL) {
+                                        // Direct call to inbox processor
+                                        resp = await fetch(inboxEndpoint, {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ chainId })
+                                        });
+                                    } else {
+                                        // Via Vite proxy to Linera service
+                                        resp = await fetch(inboxEndpoint, {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({
+                                                query: `mutation { processInbox(chainId: "${chainId}") }`
+                                            })
+                                        });
+                                    }
+
                                     const result = await resp.json();
                                     console.log('📥 Force inbox result:', result);
                                     alert('Inbox processed! Check console for details. Result: ' + JSON.stringify(result));

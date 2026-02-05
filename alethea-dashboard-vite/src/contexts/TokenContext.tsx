@@ -246,8 +246,13 @@ export const TokenProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     // Refresh balance for current user - query on user's chain with owner
     const refreshBalance = useCallback(async () => {
         if (owner && chainId) {
-            // LINERA STANDARD: Use owner address (AccountOwner)
-            await loadBalance(owner);
+            setLoading(true);
+            try {
+                // LINERA STANDARD: Use owner address (AccountOwner)
+                await loadBalance(owner);
+            } finally {
+                setLoading(false);
+            }
         }
     }, [owner, chainId, loadBalance]);
 

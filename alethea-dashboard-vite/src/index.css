@@ -72,6 +72,7 @@ body {
    ======================================== */
 
 @layer components {
+
     /* Card Styles - Clean, minimal */
     .card {
         @apply bg-white rounded-xl border border-grey-100;
@@ -214,6 +215,7 @@ body {
    ======================================== */
 
 @layer utilities {
+
     /* Hide scrollbar but keep functionality */
     .no-scrollbar {
         -ms-overflow-style: none;
@@ -222,6 +224,14 @@ body {
 
     .no-scrollbar::-webkit-scrollbar {
         display: none;
+    }
+
+    /* Standard content width */
+    .content-width {
+        width: 100%;
+        max-width: 1280px;
+        margin-left: auto;
+        margin-right: auto;
     }
 
     /* Truncate text with ellipsis */
@@ -262,6 +272,7 @@ body {
         opacity: 0;
         transform: scale(0.98);
     }
+
     100% {
         opacity: 1;
         transform: scale(1);
@@ -296,14 +307,16 @@ body {
 
 /* Touch-friendly styles */
 @media (hover: none) and (pointer: coarse) {
+
     .btn-primary,
     .btn-secondary,
     .btn-ghost {
         min-height: 44px;
     }
-    
+
     /* Better tap targets */
-    button, a {
+    button,
+    a {
         min-height: 40px;
     }
 }
@@ -313,7 +326,7 @@ body {
     header {
         padding-top: env(safe-area-inset-top);
     }
-    
+
     footer {
         padding-bottom: env(safe-area-inset-bottom);
     }

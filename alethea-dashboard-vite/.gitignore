@@ -7,6 +7,9 @@ dist/
 # Environment files
 .env.local
 .env.*.local
+.env.reminder
+
+# IMPORTANT: Never commit email credentials!
 
 # IDE
 .vscode/

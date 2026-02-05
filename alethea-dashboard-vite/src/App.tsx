@@ -12,7 +12,7 @@ function App() {
     return (
         <div className="flex flex-col min-h-screen bg-white">
             <Header />
-            <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 md:py-8 flex-1">
+            <main className="w-full max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 md:py-8 flex-1">
                 <Routes>
                     <Route path="/" element={<HomePage />} />
                     <Route path="/voters" element={<VotersPage />} />

@@ -8,15 +8,22 @@
         "build": "vite build",
         "preview": "vite preview",
         "inbox": "node server/inbox-processor.js",
-        "dev:all": "concurrently \"npm run dev\" \"npm run inbox\""
+        "reminder": "node server/reminder-api.js",
+        "test:email": "node server/test-email.js",
+        "test:email:debug": "node server/test-email-debug.js",
+        "test:reminders": "node server/send-test-reminders.js",
+        "check:dns": "node server/check-dns.js",
+        "dev:all": "concurrently \"npm run dev\" \"npm run inbox\" \"npm run reminder\""
     },
     "dependencies": {
         "@linera/client": "0.15.6",
         "@linera/signer": "0.15.6",
         "cors": "^2.8.5",
+        "dotenv": "^16.4.5",
         "ethers": "^6.13.0",
         "express": "^4.22.1",
         "lucide-react": "^0.556.0",
+        "nodemailer": "^6.9.8",
         "react": "^19.2.1",
         "react-dom": "^19.2.1",
         "react-router-dom": "^7.1.0",
@@ -24,6 +31,7 @@
     },
     "devDependencies": {
         "@types/node": "^22.19.2",
+        "@types/nodemailer": "^6.4.14",
         "@types/react": "^19.0.0",
         "@types/react-dom": "^19.0.0",
         "@vitejs/plugin-react": "^5.0.0",

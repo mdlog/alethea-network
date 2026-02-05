@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import VoteModal from '../components/VoteModal';
 import QueryDetailModal from '../components/QueryDetailModal';
 import HeroSlider from '../components/HeroSlider';
+import ReminderModal from '../components/ReminderModal';
 
 interface Stats {
     totalVoters: number;
@@ -60,6 +61,7 @@ export default function HomePage() {
     const [loading, setLoading] = useState(true);
     const [selectedQuery, setSelectedQuery] = useState<Query | null>(null);
     const [detailQueryId, setDetailQueryId] = useState<string | null>(null);
+    const [reminderQuery, setReminderQuery] = useState<Query | null>(null);
     const [activeTab, setActiveTab] = useState<'active' | 'upcoming' | 'past'>('active');
     const [pastPage, setPastPage] = useState(1);
     const [, setTick] = useState(0);
@@ -223,11 +225,15 @@ export default function HomePage() {
                                         Past ({pastQueries.length})
                                     </button>
                                 </div>
-                                <Link to="/queries" className="text-alethea-600 hover:text-alethea-700 text-xs sm:text-sm flex items-center gap-1 self-end sm:self-auto">
+                                <button
+                                    onClick={() => activeQueries.length > 0 && setReminderQuery(activeQueries[0])}
+                                    className="text-alethea-600 hover:text-alethea-700 text-xs sm:text-sm flex items-center gap-1 self-end sm:self-auto disabled:opacity-50 disabled:cursor-not-allowed"
+                                    disabled={activeQueries.length === 0}
+                                >
                                     <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                                     <span className="hidden sm:inline">Remind me</span>
                                     <span className="sm:hidden">Remind</span>
-                                </Link>
+                                </button>
                             </div>
 
                             {/* Phase Summary Bar - only show for active tab */}
@@ -397,6 +403,16 @@ export default function HomePage() {
                 <QueryDetailModal
                     queryId={detailQueryId}
                     onClose={() => setDetailQueryId(null)}
+                />
+            )}
+
+            {/* Reminder Modal */}
+            {reminderQuery && (
+                <ReminderModal
+                    isOpen={true}
+                    onClose={() => setReminderQuery(null)}
+                    queryId={reminderQuery.id}
+                    queryDescription={reminderQuery.description}
                 />
             )}
         </div>
