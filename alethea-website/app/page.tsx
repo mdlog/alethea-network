@@ -254,9 +254,17 @@ export default function Home() {
                         <h1 className="text-7xl md:text-8xl font-black tracking-tighter leading-none mb-4">
                             <PuzzleText text="DECENTRALIZED" />
                             <br />
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-gray-400 to-white">
+                            <motion.span
+                                className="text-white"
+                                animate={{
+                                    backgroundImage: ['linear-gradient(to right, white, white)', 'linear-gradient(to right, white, rgb(156, 163, 175), white)'],
+                                    WebkitBackgroundClip: ['text', 'text'],
+                                    WebkitTextFillColor: ['white', 'transparent'],
+                                }}
+                                transition={{ delay: 0.8, duration: 0.5 }}
+                            >
                                 <PuzzleText text="ORACLE" />
-                            </span>
+                            </motion.span>
                         </h1>
                         <motion.div
                             className="flex items-center gap-4 text-2xl font-mono"
@@ -265,7 +273,7 @@ export default function Home() {
                             transition={{ delay: 1.2, duration: 0.6 }}
                         >
                             <div className="w-12 h-1 bg-white" />
-                            <PuzzleText text="FOR LINERA PROTOCOL" className="text-gray-400" />
+                            <span className="text-gray-400">FOR LINERA PROTOCOL</span>
                         </motion.div>
                     </div>
 
