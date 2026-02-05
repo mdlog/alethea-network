@@ -235,8 +235,13 @@ export default function Home() {
 
             {/* Hero - Bold & Geometric */}
             <section className="pt-32 pb-20 px-6 relative overflow-hidden">
-                {/* Animated Blockchain Grid Background */}
-                <BlockchainGrid />
+                {/* Simple Grid Background */}
+                <div className="absolute inset-0 opacity-5">
+                    <div className="absolute inset-0" style={{
+                        backgroundImage: 'linear-gradient(white 1px, transparent 1px), linear-gradient(90deg, white 1px, transparent 1px)',
+                        backgroundSize: '50px 50px'
+                    }} />
+                </div>
 
                 <div className="max-w-6xl mx-auto relative z-10">
                     {/* Status Badge */}
