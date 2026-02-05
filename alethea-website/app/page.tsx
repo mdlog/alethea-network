@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Github, Shield, Zap, Users, Circle } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
+import { BlockchainVisualization } from './components/BlockchainVisualization';
 
 // Puzzle Text Animation Component
 function PuzzleText({ text, className = '' }: { text: string; className?: string }) {
@@ -235,13 +236,8 @@ export default function Home() {
 
             {/* Hero - Bold & Geometric */}
             <section className="pt-32 pb-20 px-6 relative overflow-hidden">
-                {/* Simple Grid Background */}
-                <div className="absolute inset-0 opacity-5">
-                    <div className="absolute inset-0" style={{
-                        backgroundImage: 'linear-gradient(white 1px, transparent 1px), linear-gradient(90deg, white 1px, transparent 1px)',
-                        backgroundSize: '50px 50px'
-                    }} />
-                </div>
+                {/* Blockchain Visualization Background */}
+                <BlockchainVisualization />
 
                 <div className="max-w-6xl mx-auto relative z-10">
                     {/* Status Badge */}
