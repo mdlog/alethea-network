@@ -3,6 +3,79 @@
 import { motion } from 'framer-motion';
 import { ArrowRight, Github, Shield, Zap, Users, Circle } from 'lucide-react';
 import Image from 'next/image';
+import { useEffect, useState } from 'react';
+
+// Blockchain Animation Component
+function BlockchainGrid() {
+    const [blocks, setBlocks] = useState<{ id: number; active: boolean; connected: boolean }[]>([]);
+    const gridSize = 12; // 12x8 grid
+    const gridHeight = 8;
+
+    useEffect(() => {
+        // Initialize blocks
+        const initialBlocks = Array.from({ length: gridSize * gridHeight }, (_, i) => ({
+            id: i,
+            active: false,
+            connected: false,
+        }));
+        setBlocks(initialBlocks);
+
+        // Animation sequence
+        let currentIndex = 0;
+        const interval = setInterval(() => {
+            setBlocks(prev => {
+                const newBlocks = [...prev];
+
+                // Deactivate previous block
+                if (currentIndex > 0) {
+                    newBlocks[currentIndex - 1] = { ...newBlocks[currentIndex - 1], active: false, connected: true };
+                }
+
+                // Activate current block
+                if (currentIndex < newBlocks.length) {
+                    newBlocks[currentIndex] = { ...newBlocks[currentIndex], active: true, connected: false };
+                    currentIndex++;
+                } else {
+                    // Reset animation
+                    currentIndex = 0;
+                    return initialBlocks;
+                }
+
+                return newBlocks;
+            });
+        }, 100); // Blink every 100ms
+
+        return () => clearInterval(interval);
+    }, []);
+
+    return (
+        <div className="absolute inset-0 opacity-20">
+            <div className="grid grid-cols-12 gap-4 h-full p-8">
+                {blocks.map((block) => (
+                    <motion.div
+                        key={block.id}
+                        className={`relative border transition-all duration-300 ${block.active
+                            ? 'border-white bg-white shadow-lg shadow-white/50'
+                            : block.connected
+                                ? 'border-gray-600 bg-gray-800'
+                                : 'border-gray-800'
+                            }`}
+                        animate={{
+                            scale: block.active ? 1.2 : 1,
+                            opacity: block.active ? 1 : block.connected ? 0.6 : 0.2,
+                        }}
+                        transition={{ duration: 0.2 }}
+                    >
+                        {/* Connection line to next block */}
+                        {block.connected && block.id % gridSize !== gridSize - 1 && (
+                            <div className="absolute top-1/2 left-full w-4 h-0.5 bg-gray-600 -translate-y-1/2" />
+                        )}
+                    </motion.div>
+                ))}
+            </div>
+        </div>
+    );
+}
 
 export default function Home() {
     return (
@@ -30,15 +103,10 @@ export default function Home() {
 
             {/* Hero - Bold & Geometric */}
             <section className="pt-32 pb-20 px-6 relative overflow-hidden">
-                {/* Grid Background */}
-                <div className="absolute inset-0 opacity-10">
-                    <div className="absolute inset-0" style={{
-                        backgroundImage: 'linear-gradient(white 1px, transparent 1px), linear-gradient(90deg, white 1px, transparent 1px)',
-                        backgroundSize: '50px 50px'
-                    }} />
-                </div>
+                {/* Animated Blockchain Grid Background */}
+                <BlockchainGrid />
 
-                <div className="max-w-6xl mx-auto relative">
+                <div className="max-w-6xl mx-auto relative z-10">
                     {/* Status Badge */}
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
