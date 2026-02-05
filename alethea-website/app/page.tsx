@@ -136,12 +136,12 @@ ercase tracking-wider">Smart Contracts</div>
             </motion.div>
         </div>
 
-                    {/* Overlay for better text readability */ }
+                    {/* Overlay for better text readability */}
     <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/60" />
-                </div >
+                </div>
 
-        {/* Content - Centered */ }
-        < div className = "relative w-full px-6 py-24" style = {{ zIndex: 1 }
+        {/* Content - Centered */}
+        <div className="relative w-full px-6 py-24" style={{ zIndex: 1 }
 }>
                     <div className="max-w-6xl mx-auto text-center">
                         {/* Badge */}
@@ -228,32 +228,32 @@ ercase tracking-wider">Smart Contracts</div>
                                 <Code className="w-4 h-4 text-purple-400" />
                                 <span>3 Smart Contracts</span>
                             </div>
-                        </motion.div >
-                    </div >
-                </div >
+                        </motion.div>
+                    </div>
+                </div>
 
-    {/* Scroll Indicator */ }
-    < motion.div
+    {/* Scroll Indicator */}
+    <motion.div
 className = "absolute bottom-12 left-1/2 -translate-x-1/2"
-initial = {{ opacity: 0, y: -10 }}
-animate = {{ opacity: 1, y: 0 }}
-transition = {{ duration: 0.8, delay: 1, repeat: Infinity, repeatType: "reverse" }}
+initial={{ opacity: 0, y: -10 }}
+animate={{ opacity: 1, y: 0 }}
+transition={{ duration: 0.8, delay: 1, repeat: Infinity, repeatType: "reverse" }}
 style = {{ zIndex: 2 }}
                 >
     <div className="flex flex-col items-center gap-2 text-gray-500">
         <span className="text-xs tracking-wider">Scroll to explore</span>
         <ArrowRight className="w-5 h-5 rotate-90" />
     </div>
-                </motion.div >
-            </section >
+                </motion.div>
+            </section>
 
-    {/* Section Divider */ }
-    < div className = "h-px bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent max-w-4xl mx-auto" />
+    {/* Section Divider */}
+    <div className="h-px bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent max-w-4xl mx-auto" />
 
-        {/* What is Alethea Section - Diagonal Split */ }
-        < section className = "py-24 px-6 relative overflow-hidden" style = {{ zIndex: 10 }}>
+        {/* What is Alethea Section - Diagonal Split */}
+        <section className="py-24 px-6 relative overflow-hidden" style={{ zIndex: 10 }}>
             <div className="absolute inset-0 bg-black/95" style={{ zIndex: -1 }} />
-{/* Diagonal divider */ }
+{/* Diagonal divider */}
                 <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-cyan-500/5 via-transparent to-purple-500/5 transform -skew-y-3" />
 
                 <div className="max-w-7xl mx-auto relative">
@@ -291,13 +291,13 @@ style = {{ zIndex: 2 }}
                         </motion.div>
                     </div>
                 </div>
-            </section >
+            </section>
 
-    {/* Section Divider */ }
-    < div className = "h-px bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent max-w-4xl mx-auto" />
+    {/* Section Divider */}
+    <div className="h-px bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent max-w-4xl mx-auto" />
 
-        {/* Core Features - Bento Grid Layout */ }
-        < section id = "features" className = "py-24 px-6 relative overflow-hidden" style = {{ zIndex: 10 }}>
+        {/* Core Features - Bento Grid Layout */}
+        < section id="features" className="py-24 px-6 relative overflow-hidden" style={{ zIndex: 10 }}>
                 <div className="absolute inset-0 bg-gradient-to-b from-black/90 to-gray-900/90" style={{ zIndex: 0 }} />
                 <DynamicChainAnimation />
                 <div className="max-w-7xl mx-auto relative" style={{ zIndex: 2 }}>
@@ -373,15 +373,15 @@ style = {{ zIndex: 2 }}
                         />
                     </div>
                 </div>
-            </section >
+            </section>
 
-    {/* Section Divider */ }
-    < div className = "h-px bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent max-w-4xl mx-auto" />
+    {/* Section Divider */}
+    <div className="h-px bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent max-w-4xl mx-auto" />
 
-        {/* Technology - Zigzag Layout */ }
-        < section id = "technology" className = "py-24 px-6 relative overflow-hidden" style = {{ zIndex: 10 }}>
+        {/* Technology - Zigzag Layout */}
+        < section id="technology" className="py-24 px-6 relative overflow-hidden" style={{ zIndex: 10 }}>
             <div className="absolute inset-0 bg-gray-900/90" style={{ zIndex: 0 }} />
-{/* Diagonal accent */ }
+{/* Diagonal accent */}
                 <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-tr from-cyan-500/5 to-transparent transform skew-y-3" />
                 <DynamicChainAnimation />
 
@@ -446,15 +446,15 @@ style = {{ zIndex: 2 }}
                         </div>
                     </div>
                 </div>
-            </section >
+            </section>
 
-    {/* Section Divider */ }
-    < div className = "h-px bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent max-w-4xl mx-auto" />
+    {/* Section Divider */}
+    <div className="h-px bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent max-w-4xl mx-auto" />
 
-        {/* Use Cases - Masonry/Pinterest Layout */ }
-        < section className = "py-24 px-6 relative overflow-hidden" style = {{ zIndex: 10 }}>
+        {/* Use Cases - Masonry/Pinterest Layout */}
+        <section className="py-24 px-6 relative overflow-hidden" style={{ zIndex: 10 }}>
             <div className="absolute inset-0 bg-black/90" style={{ zIndex: 0 }} />
-{/* Circular gradient accent */ }
+{/* Circular gradient accent */}
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-radial from-cyan-500/10 to-transparent rounded-full blur-3xl" />
                 <DynamicChainAnimation />
 
@@ -539,15 +539,15 @@ style = {{ zIndex: 2 }}
                         </div>
                     </motion.div>
                 </div>
-            </section >
+            </section>
 
-    {/* Section Divider */ }
-    < div className = "h-px bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent max-w-4xl mx-auto" />
+    {/* Section Divider */}
+    <div className="h-px bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent max-w-4xl mx-auto" />
 
-        {/* CTA - Split Screen Design */ }
-        < section className = "py-24 px-6 relative overflow-hidden" style = {{ zIndex: 10 }}>
+        {/* CTA - Split Screen Design */}
+        <section className="py-24 px-6 relative overflow-hidden" style={{ zIndex: 10 }}>
             <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/20 via-blue-500/20 to-purple-500/20" style={{ zIndex: -1 }} />
-{/* Diagonal split */ }
+{/* Diagonal split */}
                 <div className="absolute inset-0 bg-gradient-to-br from-black/50 to-transparent transform -skew-y-6" />
 
                 <div className="max-w-7xl mx-auto relative">
@@ -619,12 +619,12 @@ style = {{ zIndex: 2 }}
                         </motion.div>
                     </div>
                 </div>
-            </section >
+            </section>
 
-    {/* Footer - Asymmetric Multi-column */ }
-    < footer className = "py-20 px-6 relative overflow-hidden" style = {{ zIndex: 10 }}>
+    {/* Footer - Asymmetric Multi-column */}
+    <footer className="py-20 px-6 relative overflow-hidden" style={{ zIndex: 10 }}>
         <div className="absolute inset-0 bg-black/95" style={{ zIndex: -1 }} />
-{/* Diagonal accent */ }
+{/* Diagonal accent */}
                 <div className="absolute bottom-0 right-0 w-1/3 h-full bg-gradient-to-tl from-cyan-500/5 to-transparent transform skew-x-12" />
 
                 <div className="max-w-7xl mx-auto relative">
@@ -694,8 +694,8 @@ style = {{ zIndex: 2 }}
                         </div>
                     </div>
                 </div>
-            </footer >
-        </div >
+            </footer>
+        </div>
     );
 }
 
