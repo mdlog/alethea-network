@@ -183,6 +183,10 @@ export const TokenProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             return bal;
         } catch (err) {
             console.error('Failed to load balance:', err);
+            // Set balance to 0 on error instead of leaving it undefined
+            if (ownerAddress === owner) {
+                setBalance(0);
+            }
             return '0';
         }
     }, [owner, chainId, tokenApplication]);
@@ -247,10 +251,17 @@ export const TokenProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const refreshBalance = useCallback(async () => {
         if (owner && chainId) {
             setLoading(true);
+            setError(null);
             try {
                 // LINERA STANDARD: Use owner address (AccountOwner)
                 await loadBalance(owner);
+            } catch (err) {
+                console.error('Failed to refresh balance:', err);
+                setError(err instanceof Error ? err.message : 'Failed to refresh balance');
+                // Set balance to 0 on error
+                setBalance(0);
             } finally {
+                // Always reset loading state
                 setLoading(false);
             }
         }

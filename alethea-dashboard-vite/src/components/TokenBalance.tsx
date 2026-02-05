@@ -48,8 +48,11 @@ export default function TokenBalance({ showRefresh = true, compact = false }: To
             <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-alethea-50 border border-alethea-200 rounded-md sm:rounded-lg">
                 <Coins className="w-3 h-3 sm:w-4 sm:h-4 text-alethea-600" />
                 <span className="text-[10px] sm:text-xs md:text-sm font-medium text-alethea-700">
-                    {loading ? '...' : formatBalance(balance)}
+                    {formatBalance(balance)}
                 </span>
+                {loading && (
+                    <Loader2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 animate-spin text-alethea-500" />
+                )}
             </div>
         );
     }
