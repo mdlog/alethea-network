@@ -149,22 +149,9 @@ export const TokenProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
             let bal = '0';
 
-            // Try WASM first (triggers inbox processing)
-            if (tokenApplication) {
-                try {
-                    // Updated query format for new token contract
-                    const balanceQuery = `{ balance(owner: "${queryOwner}") }`;
-                    const response = await tokenApplication.query(JSON.stringify({ query: balanceQuery }));
-                    const result = typeof response === 'string' ? JSON.parse(response) : response;
-                    bal = result?.data?.balance || '0';
-                    console.log(`💰 Balance via WASM: ${bal}`);
-                } catch (wasmErr) {
-                    console.warn('WASM balance query failed, falling back to HTTP:', wasmErr);
-                }
-            }
-
-            // Fallback to HTTP if WASM failed or not available
-            if (bal === '0') {
+            // Use HTTP query for balance (read-only, no signing needed)
+            // This prevents MetaMask popup on every refresh
+            try {
                 const data = await executeTokenQueryOnChain(`
                     query {
                         balance(owner: "${queryOwner}")
@@ -172,6 +159,21 @@ export const TokenProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 `, chainId);
                 bal = data?.balance || '0';
                 console.log(`💰 Balance via HTTP: ${bal}`);
+            } catch (httpErr) {
+                console.warn('HTTP balance query failed:', httpErr);
+
+                // Only try WASM as fallback if HTTP fails
+                if (tokenApplication) {
+                    try {
+                        const balanceQuery = `{ balance(owner: "${queryOwner}") }`;
+                        const response = await tokenApplication.query(JSON.stringify({ query: balanceQuery }));
+                        const result = typeof response === 'string' ? JSON.parse(response) : response;
+                        bal = result?.data?.balance || '0';
+                        console.log(`💰 Balance via WASM fallback: ${bal}`);
+                    } catch (wasmErr) {
+                        console.error('Both HTTP and WASM balance queries failed:', wasmErr);
+                    }
+                }
             }
 
             // Parse balance (remove trailing dot if present)
