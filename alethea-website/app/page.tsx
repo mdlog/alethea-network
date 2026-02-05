@@ -209,7 +209,7 @@ export default function Home() {
                         </div>
                     </div>
                     <div className="text-center mt-8 text-xs text-gray-600">
-                        © 2024 ALETHEA_NETWORK // BUILT_ON_LINERA_PROTOCOL
+                        © 2026 ALETHEA_NETWORK // BUILT_ON_LINERA_PROTOCOL
                     </div>
                 </div>
             </footer>
