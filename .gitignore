@@ -78,25 +78,28 @@ linera-protocol/
 # Exclude test scripts and temporary files in root
 /test_*.sh
 /check_*.sh
-/create_test_*.sh
-/create_query_*.sh
-/create_quick_*.sh
-/create_past_*.sh
-/create_recent_*.sh
-/create_january_*.sh
+/create_*.sh
 /deploy_*.sh
 /mint_*.sh
 /monitor_*.sh
 /process_*.sh
 /quick_*.sh
 /rebuild_*.sh
+/compare_*.sh
 
-# Exclude temporary query files
+# Exclude temporary query files and data
 /queries_*.json
+/query_*.json
+/nvidia_query.json
+/*_output.txt
+/*_report.csv
+/*.csv
 /COPY_PASTE_COMMANDS.txt
 /READY_TO_PASTE.txt
 /WORKING_COMMANDS.txt
 /SIMPLE_COMMANDS.sh
+/CREATE_QUERIES_CLI.sh
+/NVIDIA_QUERY_COMMAND.txt
 
 # Exclude detailed documentation (keep main docs)
 /WAVE_6_FINAL_SUBMISSION.md
