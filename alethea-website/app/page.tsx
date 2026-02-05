@@ -254,39 +254,31 @@ export default function Home() {
                         LIVE_ON_CONWAY_TESTNET
                     </motion.div>
 
-                    {/* Main Heading - Puzzle Animation */}
-                    <div className="mb-8">
+                    {/* Main Heading - Simple Animation */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 }}
+                        className="mb-8"
+                    >
                         <h1 className="text-7xl md:text-8xl font-black tracking-tighter leading-none mb-4">
-                            <PuzzleText text="DECENTRALIZED" />
+                            DECENTRALIZED
                             <br />
-                            <motion.span
-                                className="text-white"
-                                animate={{
-                                    backgroundImage: ['linear-gradient(to right, white, white)', 'linear-gradient(to right, white, rgb(156, 163, 175), white)'],
-                                    WebkitBackgroundClip: ['text', 'text'],
-                                    WebkitTextFillColor: ['white', 'transparent'],
-                                }}
-                                transition={{ delay: 0.8, duration: 0.5 }}
-                            >
-                                <PuzzleText text="ORACLE" />
-                            </motion.span>
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-gray-400 to-white">
+                                ORACLE
+                            </span>
                         </h1>
-                        <motion.div
-                            className="flex items-center gap-4 text-2xl font-mono"
-                            initial={{ opacity: 0, x: -50 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 1.2, duration: 0.6 }}
-                        >
+                        <div className="flex items-center gap-4 text-2xl font-mono">
                             <div className="w-12 h-1 bg-white" />
                             <span className="text-gray-400">FOR LINERA PROTOCOL</span>
-                        </motion.div>
-                    </div>
+                        </div>
+                    </motion.div>
 
                     {/* Description */}
                     <motion.p
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 1.5, duration: 0.6 }}
+                        transition={{ delay: 0.2, duration: 0.6 }}
                         className="text-xl text-gray-400 mb-12 max-w-2xl font-mono leading-relaxed"
                     >
                         Committee-based consensus with reputation-weighted voting.
@@ -298,7 +290,7 @@ export default function Home() {
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 1.8, duration: 0.6 }}
+                        transition={{ delay: 0.3, duration: 0.6 }}
                         className="flex flex-col sm:flex-row gap-4"
                     >
                         <a
@@ -318,11 +310,11 @@ export default function Home() {
                             VIEW_SOURCE
                         </a>
                     </motion.div>
-                </div>
-            </section>
+                </div >
+            </section >
 
             {/* Features - Grid System */}
-            <section className="py-20 px-6 border-t-2 border-white">
+            < section className="py-20 px-6 border-t-2 border-white" >
                 <div className="max-w-7xl mx-auto">
                     <div className="grid md:grid-cols-3 gap-px bg-white">
                         <FeatureBox
@@ -345,10 +337,10 @@ export default function Home() {
                         />
                     </div>
                 </div>
-            </section>
+            </section >
 
             {/* How It Works - Timeline */}
-            <section className="py-20 px-6 border-t-2 border-white">
+            < section className="py-20 px-6 border-t-2 border-white" >
                 <div className="max-w-5xl mx-auto">
                     <h2 className="text-5xl font-black mb-16 font-mono">HOW_IT_WORKS</h2>
 
@@ -370,10 +362,10 @@ export default function Home() {
                         />
                     </div>
                 </div>
-            </section>
+            </section >
 
             {/* Stats - Bold Numbers */}
-            <section className="py-20 px-6 border-t-2 border-white">
+            < section className="py-20 px-6 border-t-2 border-white" >
                 <div className="max-w-7xl mx-auto">
                     <div className="grid md:grid-cols-3 gap-12">
                         <StatBox number="100%" label="OPERATIONAL" />
@@ -381,10 +373,10 @@ export default function Home() {
                         <StatBox number="<1s" label="QUERY_RESPONSE" />
                     </div>
                 </div>
-            </section>
+            </section >
 
             {/* CTA - Final */}
-            <section className="py-20 px-6 border-t-2 border-white">
+            < section className="py-20 px-6 border-t-2 border-white" >
                 <div className="max-w-4xl mx-auto text-center">
                     <h2 className="text-6xl font-black mb-8 font-mono">READY_TO_BUILD?</h2>
                     <p className="text-xl text-gray-400 mb-12 font-mono">
@@ -399,10 +391,10 @@ export default function Home() {
                         <ArrowRight className="w-6 h-6" />
                     </a>
                 </div>
-            </section>
+            </section >
 
             {/* Footer - Minimal */}
-            <footer className="py-12 px-6 border-t-2 border-white">
+            < footer className="py-12 px-6 border-t-2 border-white" >
                 <div className="max-w-7xl mx-auto">
                     <div className="flex flex-col md:flex-row justify-between items-center gap-6 font-mono text-sm">
                         <div className="flex items-center gap-3">
@@ -425,8 +417,8 @@ export default function Home() {
                         © 2026 ALETHEA_NETWORK // BUILT_ON_LINERA_PROTOCOL
                     </div>
                 </div>
-            </footer>
-        </div>
+            </footer >
+        </div >
     );
 }
 
