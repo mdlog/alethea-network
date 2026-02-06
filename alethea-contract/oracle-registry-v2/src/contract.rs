@@ -490,14 +490,37 @@ impl Contract for OracleRegistryV2Contract {
             Operation::ResetYearlyCounters => {
                 self.reset_yearly_counters().await
             }
+            
+            Operation::TransferAdmin { new_admin } => {
+                self.transfer_admin(new_admin).await
+            }
+            
+            Operation::AcceptAdmin => {
+                self.accept_admin().await
+            }
         }
     }
 
     async fn execute_message(&mut self, message: Self::Message) {
         use oracle_registry_v2::Message;
         
-        // Handle cross-chain messages for account-based voting
-        // Authentication is automatic - Linera verifies the message sender
+        // SECURITY: Cross-chain message authentication
+        // 
+        // Linera ensures that only the same application ID on the sender chain can send
+        // messages to this contract. The `with_authentication()` flag on message sending
+        // forwards the authenticated signer. The `sender_chain` field within messages
+        // is set by our own application code on the sending chain (via Send*Message operations),
+        // so it is trustworthy as long as the application bytecode is not tampered with.
+        //
+        // Additional defense: We check the pause state for all incoming messages to ensure
+        // the protocol can be halted in case of emergencies.
+        
+        // Check if protocol is paused - reject all cross-chain messages when paused
+        if self.state.is_paused().await {
+            eprintln!("⚠️ Protocol is paused, rejecting cross-chain message");
+            return;
+        }
+        
         let response = match message {
             Message::RegisterVoter { sender_chain, stake, name, metadata_url } => {
                 // sender_chain is already a ChainId, use directly
@@ -1664,8 +1687,9 @@ impl OracleRegistryV2Contract {
         let new_total = current_stake.saturating_sub(stake);
         self.state.total_stake.set(new_total);
         
+        // SECURITY: Use saturating_sub to prevent underflow panic
         let current_count = *self.state.voter_count.get();
-        self.state.voter_count.set(current_count - 1);
+        self.state.voter_count.set(current_count.saturating_sub(1));
         
         // Update token holdings - remove voter's holdings
         if let Err(e) = self.state.token_holdings.remove(&voter_chain) {
@@ -3486,6 +3510,16 @@ impl OracleRegistryV2Contract {
             return OperationResponse::error(e);
         }
         
+        // SECURITY: Enforce commit-reveal exclusivity
+        // If a query is in Commit or Reveal phase, direct SubmitVote is not allowed.
+        // Voters must use CommitVote + RevealVote to prevent vote copying attacks.
+        if query.phase == state::VotingPhase::Commit || query.phase == state::VotingPhase::Reveal {
+            return OperationResponse::error(format!(
+                "Query {} is in {:?} phase. Use CommitVote/RevealVote instead of direct SubmitVote to prevent vote copying.",
+                query_id, query.phase
+            ));
+        }
+        
         // Validate voter hasn't already voted
         if let Err(e) = self.validate_voter_not_voted(&query, &voter_chain) {
             return OperationResponse::error(e);
@@ -3603,6 +3637,14 @@ impl OracleRegistryV2Contract {
         // Validate deadline hasn't passed
         if let Err(e) = self.validate_query_deadline_not_passed(&query) {
             return OperationResponse::error(e);
+        }
+        
+        // SECURITY: Enforce commit-reveal exclusivity for cross-chain messages too
+        if query.phase == state::VotingPhase::Commit || query.phase == state::VotingPhase::Reveal {
+            return OperationResponse::error(format!(
+                "Query {} is in {:?} phase. Use CommitVote/RevealVote instead of direct SubmitVote.",
+                query_id, query.phase
+            ));
         }
         
         // Validate voter hasn't already voted
@@ -4173,13 +4215,14 @@ impl OracleRegistryV2Contract {
     }
     
     /// Get voter reputation information
-    async fn get_voter_reputation_info(&self, voter_chain: &linera_sdk::linera_base_types::ChainId) -> Option<(u32, &'static str, f64)> {
+    /// Returns (reputation_score, tier_name, weight_in_basis_points)
+    async fn get_voter_reputation_info(&self, voter_chain: &linera_sdk::linera_base_types::ChainId) -> Option<(u32, &'static str, u64)> {
         let voter_info = self.state.get_voter(voter_chain).await?;
         let reputation = voter_info.reputation;
         let tier = self.state.get_reputation_tier(reputation);
-        let weight = self.state.calculate_reputation_weight(reputation);
+        let weight_bps = self.state.calculate_reputation_weight_bps(reputation);
         
-        Some((reputation, tier, weight))
+        Some((reputation, tier, weight_bps))
     }
     
     /// Calculate potential slash amount for a voter (for preview/estimation)
@@ -5395,11 +5438,12 @@ impl OracleRegistryV2Contract {
                         
                         // Log slashing event for transparency
                         eprintln!(
-                            "Slashed voter {} for incorrect vote on query {}: {} tokens ({}% of stake)",
+                            "Slashed voter {} for incorrect vote on query {}: {} tokens ({}.{}% of stake)",
                             voter,
                             query_id,
                             actual_slash_amount,
-                            params.slash_percentage as f64 / 100.0
+                            params.slash_percentage / 100,
+                            params.slash_percentage % 100
                         );
                     }
                 }
@@ -5527,7 +5571,8 @@ impl OracleRegistryV2Contract {
                 callback_data: callback_data.clone(),
                 vote_count: (correct_voters + incorrect_voters) as u32,
                 confidence: if correct_voters + incorrect_voters > 0 {
-                    ((correct_voters as f64 / (correct_voters + incorrect_voters) as f64) * 100.0) as u8
+                    // SECURITY: Integer-only calculation for confidence percentage
+                    ((correct_voters * 100) / (correct_voters + incorrect_voters)) as u8
                 } else {
                     0
                 },
@@ -5654,8 +5699,9 @@ impl OracleRegistryV2Contract {
     }
     
     /// Calculate result weighted by voter reputation
+    /// SECURITY: Uses integer-only arithmetic (basis points) instead of f64
     async fn calculate_reputation_weighted_result(&self, query: &state::Query) -> String {
-        let mut weighted_votes: std::collections::HashMap<String, f64> = std::collections::HashMap::new();
+        let mut weighted_votes: std::collections::HashMap<String, u64> = std::collections::HashMap::new();
         
         for vote in query.votes.values() {
             // Get voter reputation (default to 50 if not found)
@@ -5665,16 +5711,14 @@ impl OracleRegistryV2Contract {
                 50
             };
             
-            let weight = self.state.calculate_reputation_weight(reputation);
-            *weighted_votes.entry(vote.value.clone()).or_insert(0.0) += weight;
+            let weight_bps = self.state.calculate_reputation_weight_bps(reputation);
+            *weighted_votes.entry(vote.value.clone()).or_insert(0) += weight_bps;
         }
         
         // Find the value with highest weighted votes
         weighted_votes
             .into_iter()
-            .max_by(|(_, weight_a), (_, weight_b)| {
-                weight_a.partial_cmp(weight_b).unwrap_or(std::cmp::Ordering::Equal)
-            })
+            .max_by_key(|(_, weight)| *weight)
             .map(|(value, _)| value)
             .unwrap_or_else(|| "No consensus".to_string())
     }
@@ -5830,9 +5874,16 @@ impl OracleRegistryV2Contract {
     
     /// Claim pending rewards for a specific voter (by address)
     /// This allows claiming rewards when the caller chain is different from voter chain
+    /// SECURITY: Admin-only operation to prevent unauthorized reward claims
     async fn claim_rewards_for(&mut self, voter_address: String) -> oracle_registry_v2::OperationResponse {
         use oracle_registry_v2::{OperationResponse, ResponseData};
         use linera_sdk::linera_base_types::AccountOwner;
+        
+        // Verify caller is admin
+        let caller_chain = self.runtime.chain_id();
+        if !self.state.is_admin(&caller_chain).await {
+            return OperationResponse::error("Unauthorized: only admin can claim rewards for others");
+        }
         
         // Parse voter address to ChainId
         let voter_chain: ChainId = match voter_address.parse() {
@@ -5938,8 +5989,15 @@ impl OracleRegistryV2Contract {
     
     /// Withdraw stake for a specific voter (by address)
     /// This allows withdrawing stake when the caller chain is different from voter chain
+    /// SECURITY: Admin-only operation to prevent unauthorized stake withdrawal
     async fn withdraw_stake_for(&mut self, voter_address: String, amount: Amount) -> oracle_registry_v2::OperationResponse {
         use oracle_registry_v2::{OperationResponse, ResponseData};
+        
+        // Verify caller is admin
+        let caller_chain = self.runtime.chain_id();
+        if !self.state.is_admin(&caller_chain).await {
+            return OperationResponse::error("Unauthorized: only admin can withdraw stake for others");
+        }
         
         // Parse voter address to ChainId
         let voter_chain: ChainId = match voter_address.parse() {
@@ -6034,8 +6092,15 @@ impl OracleRegistryV2Contract {
     /// 3. Registry trusts admin and updates voter's stake
     ///
     /// This allows adding stake when the caller chain is different from voter chain.
+    /// SECURITY: Admin-only operation to prevent unauthorized stake modification
     async fn update_stake_for(&mut self, voter_address: String, additional_stake: Amount) -> oracle_registry_v2::OperationResponse {
         use oracle_registry_v2::{OperationResponse, ResponseData};
+
+        // Verify caller is admin
+        let caller_chain = self.runtime.chain_id();
+        if !self.state.is_admin(&caller_chain).await {
+            return OperationResponse::error("Unauthorized: only admin can update stake for others");
+        }
 
         // Parse voter address to ChainId
         let voter_chain: ChainId = match voter_address.parse() {
@@ -6113,9 +6178,16 @@ impl OracleRegistryV2Contract {
     
     /// Claim withdrawable tokens for a specific voter
     /// This clears the withdrawable_balance and sends tokens back to user via token contract
+    /// SECURITY: Admin-only operation to prevent unauthorized token withdrawal
     async fn claim_withdrawable_tokens(&mut self, voter_address: String) -> oracle_registry_v2::OperationResponse {
         use oracle_registry_v2::{OperationResponse, ResponseData};
         use linera_sdk::linera_base_types::{AccountOwner, Account};
+        
+        // Verify caller is admin
+        let caller_chain = self.runtime.chain_id();
+        if !self.state.is_admin(&caller_chain).await {
+            return OperationResponse::error("Unauthorized: only admin can claim withdrawable tokens for others");
+        }
         
         // Parse voter address to ChainId
         let voter_chain: ChainId = match voter_address.parse() {
@@ -7696,5 +7768,75 @@ impl OracleRegistryV2Contract {
             "Yearly counters reset for year {}",
             current_year
         ))
+    }
+    
+    /// Initiate admin transfer (two-step process for safety)
+    /// Step 1: Current admin calls this to nominate new admin
+    async fn transfer_admin(&mut self, new_admin: ChainId) -> oracle_registry_v2::OperationResponse {
+        use oracle_registry_v2::OperationResponse;
+        
+        let caller_chain = self.runtime.chain_id();
+        
+        // Verify caller is current admin
+        if !self.state.is_admin(&caller_chain).await {
+            return OperationResponse::error("Unauthorized: only current admin can transfer admin role");
+        }
+        
+        // Prevent self-transfer
+        if caller_chain == new_admin {
+            return OperationResponse::error("Cannot transfer admin role to self");
+        }
+        
+        // Set pending admin
+        self.state.pending_admin.set(Some(new_admin));
+        
+        eprintln!(
+            "🔑 Admin transfer initiated: {} -> {} (pending acceptance)",
+            caller_chain, new_admin
+        );
+        
+        OperationResponse::success(format!(
+            "Admin transfer initiated to {}. New admin must call AcceptAdmin to complete.",
+            new_admin
+        ))
+    }
+    
+    /// Accept pending admin transfer
+    /// Step 2: New admin calls this to complete the transfer
+    async fn accept_admin(&mut self) -> oracle_registry_v2::OperationResponse {
+        use oracle_registry_v2::OperationResponse;
+        
+        let caller_chain = self.runtime.chain_id();
+        
+        // Check if there's a pending admin transfer
+        let pending = *self.state.pending_admin.get();
+        match pending {
+            Some(pending_admin) => {
+                if caller_chain != pending_admin {
+                    return OperationResponse::error(
+                        "Unauthorized: only the nominated admin can accept the transfer"
+                    );
+                }
+                
+                let old_admin = *self.state.admin.get();
+                
+                // Complete the transfer
+                self.state.admin.set(Some(caller_chain));
+                self.state.pending_admin.set(None);
+                
+                eprintln!(
+                    "🔑 Admin transfer completed: {:?} -> {}",
+                    old_admin, caller_chain
+                );
+                
+                OperationResponse::success(format!(
+                    "Admin role accepted. You ({}) are now the admin.",
+                    caller_chain
+                ))
+            }
+            None => {
+                OperationResponse::error("No pending admin transfer")
+            }
+        }
     }
 }

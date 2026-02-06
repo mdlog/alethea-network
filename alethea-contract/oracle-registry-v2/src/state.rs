@@ -784,6 +784,8 @@ pub struct OracleRegistryV2 {
     pub total_service_fees_collected: RegisterView<Amount>,  // Track total service fees
     pub is_paused: RegisterView<bool>,
     pub admin: RegisterView<Option<ChainId>>,
+    /// Pending admin transfer target (two-step admin transfer for safety)
+    pub pending_admin: RegisterView<Option<ChainId>>,
     
     // Statistics
     pub total_queries_created: RegisterView<u64>,
@@ -976,11 +978,20 @@ impl OracleRegistryV2 {
     
     /// Calculate reputation weight for weighted voting strategies
     /// 
-    /// Returns a weight multiplier based on reputation (0.5 to 2.0)
+    /// Returns a weight in basis points (5000 to 20000, representing 0.5x to 2.0x)
     /// Higher reputation = higher weight
+    /// 
+    /// SECURITY: Uses integer-only arithmetic to avoid floating-point precision issues
+    pub fn calculate_reputation_weight_bps(&self, reputation: u32) -> u64 {
+        // Map reputation (0-100) to weight in basis points (5000-20000)
+        // Formula: weight_bps = 5000 + (reputation * 15000 / 100) = 5000 + reputation * 150
+        5000 + (reputation as u64) * 150
+    }
+    
+    /// Calculate reputation weight as f64 (DEPRECATED - use calculate_reputation_weight_bps)
+    /// Kept for backward compatibility with non-financial operations only
+    #[deprecated(note = "Use calculate_reputation_weight_bps for financial calculations")]
     pub fn calculate_reputation_weight(&self, reputation: u32) -> f64 {
-        // Map reputation (0-100) to weight (0.5-2.0)
-        // Formula: weight = 0.5 + (reputation / 100) * 1.5
         0.5 + (reputation as f64 / 100.0) * 1.5
     }
     
@@ -1069,10 +1080,12 @@ impl OracleRegistryV2 {
     pub async fn get_reputation_stats(&self, voter_chain: &ChainId) -> Option<ReputationStats> {
         let voter_info = self.get_voter(voter_chain).await?;
         
+        // Display-only calculation: f64 acceptable here (not financial)
+        let weight_bps = self.calculate_reputation_weight_bps(voter_info.reputation);
         Some(ReputationStats {
             reputation: voter_info.reputation,
             tier: self.get_reputation_tier(voter_info.reputation).to_string(),
-            weight: self.calculate_reputation_weight(voter_info.reputation),
+            weight: weight_bps as f64 / 10000.0,
             total_votes: voter_info.total_votes,
             correct_votes: voter_info.correct_votes,
             accuracy_percentage: if voter_info.total_votes > 0 {
@@ -1101,18 +1114,26 @@ impl OracleRegistryV2 {
     ) -> Amount {
         let base_value: u128 = base_reward.into();
         
-        // Calculate reputation multiplier (0.8 to 1.2)
-        // Higher reputation gets up to 20% bonus, lower gets up to 20% penalty
-        let reputation_multiplier = 0.8 + (voter_info.reputation as f64 / 100.0) * 0.4;
+        // SECURITY: Integer-only math for financial precision
+        // 
+        // Reputation multiplier: 0.8x to 1.2x (mapped to 8000-12000 bps)
+        // Formula: reputation_bps = 8000 + (reputation * 4000 / 100) = 8000 + reputation * 40
+        let reputation_bps: u128 = 8000 + (voter_info.reputation as u128) * 40;
         
-        // Apply reputation multiplier
-        let reward_with_reputation = (base_value as f64 * reputation_multiplier) as u128;
+        // Apply reputation multiplier: reward * reputation_bps / 10000
+        let reward_with_reputation = base_value
+            .checked_mul(reputation_bps)
+            .unwrap_or(u128::MAX)
+            / 10000;
         
         // Deduct protocol fee (in basis points, e.g., 100 = 1%)
-        let fee_multiplier = 1.0 - (params.protocol_fee as f64 / 10000.0);
-        let final_reward = (reward_with_reputation as f64 * fee_multiplier) as u128;
+        // fee_multiplier_bps = 10000 - protocol_fee
+        let fee_multiplier_bps: u128 = 10000u128.saturating_sub(params.protocol_fee as u128);
+        let final_reward = reward_with_reputation
+            .checked_mul(fee_multiplier_bps)
+            .unwrap_or(u128::MAX)
+            / 10000;
         
-        // base_reward is already in attos, so use from_attos
         Amount::from_attos(final_reward)
     }
     
@@ -1132,11 +1153,14 @@ impl OracleRegistryV2 {
     ) -> Amount {
         let stake_value: u128 = voter_info.stake.into();
         
-        // Calculate slash amount (in basis points, e.g., 500 = 5%)
-        let slash_multiplier = params.slash_percentage as f64 / 10000.0;
-        let slash_amount = (stake_value as f64 * slash_multiplier) as u128;
+        // SECURITY: Integer-only math for financial precision
+        // slash_percentage is in basis points (e.g., 500 = 5%)
+        // Formula: slash = stake * slash_percentage / 10000
+        let slash_amount = stake_value
+            .checked_mul(params.slash_percentage as u128)
+            .unwrap_or(u128::MAX)
+            / 10000;
         
-        // stake_value is in attos, so result should be in attos
         Amount::from_attos(slash_amount)
     }
     
@@ -1203,6 +1227,7 @@ impl OracleRegistryV2 {
     }
     
     /// Calculate protocol fee from reward amount
+    /// SECURITY: Uses integer-only arithmetic
     pub fn calculate_protocol_fee(
         &self,
         reward_amount: Amount,
@@ -1210,11 +1235,13 @@ impl OracleRegistryV2 {
     ) -> Amount {
         let reward_value: u128 = reward_amount.into();
         
-        // Calculate fee (in basis points, e.g., 100 = 1%)
-        let fee_multiplier = params.protocol_fee as f64 / 10000.0;
-        let fee_amount = (reward_value as f64 * fee_multiplier) as u128;
+        // Calculate fee using integer math (basis points: 100 = 1%)
+        // Formula: fee = reward * protocol_fee / 10000
+        let fee_amount = reward_value
+            .checked_mul(params.protocol_fee as u128)
+            .unwrap_or(u128::MAX)
+            / 10000;
         
-        // reward_amount is in attos, so result should be in attos
         Amount::from_attos(fee_amount)
     }
     
@@ -1249,11 +1276,14 @@ impl OracleRegistryV2 {
         
         let reward_value: u128 = total_reward.into();
         
-        // Distribute rewards proportionally to stake
+        // SECURITY: Distribute rewards proportionally using integer-only math
+        // Formula: base_reward = reward_value * stake_value / total_stake
         for (voter, info) in correct_voters {
             let stake_value: u128 = info.stake.into();
-            let proportion = stake_value as f64 / total_stake as f64;
-            let base_reward = (reward_value as f64 * proportion) as u128;
+            let base_reward = reward_value
+                .checked_mul(stake_value)
+                .unwrap_or(u128::MAX)
+                / total_stake;
             
             // Apply reputation multiplier and protocol fee
             // base_reward is in attos, so use from_attos
@@ -1273,6 +1303,7 @@ impl OracleRegistryV2 {
     /// 
     /// Distributes rewards proportionally based on voter reputation
     /// Returns a map of voter -> reward amount
+    /// SECURITY: Uses integer-only arithmetic for financial precision
     pub fn calculate_reputation_weighted_rewards(
         &self,
         total_reward: Amount,
@@ -1285,29 +1316,36 @@ impl OracleRegistryV2 {
             return rewards;
         }
         
-        // Calculate total reputation weight of correct voters
-        let total_weight: f64 = correct_voters
+        // Calculate total reputation weight in basis points
+        let total_weight_bps: u64 = correct_voters
             .iter()
-            .map(|(_, info)| self.calculate_reputation_weight(info.reputation))
+            .map(|(_, info)| self.calculate_reputation_weight_bps(info.reputation))
             .sum();
         
-        if total_weight == 0.0 {
+        if total_weight_bps == 0 {
             return rewards;
         }
         
         let reward_value: u128 = total_reward.into();
         
-        // Distribute rewards proportionally to reputation weight
+        // Distribute rewards proportionally to reputation weight using integer math
         for (voter, info) in correct_voters {
-            let weight = self.calculate_reputation_weight(info.reputation);
-            let proportion = weight / total_weight;
-            let base_reward = (reward_value as f64 * proportion) as u128;
+            let weight_bps = self.calculate_reputation_weight_bps(info.reputation) as u128;
             
-            // Apply protocol fee (reputation already factored in)
-            let fee_multiplier = 1.0 - (params.protocol_fee as f64 / 10000.0);
-            let final_reward = (base_reward as f64 * fee_multiplier) as u128;
+            // base_reward = reward_value * weight_bps / total_weight_bps
+            let base_reward = reward_value
+                .checked_mul(weight_bps)
+                .unwrap_or(u128::MAX)
+                / (total_weight_bps as u128);
             
-            // base_reward is in attos, so use from_attos
+            // Apply protocol fee using integer math
+            // fee_multiplier_bps = 10000 - protocol_fee
+            let fee_multiplier_bps: u128 = 10000u128.saturating_sub(params.protocol_fee as u128);
+            let final_reward = base_reward
+                .checked_mul(fee_multiplier_bps)
+                .unwrap_or(u128::MAX)
+                / 10000;
+            
             rewards.insert(*voter, Amount::from_attos(final_reward));
         }
         
@@ -2018,17 +2056,21 @@ impl OracleRegistryV2 {
             return Ok(Amount::from_tokens(50));
         }
         
-        // Calculate annual inflation target
+        // SECURITY: Integer-only math for inflation calculation
+        // annual_target = total_supply * annual_rate_bps / 10000
         let total_supply_value: u128 = total_supply.into();
-        let annual_target_value = (total_supply_value as f64 * annual_rate_bps as f64 / 10000.0) as u128;
+        let annual_target_value = total_supply_value
+            .checked_mul(annual_rate_bps as u128)
+            .unwrap_or(u128::MAX)
+            / 10000;
         let annual_target = Amount::from_attos(annual_target_value);
         
         // Check if we've exceeded annual target
         let total_distributed = *self.total_inflation_distributed.get();
         if total_distributed >= annual_target {
             return Err(format!(
-                "Annual inflation target reached for year {} ({}%)",
-                current_year, annual_rate_bps as f64 / 100.0
+                "Annual inflation target reached for year {} ({}.{}%)",
+                current_year, annual_rate_bps / 100, annual_rate_bps % 100
             ));
         }
         
@@ -2046,8 +2088,8 @@ impl OracleRegistryV2 {
         let reward = Amount::from_attos(reward_value);
         
         eprintln!(
-            "💰 Calculated inflation reward: {} ALTH (Year {}, Rate {}%, Expected Volume {}, Remaining {})",
-            reward, current_year, annual_rate_bps as f64 / 100.0, expected_volume, remaining
+            "💰 Calculated inflation reward: {} ALTH (Year {}, Rate {}.{}%, Expected Volume {}, Remaining {})",
+            reward, current_year, annual_rate_bps / 100, annual_rate_bps % 100, expected_volume, remaining
         );
         
         Ok(reward)
@@ -2368,13 +2410,16 @@ impl RegistrationTier {
     }
     
     /// Determine tier from stake amount
+    /// 
+    /// SECURITY FIX: Compare against token amounts (not raw attos).
+    /// Amount::from_tokens() converts to the correct atto representation.
+    /// Thresholds: Free=0, Standard=100 ALTH, Premium=1000 ALTH, Enterprise=10000 ALTH
     pub fn from_stake(stake: Amount) -> Self {
-        let stake_value: u128 = stake.into();
-        if stake_value >= 10000 {
+        if stake >= Amount::from_tokens(10000) {
             RegistrationTier::Enterprise
-        } else if stake_value >= 1000 {
+        } else if stake >= Amount::from_tokens(1000) {
             RegistrationTier::Premium
-        } else if stake_value >= 100 {
+        } else if stake >= Amount::from_tokens(100) {
             RegistrationTier::Standard
         } else {
             RegistrationTier::Free

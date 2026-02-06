@@ -315,6 +315,16 @@ pub enum Message {
 }
 
 /// Registry-specific messages for cross-chain communication
+/// 
+/// **DEPRECATED**: This message type is legacy and only used by the old coordinator-based system.
+/// For `oracle-registry-v2`, use `alethea_oracle_messages::OracleRequest` and 
+/// `alethea_oracle_messages::OracleCallback` instead. These types are compatible with
+/// industry standards (UMA, Reality.eth) and support the hybrid bond model.
+/// 
+/// ## Migration Guide
+/// - `RegistryMessage::CreateQueryFromMarket` → `OracleRequest::CreateQuery` or `OracleRequest::CreateQueryWithBond`
+/// - `RegistryMessage::MarketResolved` → `OracleCallback::QueryResolved`
+#[deprecated(since = "0.2.0", note = "Use alethea_oracle_messages::{OracleRequest, OracleCallback} instead")]
 #[derive(Debug, Serialize, Deserialize)]
 pub enum RegistryMessage {
     /// Market Chain -> Registry: Create query from expired market
@@ -333,6 +343,16 @@ pub enum RegistryMessage {
         outcome_index: usize,
         confidence: u8,
         callback_data: Vec<u8>,
+    },
+    
+    /// VoteRequest (legacy, not used by oracle-registry-v2)
+    VoteRequest {
+        market_id: u64,
+        question: String,
+        outcomes: Vec<String>,
+        deadline: Timestamp,
+        commit_deadline: Timestamp,
+        reveal_deadline: Timestamp,
     },
 }
 

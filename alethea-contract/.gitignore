@@ -122,6 +122,8 @@ SET_CONFIG_VIA_DASHBOARD.md
 !alethea-logo.png
 !alethea-network-removebg-preview.jpeg
 
-  # Exclude zip files
+# Exclude zip/archive files
 *.zip
+*.tgz
+*.tar.gz
 

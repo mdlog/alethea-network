@@ -73,6 +73,8 @@ export interface OracleConfig extends OracleConfigBase {
 
 /**
  * Query/Market information
+ * 
+ * Matches the GraphQL Query type in oracle-registry-v2/src/service.rs
  */
 export interface QueryInfo {
     /** Unique query ID */
@@ -103,16 +105,16 @@ export interface QueryInfo {
     deadline: string;
 
     /** Commit phase end time (microseconds as string) */
-    commitEnd?: string;
+    commitEnd: string;
 
     /** Reveal phase end time (microseconds as string) */
-    revealEnd?: string;
+    revealEnd: string;
 
-    /** Query status */
+    /** Query status (Active, Resolved, Finalized, Disputed, Expired, Cancelled) */
     status: QueryStatus;
 
-    /** Current voting phase */
-    phase?: VotingPhase;
+    /** Current voting phase (Commit, Reveal, Completed) */
+    phase: VotingPhase;
 
     /** Resolved result (if resolved) */
     result?: string;
@@ -121,17 +123,83 @@ export interface QueryInfo {
     resolvedAt?: string;
 
     /** Number of commits (phase 1) */
-    commitCount?: number;
+    commitCount: number;
 
     /** Number of revealed votes */
     voteCount: number;
 
     /** Time remaining until deadline (in seconds) */
     timeRemaining: number;
+
+    // ==================== QUERY METADATA ====================
+
+    /** Short title for the query */
+    title?: string;
+
+    /** Category (Sports, Crypto, Politics, etc.) */
+    category?: string;
+
+    /** Detailed context for voters */
+    context?: string;
+
+    /** Resolution criteria */
+    resolutionCriteria?: string;
+
+    /** Data source URLs */
+    sourceUrls?: string;
+
+    /** Tags for categorization */
+    tags?: string;
+
+    /** External metadata URL */
+    metadataUrl?: string;
+
+    /** External market ID from DApp */
+    externalId?: string;
+
+    // ==================== HYBRID MODEL FIELDS ====================
+
+    /** Bond amount (refundable if no dispute) */
+    bondAmount?: string;
+
+    /** Priority fee (non-refundable) */
+    priorityFee?: string;
+
+    /** Whether bond has been refunded */
+    bondRefunded?: boolean;
+
+    /** Whether query has a dispute */
+    hasDispute?: boolean;
+
+    /** Dispute window end timestamp (microseconds) */
+    disputeWindowEnd?: string;
+
+    /** Can still be disputed */
+    canDispute?: boolean;
+
+    // ==================== SOURCE DAPP TRACKING ====================
+
+    /** Source DApp Application ID (if external) */
+    sourceAppId?: string;
+
+    /** Source DApp name */
+    sourceAppName?: string;
+
+    /** Source DApp logo URL */
+    sourceAppLogo?: string;
+
+    /** Source DApp category */
+    sourceAppCategory?: string;
+
+    /** Query source type (Internal, ExternalPredictionMarket, etc.) */
+    querySource?: string;
+
+    /** Is query from external DApp */
+    isExternal?: boolean;
 }
 
 export type DecisionStrategy = 'Majority' | 'Median' | 'WeightedByStake' | 'WeightedByReputation';
-export type QueryStatus = 'Active' | 'Resolved' | 'Expired' | 'Cancelled';
+export type QueryStatus = 'Active' | 'Resolved' | 'Finalized' | 'Disputed' | 'Expired' | 'Cancelled';
 export type VotingPhase = 'Commit' | 'Reveal' | 'Completed';
 
 /**

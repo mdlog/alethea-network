@@ -5,35 +5,32 @@
 //! 
 //! Simple client library for integrating Alethea Oracle Protocol into your dApp.
 //! 
+//! This SDK uses the standard message types from `alethea-oracle-messages` which are
+//! compatible with the `oracle-registry-v2` contract.
+//! 
 //! ## Quick Start
 //! 
-//! ```rust,no_run
+//! ```rust,ignore
 //! use alethea_sdk::AletheaClient;
-//! use linera_sdk::linera_base_types::Timestamp;
+//! use alethea_oracle_messages::OracleCallback;
 //! 
-//! // Create client (uses canonical registry)
+//! // Create client
 //! let client = AletheaClient::new();
 //! 
 //! // Request market resolution
-//! client.request_resolution(
-//!     &runtime,
+//! let request = client.create_resolution_request(
 //!     "Will it rain tomorrow?".to_string(),
 //!     vec!["Yes".to_string(), "No".to_string()],
-//!     Timestamp::from(future_time),
-//!     market_id.to_le_bytes().to_vec(),
-//! ).await?;
+//!     deadline,
+//!     42u64, // your market_id
+//! )?;
 //! 
 //! // Handle resolution callback
-//! if let Some(result) = client.handle_resolution(message) {
-//!     println!("Market resolved: outcome {}", result.outcome_index);
+//! if let Some(result) = client.handle_callback(callback) {
+//!     println!("Resolved: {}", result.resolved_outcome);
 //! }
 //! ```
 
-use linera_sdk::{
-    linera_base_types::{ApplicationId, Timestamp},
-    ContractRuntime, Contract,
-};
-use alethea_oracle_types::{RegistryMessage, CANONICAL_REGISTRY_ID_PLACEHOLDER};
 use thiserror::Error;
 
 pub mod client;
@@ -63,19 +60,3 @@ pub enum AletheaError {
 
 /// Result type for Alethea SDK operations
 pub type Result<T> = std::result::Result<T, AletheaError>;
-
-/// Get canonical registry ApplicationId
-/// 
-/// This returns the well-known ApplicationId of the Alethea Oracle Registry.
-/// All dApps use this same registry for oracle services.
-pub fn canonical_registry_id() -> Result<ApplicationId> {
-    // TODO: Replace with actual deployed registry ID
-    // For now, return error if not configured
-    if CANONICAL_REGISTRY_ID_PLACEHOLDER == "REGISTRY_NOT_DEPLOYED" {
-        return Err(AletheaError::RegistryNotConfigured);
-    }
-    
-    CANONICAL_REGISTRY_ID_PLACEHOLDER
-        .parse()
-        .map_err(|_| AletheaError::RegistryNotConfigured)
-}

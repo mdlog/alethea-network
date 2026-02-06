@@ -540,7 +540,8 @@ impl Voter {
         };
         
         let reputation_tier = state.get_reputation_tier(info.reputation).to_string();
-        let reputation_weight = state.calculate_reputation_weight(info.reputation);
+        // Display-only: convert basis points to f64 for GraphQL
+        let reputation_weight = state.calculate_reputation_weight_bps(info.reputation) as f64 / 10000.0;
         
         // Convert timestamp to ISO 8601 string
         let registered_at = format!("{:?}", info.registered_at);

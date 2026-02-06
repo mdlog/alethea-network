@@ -810,6 +810,20 @@ pub enum Operation {
     /// Reset yearly counters (admin only)
     /// Called at the start of each year to reset query counters
     ResetYearlyCounters,
+    
+    /// Transfer admin role to a new chain (admin only)
+    /// 
+    /// Two-step process for safety:
+    /// 1. Current admin calls TransferAdmin with new_admin chain
+    /// 2. New admin calls AcceptAdmin to complete the transfer
+    TransferAdmin {
+        new_admin: ChainId,
+    },
+    
+    /// Accept pending admin transfer (new admin only)
+    /// 
+    /// Must be called by the chain specified in TransferAdmin.
+    AcceptAdmin,
 }
 
 /// Cross-chain messages for voter operations

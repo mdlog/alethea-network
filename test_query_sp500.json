@@ -1,0 +1,3 @@
+{
+    "query": "mutation { createQuery(description: \"Did the S&P 500 index close above 6,000 points on January 25, 2026? This market resolves to 'Yes, above 6,000' if the S&P 500 index closed above 6,000 points on January 25, 2026 at the end of regular trading hours. It resolves to 'No, 6,000 or below' if the closing value was 6,000 or below. The resolution will use official S&P 500 closing data from major financial sources (Yahoo Finance, Bloomberg, or S&P Dow Jones Indices). After-hours trading does not count. Source: S&P Dow Jones Indices (https://www.spglobal.com/spdji/)\", outcomes: [\"Yes, above 6,000\", \"No, 6,000 or below\"], strategy: \"WeightedByStake\", minVotes: 3, rewardAmount: \"100000000000000000000\", durationSecs: 86400) }"
+}
