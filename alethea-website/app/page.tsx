@@ -361,7 +361,7 @@ export default function Home() {
             </section >
 
             {/* Stats - Bold Numbers */}
-            < section className="py-20 px-6 border-t-2 border-white" >
+            <section className="py-20 px-6 border-t-2 border-white">
                 <div className="max-w-7xl mx-auto">
                     <div className="grid md:grid-cols-3 gap-12">
                         <StatBox number="100%" label="OPERATIONAL" />
@@ -369,7 +369,95 @@ export default function Home() {
                         <StatBox number="<1s" label="QUERY_RESPONSE" />
                     </div>
                 </div>
-            </section >
+            </section>
+
+            {/* How to Participate */}
+            <section className="py-20 px-6 border-t-2 border-white">
+                <div className="max-w-5xl mx-auto">
+                    <h2 className="text-5xl font-black mb-16 font-mono">HOW_TO_PARTICIPATE</h2>
+
+                    <div className="space-y-8">
+                        {/* Requirement Box */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            className="border-2 border-white p-8"
+                        >
+                            <h3 className="text-2xl font-bold mb-4 font-mono">REQUIREMENTS</h3>
+                            <div className="grid md:grid-cols-2 gap-6 text-grey-300">
+                                <div>
+                                    <p className="text-sm font-mono text-gray-400 mb-2">MINIMUM_STAKE</p>
+                                    <p className="text-xl font-bold">100 ALTH</p>
+                                </div>
+                                <div>
+                                    <p className="text-sm font-mono text-gray-400 mb-2">LOCK_PER_VOTE</p>
+                                    <p className="text-xl font-bold">10% of Stake</p>
+                                </div>
+                                <div>
+                                    <p className="text-sm font-mono text-gray-400 mb-2">INCORRECT_VOTE_PENALTY</p>
+                                    <p className="text-xl font-bold">5% Slashing</p>
+                                </div>
+                                <div>
+                                    <p className="text-sm font-mono text-gray-400 mb-2">CORRECT_VOTE_REWARD</p>
+                                    <p className="text-xl font-bold">Share Pool</p>
+                                </div>
+                            </div>
+                        </motion.div>
+
+                        {/* Voting Steps */}
+                        <div className="space-y-6">
+                            <ParticipationStep
+                                number="01"
+                                title="STAKE_TOKENS"
+                                description="Deposit minimum 100 ALTH tokens to become an active voter"
+                            />
+                            <ParticipationStep
+                                number="02"
+                                title="COMMIT_VOTE"
+                                description="Submit encrypted vote hash during commit phase (prevents front-running)"
+                            />
+                            <ParticipationStep
+                                number="03"
+                                title="REVEAL_VOTE"
+                                description="Reveal your actual vote with salt during reveal phase"
+                            />
+                            <ParticipationStep
+                                number="04"
+                                title="EARN_REWARDS"
+                                description="Receive rewards if your vote matches consensus outcome"
+                            />
+                        </div>
+
+                        {/* Reputation System */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            className="border-2 border-white p-8"
+                        >
+                            <h3 className="text-2xl font-bold mb-4 font-mono">REPUTATION_SYSTEM</h3>
+                            <p className="text-gray-400 mb-6 leading-relaxed">
+                                Your voting accuracy determines your reputation score. Higher reputation increases your voting weight and reward multiplier.
+                            </p>
+                            <div className="grid md:grid-cols-3 gap-4">
+                                <div className="border border-gray-600 p-4">
+                                    <p className="text-xs text-gray-500 mb-2 font-mono">ACCURACY_BASED</p>
+                                    <p className="font-bold">Correct votes boost score</p>
+                                </div>
+                                <div className="border border-gray-600 p-4">
+                                    <p className="text-xs text-gray-500 mb-2 font-mono">STREAK_BONUS</p>
+                                    <p className="font-bold">Consecutive wins multiply rewards</p>
+                                </div>
+                                <div className="border border-gray-600 p-4">
+                                    <p className="text-xs text-gray-500 mb-2 font-mono">WEIGHT_MULTIPLIER</p>
+                                    <p className="font-bold">Higher rep = more voting power</p>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                </div>
+            </section>
 
             {/* CTA - Final */}
             < section className="py-20 px-6 border-t-2 border-white" >
@@ -465,6 +553,23 @@ function StatBox({ number, label }: { number: string; label: string }) {
         >
             <div className="text-7xl font-black mb-4 font-mono">{number}</div>
             <div className="text-gray-500 font-mono text-sm tracking-wider">{label}</div>
+        </motion.div>
+    );
+}
+
+function ParticipationStep({ number, title, description }: { number: string; title: string; description: string }) {
+    return (
+        <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            className="flex gap-8 items-start border-l-4 border-white pl-8 hover:border-gray-400 transition"
+        >
+            <div className="text-4xl font-black text-gray-800 font-mono flex-shrink-0">{number}</div>
+            <div className="pt-2">
+                <h3 className="text-xl font-bold mb-2 font-mono">{title}</h3>
+                <p className="text-gray-400 leading-relaxed">{description}</p>
+            </div>
         </motion.div>
     );
 }
