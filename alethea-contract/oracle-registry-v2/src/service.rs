@@ -3249,5 +3249,578 @@ impl MutationRoot {
         self.runtime.schedule_operation(&operation);
         Ok(true)
     }
+    
+    // ==================== MISSING MUTATIONS: CreateQueryWithBond ====================
+    
+    /// Create a resolution query with bond (Hybrid Model - PRIMARY external API)
+    ///
+    /// This is the main entry point for DApps to create oracle queries.
+    /// Bond is refundable if no dispute is raised within the dispute window.
+    /// Service fee goes to protocol treasury. Priority fee goes to voter rewards.
+    ///
+    /// # Arguments
+    /// * `description` - Query description (the main question)
+    /// * `outcomes` - Possible outcomes (2-10 items)
+    /// * `strategy` - Decision strategy: "Majority", "Median", "WeightedByStake", "WeightedByReputation"
+    /// * `min_votes` - Optional minimum votes required
+    /// * `bond_amount` - Bond amount (refundable if no dispute), e.g. "100."
+    /// * `service_fee` - Service fee (non-refundable), e.g. "10."
+    /// * `priority_fee` - Optional priority fee (adds to voter rewards), e.g. "5."
+    /// * `duration_secs` - Optional duration in seconds
+    /// * `callback_chain` - Callback chain ID for receiving resolution
+    /// * `callback_app` - Callback application ID
+    /// * `callback_data` - Optional callback data (hex-encoded bytes)
+    /// * `title` - Optional short title
+    /// * `category` - Optional category (e.g., "Sports", "Crypto")
+    /// * `context` - Optional detailed context/background
+    /// * `resolution_criteria` - Optional resolution criteria
+    /// * `source_urls` - Optional data source URLs
+    /// * `tags` - Optional comma-separated tags
+    /// * `metadata_url` - Optional external metadata URL (IPFS/HTTP)
+    /// * `external_id` - Optional external market/request ID
+    ///
+    /// # Returns
+    /// `true` if operation was scheduled successfully
+    async fn create_resolution_query_with_bond(
+        &self,
+        description: String,
+        outcomes: Vec<String>,
+        strategy: Option<String>,
+        min_votes: Option<i32>,
+        bond_amount: String,
+        service_fee: String,
+        priority_fee: Option<String>,
+        duration_secs: Option<i32>,
+        callback_chain: String,
+        callback_app: String,
+        callback_data: Option<String>,
+        title: Option<String>,
+        category: Option<String>,
+        context: Option<String>,
+        resolution_criteria: Option<String>,
+        source_urls: Option<String>,
+        tags: Option<String>,
+        metadata_url: Option<String>,
+        external_id: Option<String>,
+    ) -> Result<bool, String> {
+        use oracle_registry_v2::Operation;
+        use oracle_registry_v2::state::DecisionStrategy;
+        
+        // Validate inputs
+        if description.is_empty() {
+            return Err("Description is required".to_string());
+        }
+        if outcomes.len() < 2 || outcomes.len() > 10 {
+            return Err("Must have between 2 and 10 outcomes".to_string());
+        }
+        
+        // Parse strategy
+        let strategy_enum = match strategy.as_deref().unwrap_or("WeightedByStake") {
+            "Majority" => DecisionStrategy::Majority,
+            "Median" => DecisionStrategy::Median,
+            "WeightedByStake" => DecisionStrategy::WeightedByStake,
+            "WeightedByReputation" => DecisionStrategy::WeightedByReputation,
+            other => return Err(format!("Invalid strategy: {}. Use Majority, Median, WeightedByStake, or WeightedByReputation", other)),
+        };
+        
+        // Parse amounts
+        let bond: Amount = bond_amount.parse()
+            .map_err(|_| "Invalid bond_amount format. Use format like '100.'".to_string())?;
+        let fee: Amount = service_fee.parse()
+            .map_err(|_| "Invalid service_fee format. Use format like '10.'".to_string())?;
+        let priority: Option<Amount> = if let Some(p) = priority_fee {
+            Some(p.parse().map_err(|_| "Invalid priority_fee format".to_string())?)
+        } else {
+            None
+        };
+        
+        // Parse callback chain and app
+        let cb_chain: linera_sdk::linera_base_types::ChainId = callback_chain.parse()
+            .map_err(|_| "Invalid callback_chain format".to_string())?;
+        let cb_app: linera_sdk::linera_base_types::ApplicationId = callback_app.parse()
+            .map_err(|_| "Invalid callback_app format".to_string())?;
+        
+        // Parse callback data (hex-encoded)
+        let cb_data: Vec<u8> = if let Some(hex_data) = callback_data {
+            hex_data.as_bytes().to_vec()
+        } else {
+            Vec::new()
+        };
+        
+        let operation = Operation::CreateQueryWithBond {
+            description,
+            outcomes,
+            strategy: strategy_enum,
+            min_votes: min_votes.map(|v| v as usize),
+            bond_amount: bond,
+            service_fee: fee,
+            priority_fee: priority,
+            duration_secs: duration_secs.map(|d| d as u64),
+            callback_chain: cb_chain,
+            callback_app: cb_app,
+            callback_data: cb_data,
+            title,
+            category,
+            context,
+            resolution_criteria,
+            source_urls,
+            tags,
+            metadata_url,
+            external_id,
+        };
+        
+        self.runtime.schedule_operation(&operation);
+        Ok(true)
+    }
+    
+    // ==================== MISSING MUTATIONS: CreateQueryWithCallback ====================
+    
+    /// Create a query with callback information (for cross-application calls)
+    ///
+    /// # Arguments
+    /// * `description` - Query description
+    /// * `outcomes` - Possible outcomes
+    /// * `strategy` - Decision strategy
+    /// * `min_votes` - Optional minimum votes
+    /// * `reward_amount` - Reward amount for correct voters
+    /// * `deadline` - Optional deadline in microseconds
+    /// * `callback_chain` - Chain ID to send callback to
+    /// * `callback_app` - Application ID to send callback to
+    /// * `callback_data` - Hex-encoded callback data
+    ///
+    /// # Returns
+    /// `true` if operation was scheduled successfully
+    async fn create_query_with_callback(
+        &self,
+        description: String,
+        outcomes: Vec<String>,
+        strategy: String,
+        min_votes: Option<i32>,
+        reward_amount: String,
+        deadline: Option<String>,
+        callback_chain: String,
+        callback_app: String,
+        callback_data: Option<String>,
+    ) -> Result<bool, String> {
+        use oracle_registry_v2::Operation;
+        use oracle_registry_v2::state::DecisionStrategy;
+        
+        let strategy_enum = match strategy.as_str() {
+            "Majority" => DecisionStrategy::Majority,
+            "Median" => DecisionStrategy::Median,
+            "WeightedByStake" => DecisionStrategy::WeightedByStake,
+            "WeightedByReputation" => DecisionStrategy::WeightedByReputation,
+            other => return Err(format!("Invalid strategy: {}", other)),
+        };
+        
+        let reward: Amount = reward_amount.parse()
+            .map_err(|_| "Invalid reward_amount format".to_string())?;
+        let deadline_ts = if let Some(d) = deadline {
+            let micros: u64 = d.parse().map_err(|_| "Invalid deadline format (microseconds)")?;
+            Some(linera_sdk::linera_base_types::Timestamp::from(micros))
+        } else {
+            None
+        };
+        let cb_chain: linera_sdk::linera_base_types::ChainId = callback_chain.parse()
+            .map_err(|_| "Invalid callback_chain format".to_string())?;
+        let cb_app: linera_sdk::linera_base_types::ApplicationId = callback_app.parse()
+            .map_err(|_| "Invalid callback_app format".to_string())?;
+        let cb_data: Vec<u8> = if let Some(hex_data) = callback_data {
+            hex_data.as_bytes().to_vec()
+        } else {
+            Vec::new()
+        };
+        
+        let operation = Operation::CreateQueryWithCallback {
+            description,
+            outcomes,
+            strategy: strategy_enum,
+            min_votes: min_votes.map(|v| v as usize),
+            reward_amount: reward,
+            deadline: deadline_ts,
+            callback_chain: cb_chain,
+            callback_app: cb_app,
+            callback_data: cb_data,
+        };
+        
+        self.runtime.schedule_operation(&operation);
+        Ok(true)
+    }
+    
+    // ==================== MISSING MUTATIONS: Consumer App Management ====================
+    
+    /// Register a consumer app to use Oracle services
+    ///
+    /// Consumer apps (markets, insurance, etc.) must register before creating queries.
+    /// Stake determines tier and rate limits.
+    ///
+    /// # Arguments
+    /// * `name` - Human-readable app name
+    /// * `category` - App category: "PredictionMarket", "Insurance", "Gaming", "DeFi", "DataFeed", or custom string
+    /// * `stake` - Registration stake (determines tier), e.g. "100."
+    /// * `metadata_url` - Optional metadata URL
+    /// * `logo_url` - Optional logo URL
+    async fn register_consumer_app(
+        &self,
+        name: String,
+        category: String,
+        stake: String,
+        metadata_url: Option<String>,
+        logo_url: Option<String>,
+    ) -> Result<bool, String> {
+        use oracle_registry_v2::Operation;
+        use oracle_registry_v2::state::AppCategory;
+        
+        if name.is_empty() {
+            return Err("App name is required".to_string());
+        }
+        
+        let category_enum = match category.as_str() {
+            "PredictionMarket" => AppCategory::PredictionMarket,
+            "Insurance" => AppCategory::Insurance,
+            "Gaming" => AppCategory::Gaming,
+            "DeFi" => AppCategory::DeFi,
+            "DataFeed" => AppCategory::DataFeed,
+            other => AppCategory::Custom(other.to_string()),
+        };
+        
+        let stake_amount: Amount = stake.parse()
+            .map_err(|_| "Invalid stake format. Use format like '100.'".to_string())?;
+        
+        let operation = Operation::RegisterConsumerApp {
+            name,
+            category: category_enum,
+            stake: stake_amount,
+            metadata_url,
+            logo_url,
+        };
+        
+        self.runtime.schedule_operation(&operation);
+        Ok(true)
+    }
+    
+    /// Update consumer app information
+    ///
+    /// # Arguments
+    /// * `name` - Optional new name
+    /// * `category` - Optional new category
+    /// * `metadata_url` - Optional new metadata URL (pass null to clear)
+    async fn update_consumer_app(
+        &self,
+        name: Option<String>,
+        category: Option<String>,
+        metadata_url: Option<String>,
+    ) -> Result<bool, String> {
+        use oracle_registry_v2::Operation;
+        use oracle_registry_v2::state::AppCategory;
+        
+        let category_enum = category.map(|c| match c.as_str() {
+            "PredictionMarket" => AppCategory::PredictionMarket,
+            "Insurance" => AppCategory::Insurance,
+            "Gaming" => AppCategory::Gaming,
+            "DeFi" => AppCategory::DeFi,
+            "DataFeed" => AppCategory::DataFeed,
+            other => AppCategory::Custom(other.to_string()),
+        });
+        
+        let operation = Operation::UpdateConsumerApp {
+            name,
+            category: category_enum,
+            metadata_url: Some(metadata_url),
+        };
+        
+        self.runtime.schedule_operation(&operation);
+        Ok(true)
+    }
+    
+    /// Add more stake to upgrade consumer app tier
+    ///
+    /// # Arguments
+    /// * `additional_stake` - Additional stake amount, e.g. "100."
+    async fn upgrade_consumer_app_tier(&self, additional_stake: String) -> Result<bool, String> {
+        use oracle_registry_v2::Operation;
+        
+        let amount: Amount = additional_stake.parse()
+            .map_err(|_| "Invalid stake format. Use format like '100.'".to_string())?;
+        
+        if amount == Amount::ZERO {
+            return Err("Additional stake must be greater than 0".to_string());
+        }
+        
+        let operation = Operation::UpgradeConsumerAppTier { additional_stake: amount };
+        self.runtime.schedule_operation(&operation);
+        Ok(true)
+    }
+    
+    /// Deregister consumer app (returns stake)
+    async fn deregister_consumer_app(&self) -> Result<bool, String> {
+        use oracle_registry_v2::Operation;
+        
+        let operation = Operation::DeregisterConsumerApp;
+        self.runtime.schedule_operation(&operation);
+        Ok(true)
+    }
+    
+    /// Suspend a consumer app (admin only)
+    ///
+    /// # Arguments
+    /// * `app_id` - Application ID to suspend
+    /// * `chain_id` - Chain ID of the app
+    /// * `reason` - Reason for suspension
+    async fn suspend_consumer_app(
+        &self,
+        app_id: String,
+        chain_id: String,
+        reason: String,
+    ) -> Result<bool, String> {
+        use oracle_registry_v2::Operation;
+        
+        let app: linera_sdk::linera_base_types::ApplicationId = app_id.parse()
+            .map_err(|_| "Invalid app_id format".to_string())?;
+        let chain: linera_sdk::linera_base_types::ChainId = chain_id.parse()
+            .map_err(|_| "Invalid chain_id format".to_string())?;
+        
+        let operation = Operation::SuspendConsumerApp {
+            app_id: app,
+            chain_id: chain,
+            reason,
+        };
+        
+        self.runtime.schedule_operation(&operation);
+        Ok(true)
+    }
+    
+    /// Reactivate a suspended consumer app (admin only)
+    ///
+    /// # Arguments
+    /// * `app_id` - Application ID to reactivate
+    /// * `chain_id` - Chain ID of the app
+    async fn reactivate_consumer_app(
+        &self,
+        app_id: String,
+        chain_id: String,
+    ) -> Result<bool, String> {
+        use oracle_registry_v2::Operation;
+        
+        let app: linera_sdk::linera_base_types::ApplicationId = app_id.parse()
+            .map_err(|_| "Invalid app_id format".to_string())?;
+        let chain: linera_sdk::linera_base_types::ChainId = chain_id.parse()
+            .map_err(|_| "Invalid chain_id format".to_string())?;
+        
+        let operation = Operation::ReactivateConsumerApp {
+            app_id: app,
+            chain_id: chain,
+        };
+        
+        self.runtime.schedule_operation(&operation);
+        Ok(true)
+    }
+    
+    // ==================== MISSING MUTATIONS: Admin Operations ====================
+    
+    /// Update protocol parameters (admin only)
+    ///
+    /// All parameters must be provided (the contract validates them).
+    /// Use the `parameters` query to get current values before updating.
+    ///
+    /// # Arguments
+    /// * `min_stake` - Minimum stake to be an active voter, e.g. "100."
+    /// * `min_votes_default` - Default minimum votes per query
+    /// * `default_query_duration` - Default query duration in seconds
+    /// * `reward_percentage` - Reward percentage in basis points (e.g., 500 = 5%)
+    /// * `slash_percentage` - Slash percentage in basis points (e.g., 500 = 5%)
+    /// * `protocol_fee` - Protocol fee in basis points (e.g., 100 = 1%)
+    async fn update_parameters(
+        &self,
+        min_stake: String,
+        min_votes_default: i32,
+        default_query_duration: i32,
+        reward_percentage: i32,
+        slash_percentage: i32,
+        protocol_fee: i32,
+    ) -> Result<bool, String> {
+        use oracle_registry_v2::Operation;
+        use oracle_registry_v2::state::ProtocolParameters;
+        
+        let params = ProtocolParameters {
+            min_stake: min_stake.parse().map_err(|_| "Invalid min_stake format. Use format like '100.'")?,
+            min_votes_default: min_votes_default as usize,
+            default_query_duration: default_query_duration as u64,
+            reward_percentage: reward_percentage as u32,
+            slash_percentage: slash_percentage as u32,
+            protocol_fee: protocol_fee as u32,
+            // These are set separately via dedicated operations
+            token_app_id: None,
+            token_chain_id: None,
+            max_voters_per_query: oracle_registry_v2::state::default_max_voters_per_query(),
+            min_bond: oracle_registry_v2::state::default_min_bond(),
+            inflation_rate_bps: oracle_registry_v2::state::default_inflation_rate(),
+            inflation_reward_per_query: oracle_registry_v2::state::default_inflation_reward_per_query(),
+            dispute_window_secs: oracle_registry_v2::state::default_dispute_window(),
+            dispute_bond_percentage: oracle_registry_v2::state::default_dispute_bond_percentage(),
+            inflation_reward_share: oracle_registry_v2::state::default_inflation_reward_share(),
+            protocol_launch_timestamp: None,
+            total_supply: Amount::ZERO,
+            expected_queries_per_year: 10000,
+            queries_this_year: 0,
+            last_reset_year: None,
+            min_service_fee: Amount::ZERO,
+        };
+        
+        let operation = Operation::UpdateParameters { params };
+        self.runtime.schedule_operation(&operation);
+        Ok(true)
+    }
+    
+    /// Pause the protocol (admin only)
+    /// All operations except UnpauseProtocol will be rejected
+    async fn pause_protocol(&self) -> Result<bool, String> {
+        use oracle_registry_v2::Operation;
+        
+        let operation = Operation::PauseProtocol;
+        self.runtime.schedule_operation(&operation);
+        Ok(true)
+    }
+    
+    /// Unpause the protocol (admin only)
+    async fn unpause_protocol(&self) -> Result<bool, String> {
+        use oracle_registry_v2::Operation;
+        
+        let operation = Operation::UnpauseProtocol;
+        self.runtime.schedule_operation(&operation);
+        Ok(true)
+    }
+    
+    /// Manually expire a specific query (admin only)
+    ///
+    /// # Arguments
+    /// * `query_id` - ID of the query to expire
+    async fn expire_query(&self, query_id: u64) -> Result<bool, String> {
+        use oracle_registry_v2::Operation;
+        
+        let operation = Operation::ExpireQuery { query_id };
+        self.runtime.schedule_operation(&operation);
+        Ok(true)
+    }
+    
+    /// Resolve a dispute (admin only)
+    ///
+    /// # Arguments
+    /// * `query_id` - ID of the disputed query
+    /// * `final_outcome` - The final resolved outcome
+    /// * `winner` - Who won: "original" or "disputer"
+    async fn resolve_dispute(
+        &self,
+        query_id: u64,
+        final_outcome: String,
+        winner: String,
+    ) -> Result<bool, String> {
+        use oracle_registry_v2::Operation;
+        
+        if winner != "original" && winner != "disputer" {
+            return Err("Winner must be 'original' or 'disputer'".to_string());
+        }
+        
+        let operation = Operation::ResolveDispute {
+            query_id,
+            final_outcome,
+            winner,
+        };
+        
+        self.runtime.schedule_operation(&operation);
+        Ok(true)
+    }
+    
+    // Note: set_token_config already exists above
+    
+    // ==================== MISSING MUTATIONS: Admin Transfer ====================
+    
+    /// Transfer admin role to a new chain (admin only, step 1)
+    ///
+    /// Two-step process: TransferAdmin then AcceptAdmin
+    ///
+    /// # Arguments
+    /// * `new_admin` - Chain ID of the new admin
+    async fn transfer_admin(&self, new_admin: String) -> Result<bool, String> {
+        use oracle_registry_v2::Operation;
+        
+        let new_admin_chain: linera_sdk::linera_base_types::ChainId = new_admin.parse()
+            .map_err(|_| "Invalid new_admin chain ID format".to_string())?;
+        
+        let operation = Operation::TransferAdmin { new_admin: new_admin_chain };
+        self.runtime.schedule_operation(&operation);
+        Ok(true)
+    }
+    
+    /// Accept pending admin transfer (new admin only, step 2)
+    async fn accept_admin(&self) -> Result<bool, String> {
+        use oracle_registry_v2::Operation;
+        
+        let operation = Operation::AcceptAdmin;
+        self.runtime.schedule_operation(&operation);
+        Ok(true)
+    }
+    
+    // ==================== MISSING MUTATIONS: Inflation Control ====================
+    
+    /// Set protocol launch timestamp (admin only)
+    ///
+    /// Used to calculate the current year for inflation rate calculations.
+    ///
+    /// # Arguments
+    /// * `timestamp` - Launch timestamp in microseconds since epoch
+    async fn set_protocol_launch_timestamp(&self, timestamp: String) -> Result<bool, String> {
+        use oracle_registry_v2::Operation;
+        
+        let micros: u64 = timestamp.parse()
+            .map_err(|_| "Invalid timestamp format (microseconds since epoch)".to_string())?;
+        
+        let operation = Operation::SetProtocolLaunchTimestamp {
+            timestamp: linera_sdk::linera_base_types::Timestamp::from(micros),
+        };
+        
+        self.runtime.schedule_operation(&operation);
+        Ok(true)
+    }
+    
+    /// Update inflation control parameters (admin only)
+    ///
+    /// # Arguments
+    /// * `total_supply` - Total supply of ALTH token, e.g. "100000000."
+    /// * `expected_queries_per_year` - Expected query volume per year
+    async fn update_inflation_control(
+        &self,
+        total_supply: String,
+        expected_queries_per_year: i32,
+    ) -> Result<bool, String> {
+        use oracle_registry_v2::Operation;
+        
+        let supply: Amount = total_supply.parse()
+            .map_err(|_| "Invalid total_supply format. Use format like '100000000.'".to_string())?;
+        
+        if expected_queries_per_year <= 0 {
+            return Err("expected_queries_per_year must be positive".to_string());
+        }
+        
+        let operation = Operation::UpdateInflationControl {
+            total_supply: supply,
+            expected_queries_per_year: expected_queries_per_year as u64,
+        };
+        
+        self.runtime.schedule_operation(&operation);
+        Ok(true)
+    }
+    
+    /// Reset yearly inflation counters (admin only)
+    ///
+    /// Should be called at the start of each year to reset query counters
+    /// and inflation distribution tracking.
+    async fn reset_yearly_counters(&self) -> Result<bool, String> {
+        use oracle_registry_v2::Operation;
+        
+        let operation = Operation::ResetYearlyCounters;
+        self.runtime.schedule_operation(&operation);
+        Ok(true)
+    }
 }
 
